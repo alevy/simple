@@ -50,6 +50,14 @@ routeApp app = mroute $ \req -> fmap Just $ app req
 routeConst :: Response -> Route ()
 routeConst resp = routeApp . const . return $ resp
 
+routePathPrefix :: S.ByteString -> Route a -> Route ()
+routePathPrefix path route = mroute $ \req ->
+  let patternParts = decodePathSegments path
+      lenParts = length patternParts
+  in if patternParts == (take lenParts $ pathInfo req) then
+    runRoute route $ req { pathInfo = drop lenParts $ pathInfo req}
+    else return Nothing
+
 routeHost :: S.ByteString -> Route a -> Route ()
 routeHost host route = mroute $ \req ->
   if host == serverName req then runRoute route req
@@ -67,6 +75,7 @@ routeMethod method route = mroute $ \req ->
 
 routeName :: Text -> Route a -> Route ()
 routeName name route = mroute $ \req ->
-  if name == (head . pathInfo) req then runRoute route req
+  let poppedHdrReq = req { pathInfo = (tail . pathInfo $ req) }
+  in if name == (head . pathInfo) req then runRoute route poppedHdrReq
   else return Nothing
 
