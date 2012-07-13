@@ -29,5 +29,6 @@ library
 
   exposed-modules:
     Network.Wai.Router,
+    Network.Wai.Frank,
     Network.Wai.Responses
 

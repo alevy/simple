@@ -11,10 +11,10 @@ import Network.Wai
 import Network.Wai.Responses
 
 
-data Route a = Route (Request -> ResourceT IO (Maybe Response)) a
+class Routeable r where
+  runRoute :: r -> Request -> ResourceT IO (Maybe Response)
 
-runRoute :: Route a -> Request -> ResourceT IO (Maybe Response)
-runRoute (Route rtr _) req = rtr req
+data Route a = Route (Request -> ResourceT IO (Maybe Response)) a
 
 mroute :: (Request -> ResourceT IO (Maybe Response)) -> Route ()
 mroute handler = Route handler ()
@@ -44,13 +44,17 @@ mkRouter route req = do
     Just resp -> return resp
     Nothing -> return $ resp404 req
 
-routeApp :: Application -> Route ()
-routeApp app = mroute $ \req -> fmap Just $ app req
+instance Routeable (Route a) where
+  runRoute (Route rtr _) req = rtr req
 
-routeConst :: Response -> Route ()
-routeConst resp = routeApp . const . return $ resp
 
-routePathPrefix :: S.ByteString -> Route a -> Route ()
+instance Routeable Application where
+  runRoute app req = fmap Just $ app req
+
+instance Routeable Response where
+  runRoute resp = const . return . Just $ resp
+
+routePathPrefix :: Routeable r => S.ByteString -> r -> Route ()
 routePathPrefix path route = mroute $ \req ->
   let patternParts = decodePathSegments path
       lenParts = length patternParts
@@ -58,22 +62,23 @@ routePathPrefix path route = mroute $ \req ->
     runRoute route $ req { pathInfo = drop lenParts $ pathInfo req}
     else return Nothing
 
-routeHost :: S.ByteString -> Route a -> Route ()
+routeHost :: Routeable r => S.ByteString -> r -> Route ()
 routeHost host route = mroute $ \req ->
   if host == serverName req then runRoute route req
   else return Nothing
 
-routeTop :: Route a -> Route ()
+routeTop :: Routeable r => r -> Route ()
 routeTop route = mroute $ \req ->
   if null $ pathInfo req then runRoute route req
   else return Nothing
 
-routeMethod :: Method -> Route a -> Route ()
+routeMethod :: Routeable r => StdMethod -> r -> Route ()
 routeMethod method route = mroute $ \req ->
-  if method == requestMethod req then runRoute route req
-  else return Nothing
+  if renderStdMethod method == requestMethod req then
+    runRoute route req
+    else return Nothing
 
-routeName :: Text -> Route a -> Route ()
+routeName :: Routeable r => Text -> r -> Route ()
 routeName name route = mroute $ \req ->
   let poppedHdrReq = req { pathInfo = (tail . pathInfo $ req) }
   in if name == (head . pathInfo) req then runRoute route poppedHdrReq
