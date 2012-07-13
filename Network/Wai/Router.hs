@@ -3,9 +3,10 @@
 module Network.Wai.Router where
 
 import qualified Data.ByteString as S
+import qualified Data.ByteString.Char8 as S8
 import Data.Monoid
 import Data.Conduit
-import Data.Text (Text)
+import qualified Data.Text as T
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Responses
@@ -37,7 +38,7 @@ instance Monoid (Route ()) where
       Nothing -> b req
       Just _ -> return c
 
-mkRouter :: Route a -> Application
+mkRouter :: Routeable r => r -> Application
 mkRouter route req = do
   mapp <- runRoute route req
   case mapp of
@@ -53,14 +54,6 @@ instance Routeable Application where
 
 instance Routeable Response where
   runRoute resp = const . return . Just $ resp
-
-routePathPrefix :: Routeable r => S.ByteString -> r -> Route ()
-routePathPrefix path route = mroute $ \req ->
-  let patternParts = decodePathSegments path
-      lenParts = length patternParts
-  in if patternParts == (take lenParts $ pathInfo req) then
-    runRoute route $ req { pathInfo = drop lenParts $ pathInfo req}
-    else return Nothing
 
 routeHost :: Routeable r => S.ByteString -> r -> Route ()
 routeHost host route = mroute $ \req ->
@@ -78,9 +71,34 @@ routeMethod method route = mroute $ \req ->
     runRoute route req
     else return Nothing
 
-routeName :: Routeable r => Text -> r -> Route ()
+routePathPrefix :: Routeable r => S.ByteString -> r -> Route ()
+routePathPrefix path route = mroute $ \req ->
+  let patternParts = decodePathSegments path
+      lenParts = length patternParts
+  in if patternParts == (take lenParts $ pathInfo req) then
+    runRoute route $ req { pathInfo = drop lenParts $ pathInfo req}
+    else return Nothing
+
+routePattern :: Routeable r => S.ByteString -> r -> Route ()
+routePattern pattern route =
+  let patternParts = map T.unpack $ decodePathSegments pattern
+  in foldr mkRoute (mroute . runRoute $ route) patternParts
+  where mkRoute (':':varName) = routeVar (S8.pack varName)
+        mkRoute varName = routeName (S8.pack varName)
+
+routeName :: Routeable r => S.ByteString -> r -> Route ()
 routeName name route = mroute $ \req ->
   let poppedHdrReq = req { pathInfo = (tail . pathInfo $ req) }
-  in if name == (head . pathInfo) req then runRoute route poppedHdrReq
+  in if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
+    then runRoute route poppedHdrReq
+    else return Nothing
+
+routeVar :: Routeable r => S.ByteString -> r -> Route ()
+routeVar varName route = mroute $ \req ->
+  let varVal = S8.pack . T.unpack . head . pathInfo $ req
+      poppedHdrReq = req {
+          pathInfo = (tail . pathInfo $ req)
+        , queryString = (varName, Just varVal):(queryString req)}
+  in if (length $ pathInfo req) > 0 then runRoute route poppedHdrReq
   else return Nothing
 

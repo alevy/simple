@@ -5,7 +5,7 @@ import Network.Wai.Router
 import qualified Data.ByteString as S
 
 frankMethod :: Routeable r => StdMethod -> S.ByteString -> r -> Route ()
-frankMethod method path = routeMethod method . routePathPrefix path
+frankMethod method pattern = routeMethod method . routePattern pattern
 
 get :: Routeable r => S.ByteString -> r -> Route ()
 get = frankMethod GET
