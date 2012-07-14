@@ -60,7 +60,7 @@ mkRouter route req = do
   mapp <- runRoute route req
   case mapp of
     Just resp -> return resp
-    Nothing -> return $ resp404 req
+    Nothing -> return notFound
 
 
 instance Routeable Application where
@@ -175,7 +175,7 @@ routeMethod method route = mroute $ \req ->
 routePattern :: Routeable r => S.ByteString -> r -> Route ()
 routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
-  in foldr mkRoute (mroute . runRoute $ route) patternParts
+  in routeTop $ foldr mkRoute (mroute . runRoute $ route) patternParts
   where mkRoute (':':varName) = routeVar (S8.pack varName)
         mkRoute varName = routeName (S8.pack varName)
 
