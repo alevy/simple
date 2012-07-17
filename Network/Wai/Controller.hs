@@ -3,12 +3,16 @@
 module Network.Wai.Controller
   ( Controller
   , request
+  , body
   , queryParam
+  , respond
   ) where
 
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as S8
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit
+import Data.Conduit.List as CL
 import Network.Wai
 import Network.Wai.Router
 
@@ -29,4 +33,12 @@ queryParam varName = do
   case lookup varName qr of
     Just n -> return n
     _ -> return Nothing
+
+respond :: Routeable r => r -> Controller r
+respond = return
+
+body :: Controller L8.ByteString
+body = do
+  bd <- fmap requestBody request
+  lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
 

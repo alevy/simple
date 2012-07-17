@@ -30,6 +30,7 @@ library
   exposed-modules:
     Network.Wai.Controller,
     Network.Wai.Router,
+    Network.Wai.REST,
     Network.Wai.Frank,
     Network.Wai.Responses
 
