@@ -3,7 +3,7 @@
 module Network.Wai.Responses
   ( ok, okHtml
   , movedTo, redirectTo
-  , requireBasicAuth, forbidden
+  , badRequest, requireBasicAuth, forbidden
   , notFound
   , serverError
   ) where
@@ -62,6 +62,19 @@ redirectTo url = mkHtmlResponse status303 [(hLocation, S8.pack url)] html
               \<P>The document has moved <A HREF=\""
              , L8.pack url
              , L8.pack "\">here</A>\n\
+                       \</BODY></HTML>\n"]
+
+-- | Returns a 400 (Bad Request) 'Response'.
+badRequest :: Response
+badRequest = mkHtmlResponse status400 [] html
+  where html = L8.concat
+             [L8.pack
+              "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n\
+              \<HTML><HEAD>\n\
+              \<TITLE>400 Bad Request</TITLE>\n\
+              \</HEAD><BODY>\n\
+              \<H1>Bad Request</H1>\n\
+              \<P>Your request could not be understood.</P>\n\
                        \</BODY></HTML>\n"]
 
 -- | Returns a 401 (Authorization Required) 'Response' requiring basic

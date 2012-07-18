@@ -5,6 +5,7 @@ module Network.Wai.Controller
   , request
   , body
   , queryParam
+  , parseForm
   , respond
   ) where
 
@@ -14,6 +15,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit
 import Data.Conduit.List as CL
 import Network.Wai
+import Network.Wai.Parse
 import Network.Wai.Router
 
 data ControllerState = ControllerState { csRequest :: Request }
@@ -42,3 +44,6 @@ body = do
   bd <- fmap requestBody request
   lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
 
+parseForm :: Controller ([Param], [File FilePath])
+parseForm = do
+  request >>= lift . (parseRequestBody tempFileBackEnd)
