@@ -81,7 +81,7 @@ badRequest = mkHtmlResponse status400 [] html
 -- authentication in the given realm.
 requireBasicAuth :: String -> Response
 requireBasicAuth realm = mkHtmlResponse status401
-  [("WWW-Authenticate", S8.concat ["Basic: ", S8.pack . show $ realm])] html
+  [("WWW-Authenticate", S8.concat ["Basic realm=", S8.pack . show $ realm])] html
   where html = L8.concat
              [L8.pack
               "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n\

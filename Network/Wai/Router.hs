@@ -20,7 +20,7 @@ module Network.Wai.Router
     Routeable(..)
   , mkRouter
   -- * Route Monad
-  , Route
+  , Route(..)
   -- * Common Routes
   , routeAll, routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
