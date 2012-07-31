@@ -3,13 +3,12 @@
 
 name:                wai-lite
 version:             0.1.0.0
--- synopsis:            
--- description:         
+synopsis: A minimalist web framework for WAI web applications
+description: A minimalist web framework for WAI web applications
 license:             GPL-3
 license-file:        LICENSE
 author:              Amit Levy
 maintainer:          amit@amitlevy.com
--- copyright:           
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.9.2
