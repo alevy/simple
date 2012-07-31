@@ -34,3 +34,7 @@ library
     Network.Wai.Frank,
     Network.Wai.Responses
 
+source-repository head
+  type: git
+  location: anonymous@gitstar.com:alevy/wai-lite.git
+
