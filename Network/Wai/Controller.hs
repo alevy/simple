@@ -9,7 +9,8 @@ module Network.Wai.Controller
   , respond
   ) where
 
-import Control.Monad.Reader
+import Control.Monad.Trans.Class
+import Control.Monad.Trans.Reader
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit

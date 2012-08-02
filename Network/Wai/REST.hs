@@ -7,7 +7,7 @@ module Network.Wai.REST
 
 import Prelude hiding (show)
 
-import Control.Monad.State
+import Control.Monad.Trans.State
 import Data.Conduit
 import Network.Wai.Responses
 import Network.Wai.Router

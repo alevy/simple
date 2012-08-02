@@ -152,8 +152,9 @@ routeHost host route = mroute $ \req ->
 -- routes that pop the 'pathInfo' list.
 routeTop :: Routeable r => r -> Route ()
 routeTop route = mroute $ \req ->
-  if null $ pathInfo req then runRoute route req
-  else return Nothing
+  if null (pathInfo req)  || (T.length . head $ pathInfo req) == 0
+    then runRoute route req
+    else return Nothing
 
 -- | Matches on the HTTP request method (e.g. 'GET', 'POST', 'PUT')
 routeMethod :: Routeable r => StdMethod -> r -> Route ()
