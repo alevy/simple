@@ -49,39 +49,41 @@ instance Routeable RESTControllerState where
 
     routeMethod DELETE $ routeVar "id" $ restDelete controller
 
-type RESTController a = StateT RESTControllerState (ResourceT IO) a
+type RESTControllerM a = StateT RESTControllerState (ResourceT IO) a
 
-instance Routeable (RESTController a) where
+instance Routeable (RESTControllerM a) where
   runRoute controller = rt
     where rt req = do
             (_, st) <- runStateT controller defaultRESTControllerState
             runRoute st req
 
-index :: Routeable r => r -> RESTController ()
+type RESTController = RESTControllerM ()
+
+index :: Routeable r => r -> RESTController
 index route = modify $ \controller ->
   controller { restIndex = routeAll route }
 
-create :: Routeable r => r -> RESTController ()
+create :: Routeable r => r -> RESTController
 create route = modify $ \controller ->
   controller { restCreate = routeAll route }
 
-edit :: Routeable r => r -> RESTController ()
+edit :: Routeable r => r -> RESTController
 edit route = modify $ \controller ->
   controller { restEdit = routeAll route }
 
-new :: Routeable r => r -> RESTController ()
+new :: Routeable r => r -> RESTController
 new route = modify $ \controller ->
   controller { restNew = routeAll route }
 
-show :: Routeable r => r -> RESTController ()
+show :: Routeable r => r -> RESTController
 show route = modify $ \controller ->
   controller { restShow = routeAll route }
 
-update :: Routeable r => r -> RESTController ()
+update :: Routeable r => r -> RESTController
 update route = modify $ \controller ->
   controller { restUpdate = routeAll route }
 
-delete :: Routeable r => r -> RESTController ()
+delete :: Routeable r => r -> RESTController
 delete route = modify $ \controller ->
   controller { restDelete = routeAll route }
 
