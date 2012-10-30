@@ -4,10 +4,8 @@ module Main where
 import Data.String
 import Network.Wai.Handler.Warp
 import Network.Wai
-import Network.Wai.Router
-import Network.Wai.Responses
-import Network.Wai.Frank
-import Network.Wai.Controller
+import Web.Simple
+import Web.Frank
 
 main :: IO ()
 main = runSettings defaultSettings $ mkRouter $ do

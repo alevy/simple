@@ -9,7 +9,7 @@ import Prelude hiding (show)
 
 import Control.Monad.Trans.State
 import Data.Conduit
-import Network.Wai.Responses
+import Web.Simple.Responses
 import Web.Simple.Router
 import Network.HTTP.Types
 
