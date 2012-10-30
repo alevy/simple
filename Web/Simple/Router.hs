@@ -13,7 +13,7 @@ testing, IP geolocation lookup etc').
 
 -}
 
-module Network.Wai.Router {-# DEPRECATED "Use Simple.Web.Router" #-}
+module Web.Simple.Router
   (
   -- * Example
   -- $Example
@@ -33,7 +33,7 @@ import Data.Conduit
 import qualified Data.Text as T
 import Network.HTTP.Types
 import Network.Wai
-import Network.Wai.Responses
+import Web.Simple.Responses
 
 
 {- |

@@ -27,7 +27,12 @@ library
   ghc-options: -Wall
 
   exposed-modules:
-    Network.Wai.Lite,
+    Web.Simple,
+    Web.Simple.Controller,
+    Web.Simple.Responses,
+    Web.Simple.Router,
+    Web.Frank,
+    Web.REST,
     Network.Wai.Controller,
     Network.Wai.Router,
     Network.Wai.REST,

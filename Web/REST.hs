@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
-module Network.Wai.REST {-# DEPRECATED "Use Web.REST" #-}
+module Web.REST
   ( RESTController
   , index, show, create, update, delete
   , edit, new
@@ -10,7 +10,7 @@ import Prelude hiding (show)
 import Control.Monad.Trans.State
 import Data.Conduit
 import Network.Wai.Responses
-import Network.Wai.Router
+import Web.Simple.Router
 import Network.HTTP.Types
 
 data RESTControllerState = RESTControllerState

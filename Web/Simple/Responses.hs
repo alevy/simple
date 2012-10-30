@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | This module defines some convenience functions for creating responses.
-module Network.Wai.Responses {-# DEPRECATED "Use Web.Simple.Responses" #-}
+module Web.Simple.Responses
   ( ok, okHtml
   , movedTo, redirectTo
   , badRequest, requireBasicAuth, forbidden

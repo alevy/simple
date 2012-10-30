@@ -17,7 +17,7 @@
   @
 -}
 
-module Network.Wai.Controller {-# DEPRECATED "Use Web.Simple.Controller" #-}
+module Web.Simple.Controller
   ( Controller
   -- * Utility functions
   , redirectBack
@@ -40,8 +40,8 @@ import Data.Conduit.List as CL
 import Network.HTTP.Types.Header
 import Network.Wai
 import Network.Wai.Parse
-import Network.Wai.Responses
-import Network.Wai.Router
+import Web.Simple.Responses
+import Web.Simple.Router
 
 data ControllerState = ControllerState { csRequest :: Request }
 

@@ -21,7 +21,7 @@ details) and a 'Routeable':
 @
 
 -}
-module Network.Wai.Frank {-# DEPRECATED "Use Web.Frank" #-}
+module Web.Frank
   ( get
   , post
   , put
@@ -30,7 +30,7 @@ module Network.Wai.Frank {-# DEPRECATED "Use Web.Frank" #-}
   ) where
 
 import Network.HTTP.Types
-import Network.Wai.Router
+import Web.Simple.Router
 import qualified Data.ByteString as S
 
 -- | Helper method
