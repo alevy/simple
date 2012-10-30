@@ -3,8 +3,40 @@
 
 name:                simple
 version:             0.2.0
-synopsis: A minimalist web framework for WAI web applications
-description: A minimalist web framework for WAI web applications
+synopsis: A minimalist web framework for the WAI server interface
+description:
+
+  \Simple\ is \"framework-less\" web framework for Haskell web applications
+  using the WAI server interface (e.g. for use with the warp server). Unlike
+  other frameoworks, \Simple\ does not enforce a particular structure or
+  paradigm for web applications. Rather, \Simple\ makes it easier for you, the
+  developer, to use whichever paradigm or structure you like. This package
+  includes:
+  .
+  * Web application building blocks under Web.Simple
+  .
+  * A Sintra (http://www.sinatrarb.com) inspired DSL - Web.Frank
+  .
+  * A Monad for building RESTful controllers - Web.REST
+  .
+  To get started using the warp web server:
+  .
+  @
+    $ cabal install simple warp
+  @
+  .
+  \helloworld.hs\:
+  .
+  > import Web.Simple
+  > import Network.Wai.Handler.Warp
+  >
+  > main :: IO ()
+  > main = runSettings defaultSettings $ mkRouter $
+  >         okHtml "Hello World"
+  .
+  @$ runghc -XOverloadedStrings helloworld.hs@
+  .
+  See /Web.Simple/ for a more detailed introduction.
 license:             GPL-3
 license-file:        LICENSE
 author:              Amit Levy
