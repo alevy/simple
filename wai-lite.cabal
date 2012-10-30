@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                wai-lite
-version:             0.1.0.1
+version:             0.1.1.0
 synopsis: A minimalist web framework for WAI web applications
 description: A minimalist web framework for WAI web applications
 license:             GPL-3
@@ -15,18 +15,19 @@ cabal-version:       >=1.9.2
 
 library
   build-depends:
-    base ==4.5.*,
-    conduit == 0.5.*,
-    wai ==1.3.*,
-    wai-extra ==1.3.*,
-    http-types ==0.7.1,
-    text == 0.11.*,
-    transformers ==0.3.*,
-    bytestring ==0.9.*
+    base >=4.5 && < 5.0,
+    conduit >= 0.5,
+    wai >= 1.3 && < 2.0,
+    wai-extra >= 1.3 && < 2.0,
+    http-types >= 0.7.1,
+    text >= 0.11,
+    transformers >= 0.3,
+    bytestring >= 0.9
 
   ghc-options: -Wall
 
   exposed-modules:
+    Network.Wai.Lite,
     Network.Wai.Controller,
     Network.Wai.Router,
     Network.Wai.REST,
