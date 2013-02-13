@@ -35,7 +35,6 @@ import Network.HTTP.Types
 import Network.Wai
 import Web.Simple.Responses
 
-
 {- |
 'Routeable' types can be converted into a route function using 'runRoute'.
 If the route is matched it returns a 'Response', otherwise 'Nothing'.
@@ -176,7 +175,7 @@ routeMethod method route = mroute $ \req ->
 routePattern :: Routeable r => S.ByteString -> r -> Route ()
 routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
-  in routeTop $ foldr mkRoute (mroute . runRoute $ route) patternParts
+  in foldr mkRoute (mroute . runRoute $ routeTop route) patternParts
   where mkRoute (':':varName) = routeVar (S8.pack varName)
         mkRoute varName = routeName (S8.pack varName)
 
