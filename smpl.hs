@@ -11,6 +11,7 @@ import Filesystem.Path.CurrentOS hiding (concat)
 import Language.Haskell.Interpreter hiding (name)
 import Network.Wai.Handler.DevelServer (runQuit)
 import System.Console.CmdArgs
+import System.Environment
 
 import Web.Simple.Migrations
 import Web.Simple.Router ()
@@ -31,8 +32,11 @@ data Smpl =
 
 main :: IO ()
 main = do
+    env <- getEnvironment
+    let myport = maybe 3000 read $ lookup "PORT" env
+    putStrLn $ "Starting server on port " ++ (show myport)
     let develMode = cmdArgsMode $ modes
-                  [ Server { port = 3000 &= typ "PORT"
+                  [ Server { port = myport &= typ "PORT"
                            , moduleName = "Main" &= typ "MODULE"
                                         &= explicit &= name "module"
                            } &= auto
