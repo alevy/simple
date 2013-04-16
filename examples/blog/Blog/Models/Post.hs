@@ -7,7 +7,7 @@ import Database.PostgreSQL.Models
 import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToRow
 
-data Post = Post { key :: Maybe Integer
+data Post = Post { postId :: Maybe Integer
                  , title :: Text
                  , body :: Text } deriving (Show, Read)
 
@@ -23,7 +23,8 @@ posts = TableName "posts"
 
 instance PostgreSQLModel Post where
   type PrimaryKey Post = Integer
-  primaryKey = key
+  primaryKey = postId
   tableName _ = posts
   columns _ = ["title", "body"]
   orderBy _ = Just "id desc"
+
