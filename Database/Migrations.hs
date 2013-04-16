@@ -4,21 +4,15 @@ module Database.Migrations
   , module Database.Sequel
   ) where
 
-import Prelude hiding (catch)
-import Control.Exception
+import Prelude
 import Control.Monad.IO.Class (liftIO)
 import Database.Connection
 import Database.Sequel
 import Database.PostgreSQL.Simple
-import System.Environment
 import Web.Simple.Migrations
 
 runDb :: Sequel a -> IO a
-runDb act = do
-  dbURI <- catch (getEnv "DATABASE_URL")
-            (const $ return "postgres://" :: SomeException -> IO String)
-  conn <- connect $ parseDbURL dbURI
-  withTransaction conn $ runSequel act conn
+runDb act = withConnection $ \conn -> runSequel act conn
 
 dbUp :: Sequel a -> Migration
 dbUp act version name = runDb $ do

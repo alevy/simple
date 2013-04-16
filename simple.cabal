@@ -84,9 +84,9 @@ library
     transformers >= 0.3,
     bytestring >= 0.9,
     postgresql-simple >= 0.2.4.1,
+    resource-pool >= 0.2.1 && < 0.3,
     resourcet >= 0.4.4,
     network >= 2.4,
-    MonadCatchIO-mtl >= 0.3.0.5,
     mtl >= 2.1
 
   ghc-options: -Wall -fno-warn-unused-do-bind

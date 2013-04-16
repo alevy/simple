@@ -1,21 +1,27 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 module Database.Connection where
 
-import Control.Exception (throwIO, SomeException)
-import Control.Monad.CatchIO
+import Data.Pool
 import Control.Monad.IO.Class
-import Control.Concurrent
 import Control.Monad.Trans.Resource
 import Database.PostgreSQL.Simple
 import Network.URI
 import System.IO.Unsafe
+import System.Environment
 
 {-# NOINLINE conns #-}
-conns :: Chan Connection
-conns = unsafePerformIO $ newChan
+conns :: Pool Connection
+conns = unsafePerformIO $ do
+  dbUrl <- getEnv "DATABASE_URL"
+  let creator = createConnection $ parseDbURL dbUrl
+  createPool creator
+             (\c -> rollback c >> close c)
+             1
+             (fromInteger 60)
+             20
 
-createConnection :: ConnectInfo -> IO ()
-createConnection config = connect config >>= writeChan conns
+createConnection :: ConnectInfo -> IO Connection
+createConnection config = connect config
 
 parseDbURL :: String -> ConnectInfo
 parseDbURL uri = case mdbURI of
@@ -43,25 +49,10 @@ parseDbURL uri = case mdbURI of
         toDatabase ('/':db) = db
         toDatabase _ = ""
 
-withConnection :: MonadCatchIO m => (Connection -> m b) -> m b
-withConnection func = do
-  conn <- liftIO $ readChan conns
+withConnection :: (MonadIO m, MonadBaseControl IO m) => (Connection -> m b) -> m b
+withConnection func = withResource conns $ \conn -> do
   liftIO $ begin conn
-  ee <- try $ func conn
-  liftIO $ case ee of
-    Right a -> do
-      commit conn
-      writeChan conns conn
-      return a
-    Left e -> do
-      rollback conn
-      writeChan conns conn
-      throwIO (e :: SomeException)
-      
-  where try a = catch (a >>= \v -> return (Right v)) (\e -> return (Left e))
-
-instance MonadCatchIO (ResourceT IO) where
-  m `catch` f = liftIO $ (runResourceT m) `catch` \e -> runResourceT (f e)
-  block = liftIO . block . runResourceT
-  unblock = liftIO . block . runResourceT
+  res <- func conn
+  liftIO $ commit conn
+  return res
 
