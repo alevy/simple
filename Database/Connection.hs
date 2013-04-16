@@ -1,8 +1,11 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Database.Connection where
 
-import Control.Monad.IO.Class (liftIO, MonadIO)
+import Control.Exception (throwIO, SomeException)
+import Control.Monad.CatchIO
+import Control.Monad.IO.Class
 import Control.Concurrent
-import Control.Exception (finally)
+import Control.Monad.Trans.Resource
 import Database.PostgreSQL.Simple
 import Network.URI
 import System.IO.Unsafe
@@ -40,8 +43,25 @@ parseDbURL uri = case mdbURI of
         toDatabase ('/':db) = db
         toDatabase _ = ""
 
-withConnection :: MonadIO m => (Connection -> IO b) -> m b
-withConnection func = liftIO $ do
-  conn <- readChan conns
-  finally (func conn) (writeChan conns conn)
+withConnection :: MonadCatchIO m => (Connection -> m b) -> m b
+withConnection func = do
+  conn <- liftIO $ readChan conns
+  liftIO $ begin conn
+  ee <- try $ func conn
+  liftIO $ case ee of
+    Right a -> do
+      commit conn
+      writeChan conns conn
+      return a
+    Left e -> do
+      rollback conn
+      writeChan conns conn
+      throwIO (e :: SomeException)
+      
+  where try a = catch (a >>= \v -> return (Right v)) (\e -> return (Left e))
+
+instance MonadCatchIO (ResourceT IO) where
+  m `catch` f = liftIO $ (runResourceT m) `catch` \e -> runResourceT (f e)
+  block = liftIO . block . runResourceT
+  unblock = liftIO . block . runResourceT
 

@@ -1,23 +1,64 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Database.Migrations
-  ( defaultMain
+  ( runDb, dbUp, dbDown, initDb
   , module Database.Sequel
   ) where
 
 import Prelude hiding (catch)
 import Control.Exception
+import Control.Monad.IO.Class (liftIO)
 import Database.Connection
 import Database.Sequel
 import Database.PostgreSQL.Simple
 import System.Environment
+import Web.Simple.Migrations
 
-defaultMain :: Sequel () -> Sequel () -> IO ()
-defaultMain up down = do
+runDb :: Sequel a -> IO a
+runDb act = do
   dbURI <- catch (getEnv "DATABASE_URL")
             (const $ return "postgres://" :: SomeException -> IO String)
-  createConnection $ parseDbURL dbURI
+  conn <- connect $ parseDbURL dbURI
+  withTransaction conn $ runSequel act conn
 
-  args <- getArgs
-  case args of
-    "--rollback":_ -> runSequel down >>= withConnection . (flip execute_)
-    _ -> runSequel up >>= withConnection . (flip execute_)
-  return ()
+dbUp :: Sequel a -> Migration
+dbUp act version name = runDb $ do
+  (Only count:_) <-
+    sqlQuery "select count(version) from schema_migrations where version = ?"
+              [version]
+  if (count :: Int) > 0 then
+    return False
+    else do
+          liftIO $ putStrLn $
+            "=== Running migration: " ++ name ++ " (" ++ version ++ ")"
+          act
+          sqlExecute "insert into schema_migrations (version) values(?)"
+                     (Only version)
+          return True
+
+dbDown :: Sequel a -> Migration
+dbDown act version name = runDb $ do
+  (Only count:_) <-
+    sqlQuery "select count(version) from schema_migrations where version = ?"
+              [version]
+  if (count :: Int) == 0 then
+    return False
+    else do
+          liftIO $ putStrLn $
+            "=== Rolling back: " ++ name ++ " (" ++ version ++ ")"
+          act
+          sqlExecute "delete from schema_migrations where version = ?"
+                     (Only version)
+          return True
+
+initDb :: Migration
+initDb _ _ = runDb $ do
+  (Only count:_) <- sqlQuery "select count(*) from pg_class where relname = ?"
+                      (Only ("schema_migrations" :: String))
+  if (count :: Int) /= 0 then
+    return False
+    else do
+          liftIO $ putStrLn "Creating table `schema_migrations`"
+          create_table "schema_migrations" $
+            column "version" string [UNIQUE]
+          return True
+

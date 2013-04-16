@@ -1,31 +1,35 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Database.Sequel where
 
+import Database.PostgreSQL.Simple
+import Control.Monad.Identity
 import Control.Monad.State
 import Data.List
 import Data.String
 
-type Sequel = StateT String IO
+data Sequel a = Sequel { runSequel :: Connection -> IO a }
 
-runSequel :: IsString s => Sequel a -> IO s
-runSequel sql = fmap (fromString . snd) $ runStateT sql ""
+instance Monad Sequel where
+  return a = Sequel $ const $ return a
+  (>>=) (Sequel run) f = Sequel $ \conn ->
+    run conn >>= \res -> runSequel (f res) conn
 
-append :: String -> Sequel ()
-append str1 = modify $ \str0 -> concat $
-  [ str0
-  , "\n\n"
-  , str1]
+instance MonadIO Sequel where
+  liftIO = Sequel . const
 
 drop_table :: String -> Sequel ()
-drop_table name = append $ "DROP TABLE " ++ name ++ ";"
+drop_table name = sqlExecute_ (fromString $ "DROP TABLE " ++ name ++ ";")
 
 create_table :: String -> CreateTable a -> Sequel ()
 create_table name block = do
-  blk <- runCreateTable $ do
-    block
-  append $ concat $
-    [ "CREATE TABLE " ++ name ++ " (\n"
-    , blk
-    , "\n);"]
+  let blk = runCreateTable block
+  let execStr = fromString $ concat $
+            [ "CREATE TABLE "
+            , name
+            , " (\n"
+            , blk
+            , "\n);"]
+  sqlExecute_ execStr
 
 type ColumnType = String
 
@@ -65,14 +69,15 @@ stringifyConstraint (REFERENCES table col) =
   "REFERENCES " ++ table ++ "(" ++ col ++ ")"
 
 drop_column :: String -> String -> Sequel ()
-drop_column tableName colName = append $ concat $
-  [ "ALTER TABLE "
-  , tableName
-  , " DROP COLUMN "
-  , colName, ";"]
+drop_column tableName colName = sqlExecute_ $ fromString $ concat
+    ["ALTER TABLE "
+    , tableName
+    , " DROP COLUMN "
+    , colName
+    , ";"]
 
 add_column :: String -> String -> ColumnType -> [ColumnConstraint] -> Sequel ()
-add_column tableName colName colType ctrs = append $ concat $
+add_column tableName colName colType ctrs = sqlExecute_ $ fromString $ concat
   [ "ALTER TABLE "
   , tableName
   , " ADD COLUMN "
@@ -83,19 +88,18 @@ add_column tableName colName colType ctrs = append $ concat $
   , concat $ intersperse " " (map stringifyConstraint ctrs), ";"]
 
 rename_column :: String -> String -> String -> Sequel ()
-rename_column tableName fromName toName = append $ concat $
+rename_column tableName fromName toName = sqlExecute_ $ fromString $ concat
   [ "ALTER TABLE "
   , tableName
   , " RENAME COLUMN "
   , fromName
   , " TO "
-  , toName
-  , ";"]
+  , toName, ";"]
 
-type CreateTable = StateT [(ColumnType, String, [ColumnConstraint])] Sequel
+type CreateTable = StateT [(ColumnType, String, [ColumnConstraint])] Identity
 
-runCreateTable :: CreateTable a -> Sequel String
-runCreateTable ct = do
+runCreateTable :: CreateTable a -> String
+runCreateTable ct = runIdentity $ do
   (_, cols) <- runStateT ct []
   let colStrs = map
         (\(t, name, crts) ->
@@ -107,4 +111,16 @@ runCreateTable ct = do
 column :: String -> ColumnType -> [ColumnConstraint] -> CreateTable ()
 column colName colType constraints = do
   modify $ \cols -> (colType, colName, constraints):cols
+
+sqlQuery :: (ToRow q, FromRow r) => Query -> q -> Sequel [r]
+sqlQuery myq params = Sequel $ \conn -> query conn myq params
+
+sqlQuery_ :: FromRow r => Query -> Sequel [r]
+sqlQuery_ myq = Sequel $ \conn -> query_ conn myq
+
+sqlExecute :: ToRow q => Query -> q -> Sequel ()
+sqlExecute myq params = Sequel $ \conn -> execute conn myq params >> return ()
+
+sqlExecute_ :: Query -> Sequel ()
+sqlExecute_ myq = Sequel $ \conn -> execute_ conn myq >> return ()
 

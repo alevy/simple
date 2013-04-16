@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 -- | This module defines some convenience functions for creating responses.
 module Web.Simple.Responses
-  ( ok, okHtml
+  ( ok, okHtml, okJson
   , movedTo, redirectTo
   , badRequest, requireBasicAuth, forbidden
   , notFound
@@ -32,6 +32,11 @@ mkHtmlResponse stat hdrs =
 okHtml :: L8.ByteString -> Response
 okHtml body =
   mkHtmlResponse status200 [] body
+
+-- | Creates a 200 (OK) 'Response' with content-type \"application/json\" and the
+-- given resposne body
+okJson :: L8.ByteString -> Response
+okJson = ok (S8.pack "application/json")
 
 -- | Given a URL returns a 301 (Moved Permanently) 'Response' redirecting to
 -- that URL.
