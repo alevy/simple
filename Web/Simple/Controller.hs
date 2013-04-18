@@ -87,13 +87,26 @@ redirectBackOr def = do
 -- @
 --
 -- would return /Nothing/
-queryParam :: S8.ByteString -- ^ Parameter name
-           -> Controller (Maybe S8.ByteString)
+queryParam :: Parseable a => S8.ByteString -- ^ Parameter name
+           -> Controller (Maybe a)
 queryParam varName = do
   qr <- fmap queryString request
   case lookup varName qr of
-    Just n -> return n
+    Just p -> return $ fmap parse p
     _ -> return Nothing
+
+class Parseable a where
+  parse :: S8.ByteString -> a
+
+instance Parseable S8.ByteString where
+  parse = id
+instance Parseable String where
+  parse = S8.unpack
+instance Parseable Integer where
+  parse = parseReadable
+
+parseReadable :: Read a => S8.ByteString -> a
+parseReadable = read . S8.unpack
 
 -- | An alias for 'return' that's helps the the compiler type a code block as a
 -- 'Controller'. For example, when using the 'Network.Wai.Frank' routing DSL to

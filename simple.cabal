@@ -93,9 +93,9 @@ library
 
   exposed-modules:
     Database.PostgreSQL.Models,
-    Database.Connection,
-    Database.Migrations,
-    Database.Sequel,
+    Database.PostgreSQL.Connection,
+    Database.PostgreSQL.Migrations,
+    Database.PostgreSQL.Sequel,
     Web.Simple,
     Web.Simple.Auth,
     Web.Simple.Controller,

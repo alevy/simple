@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Database.Sequel where
+module Database.PostgreSQL.Sequel where
 
 import Database.PostgreSQL.Simple
 import Control.Monad.Identity

@@ -1,5 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
-module Database.Connection where
+module Database.PostgreSQL.Connection where
 
 import Data.Pool
 import Control.Monad.IO.Class

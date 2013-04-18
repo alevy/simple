@@ -1,4 +1,4 @@
-import Database.Migrations
+import Database.PostgreSQL.Migrations
 import Web.Simple.Migrations
 
 up :: Migration

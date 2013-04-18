@@ -1,0 +1,13 @@
+body {
+  background-color: white;
+  font-family: Ubuntu, Helvetica, Arial;
+}
+
+#header, #content {
+  width: 800px;
+  margin: 0 auto;
+}
+
+#content {
+  padding: 10px;
+}

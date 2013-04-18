@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Database.Migrations
+module Database.PostgreSQL.Migrations
   ( runDb, dbUp, dbDown, initDb
-  , module Database.Sequel
+  , module Database.PostgreSQL.Sequel
   ) where
 
 import Prelude
 import Control.Monad.IO.Class (liftIO)
-import Database.Connection
-import Database.Sequel
+import Database.PostgreSQL.Connection
+import Database.PostgreSQL.Sequel
 import Database.PostgreSQL.Simple
 import Web.Simple.Migrations
 

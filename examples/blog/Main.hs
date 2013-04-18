@@ -4,6 +4,7 @@ module Main where
 
 import Web.Simple
 import System.Environment
+import Network.Wai.Application.Static
 import Network.Wai.Handler.Warp
 
 import Blog.Controllers.PostsController
@@ -11,7 +12,8 @@ import Blog.Controllers.PostsController
 app runner = do
   runner $ mkRouter $ do
     routeName "posts" postsController
-    routeAll $ okHtml "Hello World"
+    routeTop $ redirectTo "/posts"
+    routeAll $ staticApp $ defaultFileServerSettings "static"
 
 main :: IO ()
 main = do
