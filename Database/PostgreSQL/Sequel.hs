@@ -42,6 +42,9 @@ integer = "integer"
 time :: ColumnType
 time = "time"
 
+timestamp :: ColumnType
+timestamp = "timestamptz"
+
 varchar :: Integer -> ColumnType
 varchar size = "varchar(" ++ (show size) ++ ")"
 
