@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 module Web.REST
-  ( RESTController
+  ( REST(..), RESTController, rest
   , index, show, create, update, delete
   , edit, new
   ) where
@@ -8,12 +8,12 @@ module Web.REST
 import Prelude hiding (show)
 
 import Control.Monad.Trans.State
-import Data.Conduit
+import Control.Monad.Identity
 import Web.Simple.Responses
 import Web.Simple.Router
 import Network.HTTP.Types
 
-data RESTControllerState = RESTControllerState
+data REST = REST
   { restIndex   :: Route ()
   , restShow    :: Route ()
   , restCreate  :: Route ()
@@ -23,8 +23,8 @@ data RESTControllerState = RESTControllerState
   , restNew     :: Route ()
   }
 
-defaultRESTControllerState :: RESTControllerState
-defaultRESTControllerState = RESTControllerState
+defaultREST :: REST
+defaultREST = REST
   { restIndex   = routeAll $ notFound
   , restShow    = routeAll $ notFound
   , restCreate  = routeAll $ notFound
@@ -34,7 +34,7 @@ defaultRESTControllerState = RESTControllerState
   , restNew     = routeAll $ notFound
   }
 
-instance Routeable RESTControllerState where
+instance Routeable REST where
   runRoute controller = runRoute $ do
     routeMethod GET $ do
       routeTop $ restIndex controller
@@ -45,17 +45,20 @@ instance Routeable RESTControllerState where
 
     routeMethod POST $ routeTop $ restCreate controller
 
-    routeMethod PUT $ routeVar "id" $ restUpdate controller
-
     routeMethod DELETE $ routeVar "id" $ restDelete controller
 
-type RESTControllerM a = StateT RESTControllerState (ResourceT IO) a
+    routeMethod PUT $ routeVar "id" $ restUpdate controller
+
+type RESTControllerM a = StateT REST Identity a
 
 instance Routeable (RESTControllerM a) where
   runRoute controller = rt
     where rt req = do
-            (_, st) <- runStateT controller defaultRESTControllerState
+            let (_, st) = runIdentity $ runStateT controller defaultREST
             runRoute st req
+
+rest :: RESTControllerM a -> REST
+rest controller = snd . runIdentity $ runStateT controller defaultREST
 
 type RESTController = RESTControllerM ()
 
