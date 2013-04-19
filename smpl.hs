@@ -34,7 +34,6 @@ main :: IO ()
 main = do
     env <- getEnvironment
     let myport = maybe 3000 read $ lookup "PORT" env
-    putStrLn $ "Starting server on port " ++ (show myport)
     let develMode = cmdArgsMode $ modes
                   [ Server { port = myport &= typ "PORT"
                            , moduleName = "Main" &= typ "MODULE"
@@ -47,7 +46,9 @@ main = do
                   , Rollback { steps = 1 &= typ "INTEGER" }]
     smpl <- cmdArgsRun develMode
     case smpl of
-      Server p m -> runQuit p m "app" (const $ return [])
+      Server p m -> do
+        runQuit p m "app" (const $ return [])
+        putStrLn $ "Starting server on port " ++ (show myport)
       Rollback steps -> do
         fls <- listDirectory "migrate"
         whileI steps (reverse . sort $ fls) $ \f -> do
