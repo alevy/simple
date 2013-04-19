@@ -1,13 +1,177 @@
 body {
   background-color: white;
   font-family: Ubuntu, Helvetica, Arial;
+  font-size: 16px;
+  overflow-x: hidden;
 }
 
-#header, #content {
-  width: 800px;
-  margin: 0 auto;
+h1, h2, h3 h4 {
+  margin-top: 0px;
 }
 
-#content {
-  padding: 10px;
+#sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 20%;
+  height: 100%;
+  padding-top: 30px;
+  padding-left: 3%;
 }
+
+#sidebar h2 {
+  font-size: 22px;
+}
+
+#sidebar h3 {
+  font-size: 14px;
+  font-weight: normal;
+}
+
+#sidebar .logo {
+  display: block;
+  width: 75%;
+}
+
+ul.nav {
+  list-style-type: none;
+  padding: 0px;
+  text-transform: lowercase;
+}
+
+#sidebar ul.nav {
+  margin-top: 40px;
+}
+
+ul.nav li {
+  margin-top: 10px;
+  color: #666;
+  font-weight: 700;
+}
+
+ul.nav a {
+  text-decoration: none;
+  color: inherit;
+  padding: 5px;
+}
+
+#sidebar ul.nav a {
+  display: block;
+}
+
+ul.nav a:hover {
+  color: #333;
+  border-radius: 5px;
+  border: 1px solid #666;
+}
+
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 20%;
+  padding: 0 0 5px 40px;
+  font-size: 11px;
+}
+
+#river {
+  position: absolute;
+  top: 0;
+  margin-left: 25%;
+  border-left: 1px solid #ccc;
+  min-height: 100%;
+  width: 75%;
+}
+
+#river header > * {
+  color: black;
+  padding-left: 40px;
+}
+
+#river header > h2 {
+  padding-top: 40px;
+}
+
+#river header > time {
+  display: block;
+  border-bottom: 1px solid #ccc;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  width: 100%;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+h1 a, h2 a, h3 a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+.content {
+  padding-left: 40px;
+  width: 60%;
+}
+
+.post {
+  border-bottom: 1px solid #ccc;
+}
+
+form {
+  width: 60%;
+}
+
+input, textarea {
+  border: 1px solid #ccc;
+  font-family: Ubuntu, sans-serif;
+  font-size: 16px;
+  line-height: 1.5em;
+}
+
+input#title, textarea {
+  width: 100%;
+}
+
+input#title {
+  font-weight: 700;
+  font-size: 20px;
+}
+
+pre {
+  padding: 15px;
+  background-color: #dfb;
+  border-radius: 5px;
+  box-shadow: 1px 1px 5px #ccc;
+}
+
+code {
+  font-family: Ubuntu Mono, monospace;
+}
+
+#admin ul.nav li {
+  display: inline;
+}
+
+#admin header {
+  clear: both;
+}
+
+#admin .banner {
+  border-bottom: 1px solid #ccc;
+}
+
+.admin-posts-list {
+  width: 100%;
+}
+
+.admin-posts-list .action {
+  width: 30px;
+}
+
+.admin-posts-list .title {
+  font-weight: 500;
+}
+
+.admin-posts-list .date {
+  text-align: center;
+}
+
