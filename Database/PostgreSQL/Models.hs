@@ -116,6 +116,20 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
           tName = tableName model
           cols = concat $ intersperse ", " $ map (++ " =?") (columns tName)
 
+  destroy :: p -> Connection -> IO Bool
+  destroy model conn = do
+    case primaryKey model of
+      Nothing -> return False
+      Just pkey -> do
+        fmap (> 0) $ execute conn template (Only pkey)
+    where template = fromString $ concat
+            [ "delete from "
+            , fromTableName tName
+            , " where "
+            , primaryKeyName tName
+            , " = ?;"]
+          tName = tableName model
+
   -- | Retrieves the single model corresponding to the given primary key
   find :: TableName p -> PrimaryKey p -> Connection -> IO (Maybe p)
   find tn = findFirst tn (primaryKeyName tn)
