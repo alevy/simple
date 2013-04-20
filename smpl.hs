@@ -5,7 +5,7 @@ import Control.Monad
 import qualified Data.ByteString.Char8 as S8
 import Data.List (sort)
 import Data.String
-import Filesystem hiding (concat)
+import Filesystem
 import Filesystem.Path hiding (concat)
 import Filesystem.Path.CurrentOS hiding (concat)
 import Language.Haskell.Interpreter hiding (name)
