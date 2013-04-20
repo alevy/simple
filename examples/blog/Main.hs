@@ -11,6 +11,7 @@ import Network.Wai
 import Network.Wai.Middleware.Static
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.MethodOverridePost
+import Network.Wai.Middleware.RequestLogger
 
 import Blog.Controllers.PostsController
 
@@ -32,5 +33,5 @@ main = do
   env <- getEnvironment
   let port = maybe 3000 read $ lookup "PORT" env
   putStrLn $ "Starting server on port " ++ (show port)
-  app (run port)
+  app (run port . logStdout)
 
