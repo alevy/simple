@@ -12,6 +12,7 @@ import Network.Wai.Middleware.Static
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.MethodOverridePost
 import Network.Wai.Middleware.RequestLogger
+import System.FilePath
 
 import Blog.Controllers.PostsController
 
@@ -20,13 +21,16 @@ app runner = do
   let adminUser = maybe "admin" S8.pack $ lookup "ADMIN_USERNAME" env
   let adminPassword = maybe "password" S8.pack $ lookup "ADMIN_PASSWORD" env
 
-  runner $ methodOverridePost . (staticPolicy $ addBase "static") $
+  let cache = FileSystemCache "cache"
+
+  runner $ methodOverridePost $
     mkRouter $ do
-      routeName "posts" postsController
+      routeName "posts" $ postsController cache
       routeName "admin" $
-        basicAuth "Simple Blog Admin" adminUser adminPassword
-          postsAdminController
-      routeTop $ restIndex postsController
+        basicAuth "Simple Blog Admin" adminUser adminPassword $
+          postsAdminController cache
+      routeTop $ restIndex $ postsController cache
+      routeAll $ staticPolicy (addBase "static") $ const $ return notFound
 
 main :: IO ()
 main = do

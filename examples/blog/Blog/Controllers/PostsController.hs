@@ -19,18 +19,23 @@ import qualified Blog.Models.Post as P
 import qualified Blog.Views.Posts as V
 import Blog.Templates
 
-postsController = rest $ do
+import Network.Wai
+
+postsController cache = rest $ do
   
   index $ DB.withConnection $ \conn -> do
     posts <- liftIO $ findAll P.posts conn
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
 
-  show $ DB.withConnection $ \conn -> do
-    (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ find P.posts pid conn
-    respond $ okHtml $ renderHtml $ defaultTemplate $ V.show post
+  show $ do
+    path <- fmap (S8.unpack . rawPathInfo) request
+    fmap okHtml $ fetchOr cache path $
+      DB.withConnection $ \conn -> do
+        (Just pid) <- queryParam "id"
+        (Just post) <- liftIO $ find P.posts pid conn
+        return $ renderHtml $ defaultTemplate $ V.show post
 
-postsAdminController = rest $ do
+postsAdminController cache = rest $ do
   index $ DB.withConnection $ \conn -> do
     posts <- liftIO $ findAll P.posts conn
     respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
@@ -53,7 +58,8 @@ postsAdminController = rest $ do
     case mpost of
       Just post -> do
         liftIO $ upsert post conn
-        respond $ redirectTo $ "/posts/" ++ (Prelude.show . fromJust $ P.postId post)
+        invalidate cache $ P.postUrl post
+        respond $ redirectTo $ P.postUrl post
       Nothing -> redirectBack
 
   new $ do
@@ -78,5 +84,6 @@ postsAdminController = rest $ do
     (Just pid) <- queryParam "id"
     (Just post) <- liftIO $ find P.posts pid conn
     liftIO $ destroy post conn
+    invalidate cache $ P.postUrl post
     respond $ redirectTo "/posts"
 

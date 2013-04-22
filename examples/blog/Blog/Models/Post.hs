@@ -3,6 +3,7 @@
 module Blog.Models.Post where
 
 import Control.Applicative
+import Data.Maybe
 import Data.Text
 import Data.Time.LocalTime
 import Data.Time.Format
@@ -23,6 +24,9 @@ postedAtStr post = formatTime defaultTimeLocale "%B %e, %C%y %R" $ postedAt post
 
 markdownBody :: Post -> Html
 markdownBody = (writeHtml def) . (readMarkdown def) . unpack . body
+
+postUrl :: Post -> String
+postUrl post = "/posts/" ++ (show $ fromJust $ postId post)
 
 instance FromRow Post where
   fromRow = Post <$> field <*> field <*> field <*> field
