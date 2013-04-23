@@ -1,4 +1,5 @@
-{-# LANGUAGE MultiParamTypeClasses, TypeFamilies, FlexibleContexts #-}
+{-# LANGUAGE MultiParamTypeClasses, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, ExistentialQuantification #-}
 {- |
 
 Type classes for PostgreSQL-backed data models.
@@ -8,6 +9,7 @@ Type classes for PostgreSQL-backed data models.
 module Database.PostgreSQL.Models
   ( FromParams(..), Param
   , PostgreSQLModel(..)
+  , Column(..)
   , HasMany(..)
   , TableName(..), fromTableName
   , fromString, IsString
@@ -38,10 +40,16 @@ newtype TableName p = TableName String deriving (Show, Eq)
 fromTableName :: TableName p -> String
 fromTableName (TableName s) = s
 
+data Column m = forall a. ToField a => Column String (m -> a)
+
+columnNames :: PostgreSQLModel p => [Column p] -> [String]
+columnNames cols = map columnName cols
+  where columnName (Column str _) = str
+
 -- | Basis type for PostgreSQL-backed data-models. Instances must, at minimum,
 -- implement 'primaryKey', 'tableName' and 'columns'. /Note: the column ordering
 -- must match that used in the type's implementation of 'FromRow' and 'ToRow'/
-class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
+class (FromRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
   => PostgreSQLModel p where
 
   type PrimaryKey p :: *
@@ -64,15 +72,15 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
 
   -- | Column names excluding primary key. Column order /must/ match the ordering
   -- used in 'ToRow' and 'FromRow'.
-  columns :: TableName p -> [String]
+  columns :: TableName p -> [Column p]
 
   -- | Name of primary key column (default: \"id\").
   primaryKeyName :: TableName p -> String
   primaryKeyName _ = "id"
 
   -- | Column names with primary-key name prepended.
-  columns_ :: TableName p -> [String]
-  columns_ tName = (primaryKeyName tName):(columns tName)
+  columns_ :: TableName p -> [Column p]
+  columns_ tName = (Column (primaryKeyName tName) primaryKey):(columns tName)
 
   orderBy :: TableName p -> Maybe String
   orderBy _ = Nothing
@@ -91,12 +99,11 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
           tName = tableName model
           qs = concat $ intersperse ", " $ map (const "?") $ colNames
           cols = concat $ intersperse ", " $ colNames
-          colNameFields = case primaryKey model of
-                            Nothing -> (columns tName, toRow model)
-                            Just pkey -> ( columns_ tName
-                                         , (toField pkey):(toRow model))
-          (_, fields) = colNameFields
-          (colNames, _) = colNameFields
+          fields = modelToRow model colStructs
+          colNames = columnNames colStructs
+          colStructs = case primaryKey model of
+                            Nothing -> columns tName
+                            Just _ -> columns_ tName
   
   -- | Create or update the model (uses the primary key to determine if
   -- the model already exists in the database)
@@ -105,7 +112,8 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
     case primaryKey model of
       Nothing -> insert model conn
       Just pkey -> do
-        execute conn template $ toRow model ++ [toField pkey]
+        execute conn template $
+          (modelToRow model $ columns tName) ++ [toField pkey]
         return pkey
     where template = fromString $ concat
             ["update "
@@ -114,7 +122,8 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
             , cols, " where ", primaryKeyName tName
             , " = ?"]
           tName = tableName model
-          cols = concat $ intersperse ", " $ map (++ " =?") (columns tName)
+          cols = concat $ intersperse ", " $
+                  map (++ " =?") (columnNames $ columns tName)
 
   destroy :: p -> Connection -> IO Bool
   destroy model conn = do
@@ -153,7 +162,7 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
             , " = ?"
             , maybe "" (" order by " ++) $ orderBy tName
             , " limit 1"]
-          cols = concat $ intersperse ", " $ columns_ tName
+          cols = concat $ intersperse ", " $ columnNames $ columns_ tName
 
   -- | Retrieves all models in the table
   findAll :: TableName p -> Connection -> IO [p]
@@ -162,7 +171,7 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
             [ "select ", cols, " from "
             , fromTableName tName
             , maybe "" (" order by " ++) $ orderBy tName]
-          cols = concat $ intersperse ", " $ columns_ tName
+          cols = concat $ intersperse ", " $ columnNames $ columns_ tName
 
   -- | Retrieves all models in the table subject to the column-value constraint.
   findAllBy :: ToField f
@@ -176,7 +185,11 @@ class (FromRow p, ToRow p, ToField (PrimaryKey p), FromField (PrimaryKey p))
             , fromTableName tName
             , " where ", col, " = ?"
             , maybe "" (" order by " ++) $ orderBy tName]
-          cols = concat $ intersperse ", " $ columns_ tName
+          cols = concat $ intersperse ", " $ columnNames $ columns_ tName
+
+modelToRow :: PostgreSQLModel p => p -> [Column p] -> [Action]
+modelToRow model cols = toRow $
+  map (\(Column _ acc) -> toField $ acc model) $ cols
 
 -- | Defines a \"has-many\" relationship between two models, where the 'parent'
 -- model may be associated with zero or more of the 'child' model. Specifically,
@@ -197,7 +210,7 @@ class (PostgreSQLModel parent, PostgreSQLModel child) =>
             , " = ?"
             , maybe "" (" order by " ++) $ orderBy ctName]
           ptName = tableName parent
-          childColumns = concat $ intersperse ", " $ columns_ ctName
+          childColumns = concat $ intersperse ", " $ columnNames $ columns_ ctName
 
   childOf :: parent -> TableName child
           -> PrimaryKey child -> Connection -> IO (Maybe child)
@@ -223,7 +236,8 @@ class (PostgreSQLModel parent, PostgreSQLModel child) =>
             , maybe "" (" order by " ++) $ orderBy ctName
             , " limit 1"]
           ptName = tableName parent
-          childColumns = concat $ intersperse ", " $ columns_ ctName
+          childColumns = concat $ intersperse ", " $
+                          columnNames $ columns_ ctName
 
   childrenOfBy :: ToField f
              => parent
@@ -241,7 +255,8 @@ class (PostgreSQLModel parent, PostgreSQLModel child) =>
             , " = ? and ", col, " = ?"
             , maybe "" (" order by " ++) $ orderBy ctName]
           ptName = tableName parent
-          childColumns = concat $ intersperse ", " $ columns_ ctName
+          childColumns = concat $ intersperse ", " $
+                          columnNames $ columns_ ctName
 
   insertFor :: parent -> child -> Connection -> IO (PrimaryKey child)
   insertFor parent chld conn = do
@@ -258,10 +273,9 @@ class (PostgreSQLModel parent, PostgreSQLModel child) =>
           ptName = tableName parent
           qs = concat $ intersperse ", " $ map (const "?") $ colNames
           cols = concat $ intersperse ", " $ colNames
-          colNameFields = case primaryKey chld of
-                            Nothing -> (columns ctName, toRow chld)
-                            Just pkey -> ( columns_ ctName
-                                         , (toField pkey):(toRow chld))
-          (_, fields) = colNameFields
-          (colNames, _) = colNameFields
+          fields = modelToRow chld colStructs
+          colNames = columnNames colStructs
+          colStructs = case primaryKey chld of
+                            Nothing -> columns ctName
+                            Just _ -> columns_ ctName
 

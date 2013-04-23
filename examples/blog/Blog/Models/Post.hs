@@ -10,6 +10,7 @@ import Data.Time.Format
 import Database.PostgreSQL.Models
 import Database.PostgreSQL.Simple.FromRow
 import Database.PostgreSQL.Simple.ToRow
+import Database.PostgreSQL.Simple.ToField
 import System.Locale
 import Text.Blaze.Html
 import Text.Pandoc
@@ -28,21 +29,18 @@ markdownBody = (writeHtml def) . (readMarkdown def) . unpack . body
 postUrl :: Post -> String
 postUrl post = "/posts/" ++ (show $ fromJust $ postId post)
 
-instance FromRow Post where
-  fromRow = Post <$> field <*> field <*> field <*> field
-
-instance ToRow Post where
-  toRow post = toRow ( title post
-                     , replace "\r" "" $ body post
-                     , postedAt post)
-
 posts :: TableName Post
 posts = TableName "posts"
+
+instance FromRow Post where
+  fromRow = Post <$> field <*> field <*> field <*> field
 
 instance PostgreSQLModel Post where
   type PrimaryKey Post = Integer
   primaryKey = postId
   tableName _ = posts
-  columns _ = ["title", "body", "posted_at"]
+  columns _ = [ Column "title" title
+              , Column "body" ((replace "\r" "") . body)
+              , Column "posted_at" postedAt]
   orderBy _ = Just "posted_at desc"
 
