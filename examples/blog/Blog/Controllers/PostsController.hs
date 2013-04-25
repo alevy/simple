@@ -15,6 +15,7 @@ import Database.PostgreSQL.Models
 
 import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
 
+import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
 import qualified Blog.Views.Posts as V
 import Blog.Templates
@@ -33,7 +34,8 @@ postsController cache = rest $ do
       DB.withConnection $ \conn -> do
         (Just pid) <- queryParam "id"
         (Just post) <- liftIO $ find P.posts pid conn
-        return $ renderHtml $ defaultTemplate $ V.show post
+        comments <- liftIO $ childrenOf post C.comments conn
+        return $ renderHtml $ defaultTemplate $ V.show post comments
 
 postsAdminController cache = rest $ do
   index $ DB.withConnection $ \conn -> do
@@ -58,8 +60,8 @@ postsAdminController cache = rest $ do
     case mpost of
       Just post -> do
         liftIO $ upsert post conn
-        invalidate cache $ P.postUrl post
-        respond $ redirectTo $ P.postUrl post
+        invalidate cache $ P.postUrl pid
+        respond $ redirectTo $ P.postUrl pid
       Nothing -> redirectBack
 
   new $ do
@@ -82,8 +84,7 @@ postsAdminController cache = rest $ do
 
   delete $ DB.withConnection $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ find P.posts pid conn
-    liftIO $ destroy post conn
-    invalidate cache $ P.postUrl post
+    liftIO $ destroy P.posts pid conn
+    invalidate cache $ P.postUrl pid
     respond $ redirectTo "/posts"
 

@@ -1,15 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Blog.Views.Posts where
 
-import Prelude hiding (id, div, show)
+import Prelude hiding (id, div, show, span)
 import qualified Prelude as Pre
 
 import Control.Monad
 import Data.Maybe
 import Text.Blaze.Html5
-import Text.Blaze.Html5.Attributes hiding (form, label)
+import Text.Blaze.Html5.Attributes hiding (form, label, cite, span)
 
+import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
+import Blog.Views.Comments
 
 index :: [P.Post] -> Html
 index posts = do
@@ -25,11 +27,14 @@ postPartial post = do
       h2 $ a ! href (toValue postUrl) $ toHtml $ P.title post
     div ! class_ "content" $ toHtml $ P.markdownBody post
 
-show post = do
+show post comments = do
   postPartial post
   div ! class_ "comments content" $ do
+    ol ! id "comments" $ forM_ comments $ \comment ->
+      li $ renderComment comment
     h4 $ "Leave a comment..."
-    form $ do
+    form ! action (toValue $ P.postUrl (fromJust $ P.postId post) ++ "/comments")
+         ! method "POST" $ do
       p $ do
         label ! for "name" $ do
           "Name"
@@ -43,6 +48,7 @@ show post = do
         "    "
         input ! type_ "email" ! name "email" ! placeholder "jane@thesmiths.net"
       p $ textarea ! name "comment" $ ""
+      p $ input ! type_ "submit" ! value "Post comment"
 
 new :: Html
 new =  do
@@ -84,14 +90,18 @@ listPosts posts = do
         th "Posted"
         th " "
         th " "
+        th " "
       forM_ posts $ \post -> do
         let (Just pid) = P.postId post
         let destroyUrl = toValue $ "/admin/" ++ (Pre.show pid)
         let editUrl = toValue $ "/admin/" ++ (Pre.show pid) ++ "/edit"
+        let commentsUrl = toValue $ "/admin/posts/" ++
+                                    (Pre.show pid) ++ "/comments"
         tr $ do
           td ! class_ "title "$ toHtml $ P.title post
           td ! class_ "date" $ time $ toHtml $ P.postedAtStr post
           td ! class_ "action" $ a ! href editUrl $ "edit"
+          td ! class_ "action" $ a ! href commentsUrl $ "comments"
           td ! class_ "action" $ do
             form ! action destroyUrl ! method "POST" $ do
               input ! type_ "hidden" ! name "_method" ! value "DELETE"

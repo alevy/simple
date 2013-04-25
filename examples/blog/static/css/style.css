@@ -136,6 +136,11 @@ input#title {
   font-size: 20px;
 }
 
+hr {
+  border: 0px;
+  border-top: 1px solid #666;
+}
+
 pre {
   padding: 15px;
   background-color: #dfb;
@@ -145,6 +150,32 @@ pre {
 
 code {
   font-family: Ubuntu Mono, monospace;
+}
+
+ol#comments {
+  padding: 0px;
+}
+
+ol#comments li {
+  list-style-type: none;
+}
+
+.comment {
+  padding-left: 60px;
+}
+
+.comment .vcard {
+  padding-top: 1em;
+}
+
+.comment .vcard img {
+  position: absolute;
+  left: 40px;
+  padding-top: 0.3em;
+}
+
+.comment p {
+  clear: both;
 }
 
 #admin ul.nav li {

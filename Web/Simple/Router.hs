@@ -175,7 +175,7 @@ routeMethod method route = mroute $ \req ->
 routePattern :: Routeable r => S.ByteString -> r -> Route ()
 routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
-  in foldr mkRoute (mroute . runRoute $ routeTop route) patternParts
+  in foldr mkRoute (mroute . runRoute $ routeAll route) patternParts
   where mkRoute (':':varName) = routeVar (S8.pack varName)
         mkRoute varName = routeName (S8.pack varName)
 

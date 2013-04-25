@@ -35,7 +35,7 @@ import qualified Data.ByteString as S
 
 -- | Helper method
 frankMethod :: Routeable r => StdMethod -> S.ByteString -> r -> Route ()
-frankMethod method pattern = routeMethod method . routePattern pattern
+frankMethod method pattern = routeMethod method . routePattern pattern . routeTop
 
 -- | Matches the GET method on the given URL pattern
 get :: Routeable r => S.ByteString -> r -> Route ()

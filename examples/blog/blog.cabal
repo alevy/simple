@@ -20,6 +20,7 @@ executable blog
     bytestring,
     directory,
     filepath,
+    gravatar,
     simple >= 0.4.1,
     wai,
     wai-middleware-static,
@@ -32,3 +33,4 @@ executable blog
     old-locale,
     pandoc,
     transformers
+

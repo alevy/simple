@@ -14,6 +14,7 @@ import Network.Wai.Middleware.MethodOverridePost
 import Network.Wai.Middleware.RequestLogger
 import System.FilePath
 
+import Blog.Controllers.CommentsController
 import Blog.Controllers.PostsController
 
 app runner = do
@@ -23,12 +24,18 @@ app runner = do
 
   let cache = FileSystemCache "cache"
 
+  let requireAuth = basicAuth "Simple Blog Admin" adminUser adminPassword
+
   runner $ methodOverridePost $
     mkRouter $ do
-      routeName "posts" $ postsController cache
-      routeName "admin" $
-        basicAuth "Simple Blog Admin" adminUser adminPassword $
-          postsAdminController cache
+      routePattern "admin" $ requireAuth $ do
+        routeName "posts" $ do
+          routePattern ":post_id/comments" $ commentsAdminController cache
+          routeAll $ postsAdminController cache
+        routeTop $ redirectTo "/admin/posts/"
+      routeName "posts" $ do
+        routePattern ":post_id/comments" $ commentsController cache
+        routeAll $ postsController cache
       routeTop $ restIndex $ postsController cache
       routeAll $ staticPolicy (addBase "static") $ const $ return notFound
 
