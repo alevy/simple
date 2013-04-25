@@ -1,3 +1,5 @@
+{- |
+ -}
 module Web.Simple (
     module Web.Simple.Router
   , module Web.Simple.Responses

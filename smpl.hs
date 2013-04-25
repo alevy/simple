@@ -47,8 +47,8 @@ main = do
     smpl <- cmdArgsRun develMode
     case smpl of
       Server p m -> do
+        putStrLn $ "Starting server at 0.0.0.0:" ++ (show myport)
         runQuit p m "app" (const $ return [])
-        putStrLn $ "Starting server on port " ++ (show myport)
       Rollback steps -> do
         fls <- listDirectory "migrate"
         whileI steps (reverse . sort $ fls) $ \f -> do

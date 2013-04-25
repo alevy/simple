@@ -2,39 +2,29 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simple
-version:             0.4.1
+version:             0.4.2
 synopsis: A minimalist web framework for the WAI server interface
 description:
 
   \Simple\ is \"framework-less\" web framework for Haskell web applications
-  using the WAI server interface (e.g. for use with the warp server). Unlike
-  other frameoworks, \Simple\ does not enforce a particular structure or
-  paradigm for web applications. Rather, \Simple\ makes it easier for you, the
-  developer, to use whichever paradigm or structure you like. This package
-  includes:
+  based on the WAI server interface (e.g. for use with the warp server).
+  \Simple\ does not enforce a particular structure or paradigm for web
+  applications. Rather, \Simple\ contains tools to help you create your own
+  patterns (or re-create existing ones). \Simple\ is minimalist, providing a
+  lightweight base - the most basic \Simple\ app is little more than a WAI
+  `Application` with some route logic. Everything else (e.g. authentication,
+  controllers, persistence, caching etc\') is provided in composable units, so
+  you can include only the ones you need in your app, and more easily replace
+  with your own components.
   .
-  * Web application building blocks under Web.Simple
-  .
-  * A Sintra (http://www.sinatrarb.com) inspired DSL - Web.Frank
-  .
-  * A Monad for building RESTful controllers - Web.REST
-  .
-  To get started using the warp web server:
+  To get started, create an app skeleton with the `smpl` utility:
   .
   @
-    $ cabal install simple warp
+    $ cabal install simple
+    $ smpl create my_app_name
+    $ cd my_app_name
+    $ smpl
   @
-  .
-  \helloworld.hs\:
-  .
-  > import Web.Simple
-  > import Network.Wai.Handler.Warp
-  >
-  > main :: IO ()
-  > main = runSettings defaultSettings $ mkRouter $
-  >         okHtml "Hello World"
-  .
-  @$ runghc -XOverloadedStrings helloworld.hs@
   .
   See /Web.Simple/ for a more detailed introduction.
 license:             GPL-3
