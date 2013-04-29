@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
-import Prelude hiding (writeFile)
+import Prelude hiding (writeFile, FilePath)
 import Control.Monad
 import qualified Data.ByteString.Char8 as S8
 import Data.List (sort)
@@ -25,7 +25,7 @@ data Smpl =
       { thing :: String
       , newArgs :: [String]} |
     Create { appName :: String } |
-    Migrate |
+    Migrate { migrationDir :: String } |
     Rollback
       { steps :: Int }
     deriving (Show, Data, Typeable)
@@ -42,7 +42,7 @@ main = do
                   , New { thing = "migration" &= argPos 0 &= typ "migration|..."
                         , newArgs = [] &= args }
                   , Create { appName = "" &= argPos 0 &= typ "APP_NAME" }
-                  , Migrate
+                  , Migrate { migrationDir = "migrate" &= typ "MIGRATIONS_DIR" &= explicit &= name "m" }
                   , Rollback { steps = 1 &= typ "INTEGER" }]
     smpl <- cmdArgsRun develMode
     case smpl of
@@ -57,14 +57,9 @@ main = do
           let mname = drop 1 $ dropWhile (/= '_') $
                         takeWhile (/= '.') fileName
           runRollback (encodeString f) version mname
-      Migrate -> do
-        fls <- listDirectory "migrate"
-        forM_ (sort fls) $ \f -> do
-          let fileName = encodeString $ filename f
-          let version = takeWhile (/= '_') fileName
-          let mname = drop 1 $ dropWhile (/= '_') $
-                        takeWhile (/= '.') fileName
-          runMigration (encodeString f) version mname
+      Migrate dir -> do
+        fls <- listDirectory $ fromString dir
+        migrateWithFiles fls
       New "migration" (name:[]) -> do
         putStrLn $ "Creating migration " ++ name
         newMigration name
@@ -76,6 +71,15 @@ main = do
           b <- act f
           if b then whileI (i - 1) fs act
             else whileI i fs act
+
+migrateWithFiles :: [FilePath] -> IO ()
+migrateWithFiles fls =
+  forM_ (sort fls) $ \f -> do
+    let fileName = encodeString $ filename f
+    let version = takeWhile (/= '_') fileName
+    let mname = drop 1 $ dropWhile (/= '_') $
+                  takeWhile (/= '.') fileName
+    runMigration (encodeString f) version mname
 
 runMigration :: String -> String -> String -> IO Bool
 runMigration fileName version mname = do
