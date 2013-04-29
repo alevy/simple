@@ -47,3 +47,4 @@ instance PostgreSQLModel Post where
 
 instance HasMany Post C.Comment where
   foreignKey _ _ = "post_id"
+

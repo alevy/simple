@@ -7,6 +7,7 @@ import qualified Data.Text as T
 import qualified Database.PostgreSQL.Connection as DB
 import Database.PostgreSQL.Models
 import Web.Simple
+import Web.Simple.Cache
 import Web.Frank
 
 import Text.Blaze.Html.Renderer.Utf8 (renderHtml)

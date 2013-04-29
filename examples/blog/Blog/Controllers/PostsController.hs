@@ -9,6 +9,7 @@ import qualified Data.ByteString.Char8 as S8
 import Data.Time.LocalTime (getZonedTime)
 import Data.Maybe
 import Web.Simple
+import Web.Simple.Cache
 import Web.REST
 import qualified Database.PostgreSQL.Connection as DB
 import Database.PostgreSQL.Models

@@ -5,6 +5,7 @@ module Main where
 import qualified Data.ByteString.Char8 as S8 (pack)
 import Web.Simple
 import Web.Simple.Auth
+import Web.Simple.Cache
 import Web.REST (restIndex)
 import System.Environment
 import Network.Wai
