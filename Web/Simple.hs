@@ -21,6 +21,18 @@ module Web.Simple (
 
   -- * Tutorial
   -- $Tutorial
+
+  -- ** Routing
+  -- $Routing
+
+  -- ** Responses
+  -- $Responses
+
+  -- ** Controllers
+  -- $Controllers
+
+  -- ** Migrations
+  -- $Migrations
   ) where
 
 import Web.Simple.Router
@@ -93,4 +105,59 @@ above could be rewritten using 'Web.Frank' as such:
 {- $Tutorial
 #tutorial#
 
+\Simple\ comes with a utility called \smpl\ which automates some common tasks
+like creating a new application, running migrations and launching a development
+server. To create a new \Simple\ app in a directory called \"example_app\", run:
+
+@
+  $ smpl create example_app
+@
+
+This will create a directory called \"example_app\" with an empty subdirectory
+called \"migrate\" (more on that later) and a single Haskell source file,
+\"Main.hs\":
+
+@
+\{\-\# LANGUAGE OverloadedStrings #\-\}
+
+module Main where
+
+import Web.Simple
+
+app runner = runner $ mkRouter $ do
+               routeAll $ okHtml \"Hello World\"
+@
+
+The `app` function is the entry point to your application. The argument is a
+function that knows how to run a `Network.Wai.Application` -- for example,
+warp's run method. `mkRouter` transforms a `Routeable` into an
+`Network.Wai.Application`. The boilerplate is just a `Response` with the body
+\"Hello World\" (and content-type \"text/html\"). To run a development server
+on port 3000:
+
+@
+  $ cd example_app
+  $ smpl
+@
+
+Pointing your browser to <http://localhost:3000> should display
+\"Hello World\"!
+-}
+
+{- $Routing
+#routing#
+
+-}
+
+{- $Responses
+#responses#
+-}
+
+{- $Controllers
+#controllers#
+
+-}
+
+{- $Migrations
+#migrations#
 -}
