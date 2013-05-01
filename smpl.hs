@@ -121,6 +121,5 @@ mainTemplate = S8.concat
   [ "{-# LANGUAGE OverloadedStrings #-}\n\n"
   , "module Main where\n\n"
   , "import Web.Simple\n\n"
-  , "app runner = runner $ mkRouter $ do\n"
-  , "               routeAll $ okHtml \"Hello World\"\n\n"]
+  , "app runner = runner $ mkRouter $ okHtml \"Hello World\"\n\n"]
 
