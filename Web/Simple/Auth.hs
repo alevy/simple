@@ -56,8 +56,15 @@ authRewriteReq authRouter testAuth rt =
 
 -- | A 'Route' that uses HTTP basic authentication to authenticate a request for a realm
 -- with the given username ans password. The request is rewritten with an 'X-User' header
--- containing the authenticated username before being passed to the next next 'Route'.
-basicAuth :: Routeable r => String -> S8.ByteString -> S8.ByteString -> r -> Route ()
+-- containing the authenticated username before being passed to the next 'Route'.
+basicAuth :: Routeable r
+          => String
+          -- ^ Realm
+          -> S8.ByteString
+          -- ^ Username
+          -> S8.ByteString
+          -- ^ Password
+          -> r -> Route ()
 basicAuth realm user pass = authRewriteReq (basicAuthRoute realm)
   (\u p -> return $ u == user && p == pass)
 

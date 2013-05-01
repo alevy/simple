@@ -26,7 +26,7 @@ description:
     $ smpl
   @
   .
-  See /Web.Simple/ for a more detailed introduction.
+  See "Web.Simple" for a more detailed introduction.
 license:             GPL-3
 license-file:        LICENSE
 author:              Amit Levy

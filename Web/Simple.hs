@@ -85,10 +85,10 @@ where 'mkRouter' generates an 'Network.Wai.Application' from a 'Routeable'
 returning a 404 (not found) response if all routes fail.
 
 It\'s convenient to specialize sets of these 'Route's for some common patters.
-This package includes the 'Web.Frank' module which provide an API to create
-applications similar to the Sinatra framework for Ruby, and the 'Web.REST'
+This package includes the "Web.Frank" module which provide an API to create
+applications similar to the Sinatra framework for Ruby, and the "Web.REST"
 module to create RESTful applications similar to Ruby on Rails. The example
-above could be rewritten using 'Web.Frank' as such:
+above could be rewritten using "Web.Frank" as such:
 
 @
   mkRouter $ do
@@ -98,6 +98,21 @@ above could be rewritten using 'Web.Frank' as such:
       ... get all posts ...
     post \"/posts\" $ do
       ... create new post ...
+@
+
+This package is broken down into the following modules:
+
+@
+  Web
+  |-- "Web.Simple" - Re-exports most common modules
+  |   |-- "Web.Simple.Router" - defines 'Routeable' and base 'Route's
+  |   |-- "Web.Simple.Controller" - Monad for writing controller bodies
+  |   |-- "Web.Simple.Responses" - Common HTTP responses
+  |   |-- "Web.Simple.Auth" - 'Routeable's for authentication
+  |   |-- "Web.Simple.Cache" - in memory and filesystem cache utilities
+  |   +-- "Web.Simple.Migrations"
+  |-- "Web.Frank" - Sinatra style 'Route's
+  +-- "Web.REST" - Monad for creating RESTful controllers
 @
 
 -}
@@ -124,8 +139,7 @@ module Main where
 
 import Web.Simple
 
-app runner = runner $ mkRouter $ do
-               routeAll $ okHtml \"Hello World\"
+app runner = runner $ mkRouter $ okHtml \"Hello World\"
 @
 
 The `app` function is the entry point to your application. The argument is a
