@@ -161,6 +161,38 @@ Pointing your browser to <http://localhost:3000> should display
 {- $Routing
 #routing#
 
+An app that does the same thing for every request is not very useful (well, it
+might be, but if it is, even \Simple\ is not simple enough for you). We want to
+build applications that do perform different actions based on properties of the
+client\'s request - e.g., the path requests, GET or POST requests, the \"Host\"
+header, etc\'. With \Simple\ we can accomplish this with 'Route's.
+'Route's are an instance of the 'Routeable' typeclass, and encapsulate a
+function from a 'Request' to a 'Maybe' 'Response'. If the request matches the
+'Route', it will fallthrough (usually to an underlying 'Routeable' like a
+'Controller' or another 'Route'). 'Route' is also an instance of 'Monad' and
+'Data.Monoid.Monoid' so you can easily chain and nest 'Route's.
+
+For example, let\'s extend the example using the 'Monad' syntax:
+
+@
+app runner = runner $ mkRouter $ do
+                routeTop $ do
+                  routeHost \"localhost\" $ okHtml \"Hello, localhost!\"
+                  routeHost \"test.lvh.me\" $ okHtml \"Hello, test.lvh.me!\"
+                routeName \"advice\" $ okHtml \"Be excellent to each other!\"
+@
+
+Now, the app will respond differently depending on whether the client is
+requesting the host name \"localhost\" or \"test.lvh.me\", or if the requested
+path is \"\/advice\" rather than \"\/\". Take it for a spin in the browser (make
+sure `smpl` is still running):
+
+  * <http://localhost:3000>
+
+  * <http://test.lvh.me:3000>
+
+  * <http://localhost:3000/advice>
+
 -}
 
 {- $Responses
