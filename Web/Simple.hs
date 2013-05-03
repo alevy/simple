@@ -1,13 +1,13 @@
 {- |
 
 
-\Simple\ is based on WAI - an standard interface for communicating between web
-servers (like warp) and web applications. You can use \Simple\ completely
+/Simple/ is based on WAI - an standard interface for communicating between web
+servers (like warp) and web applications. You can use /Simple/ completely
 independently (and of course, use any WAI server to run it). Alternatively, you
-can embed existing existing WAI applications inside an app built with \Simple\,
+can embed existing existing WAI applications inside an app built with /Simple/,
 and embed an app built with simple in another WAI app.
 
-All the components in \Simple\ are designed to be small and simple
+All the components in /Simple/ are designed to be small and simple
 enough to understand, replaceable, and work as well independantly as they do
 together.
 
@@ -42,9 +42,9 @@ import Web.Simple.Controller
 {- $Overview
  #overview#
 
-WAI applications are functions of type 'Network.Wai.Application' - give a
+WAI applications are functions of type 'Network.Wai.Application' - given a
 client 'Network.Wai.Request' they return a 'Network.Wai.Response' to return to
-the client (i.e. an HTTP status code, headers, body etc\'). A \Simple\
+the client (i.e. an HTTP status code, headers, body etc\'). A /Simple/
 application is composed of a set of 'Routeable's -- a typeclass similar to an
 'Network.Wai.Application' except it returns a 'Maybe' 'Network.Wai.Response'.
 
@@ -67,7 +67,7 @@ There are other 'Route's for matching based on the request path, the HTTP
 method, and it\'s easy to write other 'Route's. 'Route' is also an instance of
 'Monad' and 'Data.Monoid.Monoid' so they can be chained together to route
 requests in a single application to different controllers. If the first 'Route'
-fails, the next is tried until there are no more 'Route's. Thus, a \Simple\ app
+fails, the next is tried until there are no more 'Route's. Thus, a /Simple/ app
 might look something like this:
 
 @
@@ -120,9 +120,9 @@ This package is broken down into the following modules:
 {- $Tutorial
 #tutorial#
 
-\Simple\ comes with a utility called \smpl\ which automates some common tasks
+/Simple/ comes with a utility called \smpl\ which automates some common tasks
 like creating a new application, running migrations and launching a development
-server. To create a new \Simple\ app in a directory called \"example_app\", run:
+server. To create a new /Simple/ app in a directory called \"example_app\", run:
 
 @
   $ smpl create example_app
@@ -162,10 +162,10 @@ Pointing your browser to <http://localhost:3000> should display
 #routing#
 
 An app that does the same thing for every request is not very useful (well, it
-might be, but if it is, even \Simple\ is not simple enough for you). We want to
+might be, but if it is, even /Simple/ is not simple enough for you). We want to
 build applications that do perform different actions based on properties of the
 client\'s request - e.g., the path requests, GET or POST requests, the \"Host\"
-header, etc\'. With \Simple\ we can accomplish this with 'Route's.
+header, etc\'. With /Simple/ we can accomplish this with 'Route's.
 'Route's are an instance of the 'Routeable' typeclass, and encapsulate a
 function from a 'Request' to a 'Maybe' 'Response'. If the request matches the
 'Route', it will fallthrough (usually to an underlying 'Routeable' like a
@@ -193,10 +193,36 @@ sure `smpl` is still running):
 
   * <http://localhost:3000/advice>
 
+In this example, 'routeTop' matches if the 'Network.Wai.Request's
+'Network.Wai.pathInfo' is empty, which means the requested path is \"\/\" (as
+in this case), or the rest of the path has been consumed by previous 'Route's.
+'routeName' matches if the next component in the path (specifically the 'head'
+of 'Network.Wai.pathInfo') matches the argument (and if so, removes it). Check
+out "Web.Simple.Router" for more complete documentation of these and other
+'Route's.
+
+For many apps it will be convenient to use even higher level routing APIs. The
+modules "Web.Frank" and "Web.Sinatra" provide Sinatra-like and RESTful APIs,
+respectively. Both modules are implement purely in terms of 'Route's and you
+can easily implement your own patterns as well.
+
 -}
 
 {- $Responses
 #responses#
+
+You may have notice that our examples all included lines such as
+
+@
+  okHtml \"Some response body\"
+@
+
+'okHtml' is one of a few helper functions to construct HTTP responses.
+Specifically, it return a 'Network.Wai.Response' with status 200 (OK),
+conetent-type \"text\/html\" and the argument as the response body. The module
+"Web.Simple.Responses" contains other response helpers, such as 'notFound',
+'redirectTo', 'serverError', etc\'.
+
 -}
 
 {- $Controllers
