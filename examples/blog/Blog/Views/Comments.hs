@@ -22,9 +22,9 @@ listComments post comments = do
   div ! class_ "content" $ do
     ol ! id "comments" $ forM_ comments $ \comment -> do
       let delCommentUrl = "/admin/posts/" ++
-                          (Pre.show $ fromJust $ P.postId post) ++
+                          (Pre.show $ P.postId post) ++
                           "/comments/" ++
-                          (Pre.show $ fromJust $ C.commentId comment)
+                          (Pre.show $ C.commentId comment)
       li $ do
         renderComment comment
         form ! action (toValue delCommentUrl) ! method "POST" $ do

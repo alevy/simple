@@ -76,6 +76,7 @@ library
     transformers >= 0.3,
     bytestring >= 0.9,
     postgresql-simple >= 0.2.4.1,
+    postgresql-orm,
     resource-pool >= 0.2.1 && < 0.3,
     resourcet >= 0.4.4,
     network >= 2.4,
@@ -84,7 +85,6 @@ library
   ghc-options: -Wall -fno-warn-unused-do-bind
 
   exposed-modules:
-    Database.PostgreSQL.Models,
     Database.PostgreSQL.Connection,
     Database.PostgreSQL.Migrations,
     Database.PostgreSQL.Sequel,

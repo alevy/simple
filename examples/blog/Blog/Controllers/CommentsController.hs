@@ -5,13 +5,15 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
 import qualified Database.PostgreSQL.Connection as DB
-import Database.PostgreSQL.Models
+import Database.PostgreSQL.ORM.Model
+import Database.PostgreSQL.ORM.Relationships
 import Web.Simple
 import Web.Simple.Cache
 import Web.Frank
 
 import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
 
+import qualified Blog.Models ()
 import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
 
@@ -21,7 +23,7 @@ import Blog.Views.Comments
 lookupText :: S8.ByteString -> [(S8.ByteString, S8.ByteString)] -> Maybe T.Text
 lookupText k vals = fmap (T.pack . S8.unpack) $ lookup k vals
 
-commentsController cache = do
+commentsController = do
   post "/" $ do
     (Just pid) <- queryParam "post_id"
     (params, _) <- parseForm
@@ -29,25 +31,23 @@ commentsController cache = do
           name <- lookupText "name" params
           email <- lookupText "email" params
           comment <- lookupText "comment" params
-          return $ C.Comment Nothing name email comment
+          return $ C.Comment NullKey name email comment pid
     case mcomment of
       Just comment -> DB.withConnection $ \conn -> do
-        (Just post) <- liftIO $ find P.posts pid conn
-        liftIO $ insertFor post comment conn
-        invalidate cache $ P.postUrl pid
+        (Just post) <- liftIO $ find conn pid
+        liftIO $ save conn comment
     redirectBack
 
-commentsAdminController cache = do
+commentsAdminController = do
   get "/" $ DB.withConnection $ \conn -> do
     (Just pid) <- queryParam "post_id"
-    (Just post) <- liftIO $ find P.posts pid conn
-    comments <- liftIO $ childrenOf post C.comments conn
+    (Just post) <- liftIO $ find conn pid
+    comments <- liftIO $ findMany conn post
     respond $ okHtml $ renderHtml $ adminTemplate $ listComments post comments
     
   delete ":id" $ DB.withConnection $ \conn -> do
-    (Just pid) <- queryParam "post_id"
     (Just cid) <- queryParam "id"
-    liftIO $ destroy C.comments cid conn
-    invalidate cache $ P.postUrl pid
+    (Just comment) <- liftIO $ (find conn cid :: IO (Maybe C.Comment))
+    liftIO $ destroy conn comment
     redirectBack
 

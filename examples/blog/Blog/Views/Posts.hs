@@ -19,7 +19,7 @@ index posts = do
 
 postPartial :: P.Post -> Html
 postPartial post = do
-  let (Just pid) = P.postId post
+  let pid = P.postId post
   let postUrl = "/posts/" ++ (Pre.show pid)
   article ! class_ "post" $ do
     header $ do
@@ -33,7 +33,7 @@ show post comments = do
     ol ! id "comments" $ forM_ comments $ \comment ->
       li $ renderComment comment
     h4 $ "Leave a comment..."
-    form ! action (toValue $ P.postUrl (fromJust $ P.postId post) ++ "/comments")
+    form ! action (toValue $ P.postUrl (P.postId post) ++ "/comments")
          ! method "POST" $ do
       p $ do
         label ! for "name" $ do
@@ -64,7 +64,7 @@ edit :: P.Post -> Html
 edit post =  do
   header $ h2 $ "Edit Post"
   form ! class_ "content"
-       ! action (toValue $ "/admin/" ++ (Pre.show . fromJust $ P.postId post))
+       ! action (toValue $ "/admin/" ++ (Pre.show $ P.postId post))
        ! method "post" $ do
     input ! type_ "hidden" ! name "_method" ! value "PUT"
     p $ do
@@ -75,7 +75,7 @@ edit post =  do
     input ! type_ "submit" ! value "Update"
   br
   form ! class_ "content"
-       ! action (toValue $ "/posts/" ++ (Pre.show . fromJust $ P.postId post))
+       ! action (toValue $ "/posts/" ++ (Pre.show $ P.postId post))
        ! method "post" $ do
     input ! type_ "hidden" ! name "_method" ! value "DELETE"
     input ! type_ "submit" ! class_ "destroy" ! value "Delete Post"
@@ -92,7 +92,7 @@ listPosts posts = do
         th " "
         th " "
       forM_ posts $ \post -> do
-        let (Just pid) = P.postId post
+        let pid = P.postId post
         let destroyUrl = toValue $ "/admin/" ++ (Pre.show pid)
         let editUrl = toValue $ "/admin/" ++ (Pre.show pid) ++ "/edit"
         let commentsUrl = toValue $ "/admin/posts/" ++

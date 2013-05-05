@@ -29,7 +29,7 @@ executable blog
     blaze-html,
     text,
     time,
-    postgresql-simple,
+    postgresql-orm,
     old-locale,
     pandoc,
     transformers

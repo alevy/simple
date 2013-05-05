@@ -37,6 +37,7 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit
 import Data.Conduit.List as CL
+import Database.PostgreSQL.ORM.Model (DBKey, GDBRef, Model)
 import Network.HTTP.Types.Header
 import Network.Wai
 import Network.Wai.Parse
@@ -103,6 +104,10 @@ instance Parseable S8.ByteString where
 instance Parseable String where
   parse = S8.unpack
 instance Parseable Integer where
+  parse = parseReadable
+instance Parseable DBKey where
+  parse = parseReadable
+instance (Model a) => Parseable (GDBRef t a) where
   parse = parseReadable
 
 parseReadable :: Read a => S8.ByteString -> a

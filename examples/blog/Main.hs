@@ -23,21 +23,19 @@ app runner = do
   let adminUser = maybe "admin" S8.pack $ lookup "ADMIN_USERNAME" env
   let adminPassword = maybe "password" S8.pack $ lookup "ADMIN_PASSWORD" env
 
-  let cache = FileSystemCache "cache"
-
   let requireAuth = basicAuth "Simple Blog Admin" adminUser adminPassword
 
   runner $ methodOverridePost $
     mkRouter $ do
       routePattern "admin" $ requireAuth $ do
         routeName "posts" $ do
-          routePattern ":post_id/comments" $ commentsAdminController cache
-          routeAll $ postsAdminController cache
+          routePattern ":post_id/comments" $ commentsAdminController
+          routeAll $ postsAdminController
         routeTop $ redirectTo "/admin/posts/"
       routeName "posts" $ do
-        routePattern ":post_id/comments" $ commentsController cache
-        routeAll $ postsController cache
-      routeTop $ restIndex $ postsController cache
+        routePattern ":post_id/comments" $ commentsController
+        routeAll $ postsController
+      routeTop $ restIndex $ postsController
       routeAll $ staticPolicy (addBase "static") $ const $ return notFound
 
 main :: IO ()

@@ -1,27 +1,26 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, DeriveGeneric, OverloadedStrings #-}
 module Blog.Models.Comment where
 
 import Control.Applicative
 import Data.Text (Text)
-import Database.PostgreSQL.Simple.FromRow
-import Database.PostgreSQL.Models
+import Database.PostgreSQL.ORM.Model
 
-data Comment = Comment { commentId :: Maybe Integer
+import GHC.Generics
+
+import Blog.Models.Post
+
+data Comment = Comment { commentId :: DBKey
                        , name :: Text
                        , email :: Text
-                       , comment :: Text } deriving (Show, Read)
+                       , comment :: Text
+                       , postId :: DBRef Post }
+                  deriving (Show, Generic)
 
-comments :: TableName Comment
-comments = TableName "comments"
-
-instance FromRow Comment where
-  fromRow = Comment <$> field <*> field <*> field <*> field
-
-instance PostgreSQLModel Comment where
-  type PrimaryKey Comment = Integer
-  primaryKey = commentId
-  tableName _ = comments
-  columns _ = [ Column "name" name
-              , Column "email" email
-              , Column "comment" comment ]
+instance Model Comment where
+  modelInfo = defaultModelInfo { modelTable = "comments"
+                               , modelColumns = [ "id"
+                                                , "name"
+                                                , "email"
+                                                , "comment"
+                                                , "post_id"]}
 
