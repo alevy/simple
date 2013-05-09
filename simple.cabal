@@ -37,27 +37,17 @@ cabal-version:       >=1.9.2
 
 executable smpl
   Main-Is: smpl.hs
+  ghc-options: -Wall
   build-depends:
-    attoparsec >= 0.10.3,
-    base >= 4.5 && < 5.0,
-    base64-bytestring >= 1.0 && < 1.1,
-    cmdargs >= 0.10.2,
-    conduit >= 0.5,
-    hint >= 0.3.3 && < 0.4,
-    system-filepath >= 0.4.7 && < 0.5,
-    system-fileio >= 0.3.11 && < 0.4,
-    old-locale,
-    old-time,
-    wai >= 1.3 && < 2.0,
-    wai-extra >= 1.3 && < 2.0,
-    wai-handler-devel >= 1.3,
-    http-types >= 0.7.1,
-    text >= 0.11,
-    transformers >= 0.3,
-    bytestring >= 0.9,
-    postgresql-simple >= 0.2.4.1,
-    network >= 2.4,
-    mtl >= 2.1
+      base < 6
+    , attoparsec
+    , base64-bytestring
+    , bytestring
+    , cmdargs
+    , conduit
+    , directory
+    , filepath
+    , wai-handler-devel
 
 library
   build-depends:
@@ -86,13 +76,11 @@ library
 
   exposed-modules:
     Database.PostgreSQL.Connection,
-    Database.PostgreSQL.Migrations,
     Database.PostgreSQL.Sequel,
     Web.Simple,
     Web.Simple.Auth,
     Web.Simple.Cache,
     Web.Simple.Controller,
-    Web.Simple.Migrations,
     Web.Simple.Responses,
     Web.Simple.Router,
     Web.Frank,
