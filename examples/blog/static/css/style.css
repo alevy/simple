@@ -20,7 +20,7 @@ h1, h2, h3 h4 {
 }
 
 #sidebar h2 {
-  font-size: 22px;
+  font-size: 20px;
 }
 
 #sidebar h3 {
@@ -114,6 +114,10 @@ h1 a, h2 a, h3 a {
 
 .post {
   border-bottom: 1px solid #ccc;
+}
+
+.post h1, .post h2, .post h3 {
+  margin-top: 1em;
 }
 
 form {

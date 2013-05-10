@@ -51,32 +51,24 @@ executable smpl
 
 library
   build-depends:
-    base >=4.5 && < 5.0,
-    base64-bytestring >= 1.0 && < 1.1,
-    conduit >= 0.5,
-    directory >= 1.2 && < 1.3,
-    filepath >= 1.3 && < 1.4,
-    hashtables >= 1.1 && < 1.2,
-    old-locale,
-    old-time,
-    wai >= 1.3 && < 2.0,
-    wai-extra >= 1.3 && < 2.0,
-    http-types >= 0.7.1,
-    text >= 0.11,
-    transformers >= 0.3,
-    bytestring >= 0.9,
-    postgresql-simple >= 0.2.4.1,
-    postgresql-orm,
-    resource-pool >= 0.2.1 && < 0.3,
-    resourcet >= 0.4.4,
-    network >= 2.4,
-    mtl >= 2.1
+      base < 6
+    , base64-bytestring
+    , conduit
+    , directory
+    , filepath
+    , hashtables
+    , wai
+    , wai-extra
+    , http-types
+    , text
+    , transformers
+    , bytestring
+    , postgresql-orm
+    , mtl
 
   ghc-options: -Wall -fno-warn-unused-do-bind
 
   exposed-modules:
-    Database.PostgreSQL.Connection,
-    Database.PostgreSQL.Sequel,
     Web.Simple,
     Web.Simple.Auth,
     Web.Simple.Cache,

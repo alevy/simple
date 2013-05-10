@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Blog.Controllers.CommentsController where
 
+import Common
+
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
-import qualified Database.PostgreSQL.Connection as DB
 import Database.PostgreSQL.ORM.Model
 import Database.PostgreSQL.ORM.Relationships
 import Web.Simple
@@ -23,7 +24,7 @@ import Blog.Views.Comments
 lookupText :: S8.ByteString -> [(S8.ByteString, S8.ByteString)] -> Maybe T.Text
 lookupText k vals = fmap (T.pack . S8.unpack) $ lookup k vals
 
-commentsController = do
+commentsController as = do
   post "/" $ do
     (Just pid) <- queryParam "post_id"
     (params, _) <- parseForm
@@ -33,19 +34,19 @@ commentsController = do
           comment <- lookupText "comment" params
           return $ C.Comment NullKey name email comment pid
     case mcomment of
-      Just comment -> DB.withConnection $ \conn -> do
+      Just comment -> withConnection as $ \conn -> do
         (Just post) <- liftIO $ find conn pid
         liftIO $ save conn comment
     redirectBack
 
-commentsAdminController = do
-  get "/" $ DB.withConnection $ \conn -> do
+commentsAdminController as = do
+  get "/" $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "post_id"
     (Just post) <- liftIO $ find conn pid
     comments <- liftIO $ findMany conn post
     respond $ okHtml $ renderHtml $ adminTemplate $ listComments post comments
     
-  delete ":id" $ DB.withConnection $ \conn -> do
+  delete ":id" $ withConnection as $ \conn -> do
     (Just cid) <- queryParam "id"
     (Just comment) <- liftIO $ (find conn cid :: IO (Maybe C.Comment))
     liftIO $ destroy conn comment

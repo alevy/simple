@@ -4,14 +4,17 @@ module Blog.Controllers.PostsController where
 import Prelude hiding (show)
 import qualified Prelude
 
+import Common
+
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as S8
 import Data.Time.LocalTime (getZonedTime)
 import Data.Maybe
+import Data.Monoid
 import Web.Simple
 import Web.Simple.Cache
 import Web.REST
-import qualified Database.PostgreSQL.Connection as DB
+import Database.PostgreSQL.ORM.DSL
 import Database.PostgreSQL.ORM.Model
 import Database.PostgreSQL.ORM.Relationships
 import Data.String
@@ -26,31 +29,33 @@ import Blog.Templates
 
 import Network.Wai
 
-postsController = rest $ do
+postsController as = rest $ do
   
-  index $ DB.withConnection $ \conn -> do
-    posts <- liftIO $ findAll conn
+  index $ withConnection as $ \conn -> do
+    mpage <- queryParam "offset"
+    let page = maybe 0 id mpage
+    posts <- liftIO $ findBy conn $ limit 10 <> offset (page * 10)
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
 
   show $ do
     path <- fmap (S8.unpack . rawPathInfo) request
-    DB.withConnection $ \conn -> do
+    withConnection as $ \conn -> do
       (Just pid) <- queryParam "id"
       (Just post) <- liftIO $ find conn pid
       comments <- liftIO $ findMany conn post
       return $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
 
-postsAdminController = rest $ do
-  index $ DB.withConnection $ \conn -> do
+postsAdminController as = rest $ do
+  index $ withConnection as $ \conn -> do
     posts <- liftIO $ findAll conn
     respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
 
-  edit $ DB.withConnection $ \conn -> do
+  edit $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
     (Just post) <- liftIO $ find conn pid
     respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post
 
-  update $ DB.withConnection $ \conn -> do
+  update $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
     (Just post) <- liftIO $ find conn pid
     (params, _) <- parseForm
@@ -69,7 +74,7 @@ postsAdminController = rest $ do
   new $ do
     respond $ okHtml $ renderHtml $ adminTemplate V.new
 
-  create $ DB.withConnection $ \conn -> do
+  create $ withConnection as $ \conn -> do
     (params, _) <- parseForm
     curTime <- liftIO $ getZonedTime
     let mpost = do
@@ -84,7 +89,7 @@ postsAdminController = rest $ do
         respond $ redirectTo "/posts/"
       Nothing -> redirectBack
 
-  delete $ DB.withConnection $ \conn -> do
+  delete $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
     (Just post) <- liftIO $ (find conn pid :: IO (Maybe P.Post))
     liftIO $ destroy conn post

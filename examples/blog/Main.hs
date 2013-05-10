@@ -15,6 +15,7 @@ import Network.Wai.Middleware.MethodOverridePost
 import Network.Wai.Middleware.RequestLogger
 import System.FilePath
 
+import Common
 import Blog.Controllers.CommentsController
 import Blog.Controllers.PostsController
 
@@ -24,18 +25,20 @@ app runner = do
   let adminPassword = maybe "password" S8.pack $ lookup "ADMIN_PASSWORD" env
 
   let requireAuth = basicAuth "Simple Blog Admin" adminUser adminPassword
+  
+  settings <- newAppSettings
 
   runner $ methodOverridePost $
     mkRouter $ do
       routePattern "admin" $ requireAuth $ do
         routeName "posts" $ do
-          routePattern ":post_id/comments" $ commentsAdminController
-          routeAll $ postsAdminController
+          routePattern ":post_id/comments" $ commentsAdminController settings
+          routeAll $ postsAdminController settings
         routeTop $ redirectTo "/admin/posts/"
       routeName "posts" $ do
-        routePattern ":post_id/comments" $ commentsController
-        routeAll $ postsController
-      routeTop $ restIndex $ postsController
+        routePattern ":post_id/comments" $ commentsController settings
+        routeAll $ postsController settings
+      routeTop $ restIndex $ postsController settings
       routeAll $ staticPolicy (addBase "static") $ const $ return notFound
 
 main :: IO ()
