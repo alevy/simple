@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances, OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings, OverlappingInstances, UndecidableInstances #-}
 
 {- | 'Controller' provides a convenient syntax for writting 'Application'
   code as a Monadic action with access to an HTTP request, rather than a
@@ -37,7 +38,6 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit
 import Data.Conduit.List as CL
-import Database.PostgreSQL.ORM.Model (GDBRef, Model)
 import Network.HTTP.Types.Header
 import Network.Wai
 import Network.Wai.Parse
@@ -103,13 +103,8 @@ instance Parseable S8.ByteString where
   parse = id
 instance Parseable String where
   parse = S8.unpack
-instance Parseable Integer where
-  parse = parseReadable
-instance (Model a) => Parseable (GDBRef t a) where
-  parse = parseReadable
-
-parseReadable :: Read a => S8.ByteString -> a
-parseReadable = read . S8.unpack
+instance Read a => Parseable a where
+  parse = read . S8.unpack
 
 -- | An alias for 'return' that's helps the the compiler type a code block as a
 -- 'Controller'. For example, when using the 'Network.Wai.Frank' routing DSL to
