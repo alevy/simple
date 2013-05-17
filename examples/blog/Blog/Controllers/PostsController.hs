@@ -16,7 +16,6 @@ import Web.Simple.Cache
 import Web.REST
 import Database.PostgreSQL.ORM.DSL
 import Database.PostgreSQL.ORM.Model
-import Database.PostgreSQL.ORM.Relationships
 import Data.String
 
 import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
@@ -42,7 +41,7 @@ postsController as = rest $ do
     withConnection as $ \conn -> do
       (Just pid) <- queryParam "id"
       (Just post) <- liftIO $ find conn pid
-      comments <- liftIO $ findMany conn post
+      comments <- liftIO $ allComments conn post
       return $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
 
 postsAdminController as = rest $ do

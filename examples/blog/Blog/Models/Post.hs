@@ -8,7 +8,6 @@ import Data.Text (Text, unpack, replace)
 import Data.Time.LocalTime
 import Data.Time.Format
 import Database.PostgreSQL.ORM.Model
-import Database.PostgreSQL.ORM.Relationships
 import System.Locale
 import Text.Blaze.Html
 import Text.Pandoc

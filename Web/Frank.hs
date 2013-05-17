@@ -1,9 +1,9 @@
 {- |
 Frank is a Sinatra-inspired DSL (see <http://www.sinatrarb.com>) for creating
-routes. It is composable with all 'Routeable' types, but is designed to be used
+routes. It is composable with all 'ToApplication' types, but is designed to be used
 with 'Network.Wai.Controller's. Each verb ('get', 'post', 'put', etc') takes a
 URL pattern of the form \"\/dir\/:paramname\/dir\" (see 'routePattern' for
-details) and a 'Routeable':
+details) and a 'ToApplication':
 
 @
   main :: IO ()
@@ -34,26 +34,26 @@ import Web.Simple.Router
 import qualified Data.ByteString as S
 
 -- | Helper method
-frankMethod :: Routeable r => StdMethod -> S.ByteString -> r -> Route ()
-frankMethod method pattern = routeMethod method . routePattern pattern . routeTop
+frankMethod :: ToApplication a => StdMethod -> S.ByteString -> a -> Route ()
+frankMethod method pattern = routeMethod method . routePattern pattern . routeApp
 
 -- | Matches the GET method on the given URL pattern
-get :: Routeable r => S.ByteString -> r -> Route ()
+get :: ToApplication r => S.ByteString -> r -> Route ()
 get = frankMethod GET
 
 -- | Matches the POST method on the given URL pattern
-post :: Routeable r => S.ByteString -> r -> Route ()
+post :: ToApplication r => S.ByteString -> r -> Route ()
 post = frankMethod POST
 
 -- | Matches the PUT method on the given URL pattern
-put :: Routeable r => S.ByteString -> r -> Route ()
+put :: ToApplication r => S.ByteString -> r -> Route ()
 put = frankMethod PUT
 
 -- | Matches the DELETE method on the given URL pattern
-delete :: Routeable r => S.ByteString -> r -> Route ()
+delete :: ToApplication r => S.ByteString -> r -> Route ()
 delete = frankMethod DELETE
 
 -- | Matches the OPTIONS method on the given URL pattern
-options :: Routeable r => S.ByteString -> r -> Route ()
+options :: ToApplication r => S.ByteString -> r -> Route ()
 options = frankMethod OPTIONS
 

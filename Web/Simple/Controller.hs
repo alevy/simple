@@ -50,9 +50,8 @@ data ControllerState = ControllerState { csRequest :: Request }
 -- environment. A 'Controller' is 'Routeable' simply by running the 'Reader'.
 type Controller = ReaderT ControllerState (ResourceT IO)
 
-instance Routeable (Controller Response) where
-  runRoute controller req = fmap Just $
-    runReaderT controller $ ControllerState req
+instance ToApplication (Controller Response) where
+  toApp controller = runReaderT controller . ControllerState
 
 -- | Reads the underlying 'Request'
 request :: Controller Request
@@ -124,7 +123,7 @@ instance Read a => Parseable a where
 --     someSideEffect
 --     return $ okHtml \"Hello World\") :: Controller Response
 -- @
-respond :: Routeable r => r -> Controller r
+respond :: r -> Controller r
 respond = return
 
 -- | Returns the value of the given request header or 'Nothing' if it is not

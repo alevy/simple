@@ -14,7 +14,7 @@ cabal-version:       >=1.8
 
 executable blog
   main-is: Main.hs
-  ghc-options: -threaded -O2 -fllvm
+  ghc-options: -threaded -O2
   build-depends:
     base,
     bytestring,

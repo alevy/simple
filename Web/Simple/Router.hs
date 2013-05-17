@@ -17,15 +17,15 @@ module Web.Simple.Router
   (
   -- * Example
   -- $Example
-    Routeable(..)
-  , mkRouter
+    ToApplication(..)
   -- * Route Monad
   , Route(..)
   -- * Common Routes
-  , routeAll, routeHost, routeTop, routeMethod
+  , routeApp, routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
   ) where
 
+import Control.Applicative
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import Data.Monoid
@@ -49,24 +49,14 @@ returns a 'Response':
 @
 
 -}
-class Routeable r where
-  runRoute :: r -> Request -> ResourceT IO (Maybe Response)
+class ToApplication r where
+  toApp :: r -> Application
 
--- | Converts any 'Routeable' into an 'Application' that can be passed directly
--- to a WAI server.
-mkRouter :: Routeable r => r -> Application
-mkRouter route req = do
-  mapp <- runRoute route req
-  case mapp of
-    Just resp -> return resp
-    Nothing -> return notFound
+instance ToApplication Application where
+  toApp = id
 
-
-instance Routeable Application where
-  runRoute app req = fmap Just $ app req
-
-instance Routeable Response where
-  runRoute resp = const . return . Just $ resp
+instance ToApplication Response where
+  toApp = const . return
 
 {- |
 The 'Route' type is a basic instance of 'Routeable' that simply holds the
@@ -113,6 +103,13 @@ data Route a = Route (Request -> ResourceT IO (Maybe Response)) a
 mroute :: (Request -> ResourceT IO (Maybe Response)) -> Route ()
 mroute handler = Route handler ()
 
+instance ToApplication (Route a) where
+  toApp (Route rtr _) req = do
+    mres <- rtr req
+    case mres of
+      Just res -> return res
+      Nothing -> return notFound
+
 instance Monad Route where
   return a = Route (const $ return Nothing) a
   (Route rtA valA) >>= fn =
@@ -131,35 +128,32 @@ instance Monoid (Route ()) where
       Nothing -> b req
       Just _ -> return c
 
-instance Routeable (Route a) where
-  runRoute (Route rtr _) req = rtr req
-
 -- | A route that always matches (useful for converting a 'Routeable' into a
 -- 'Route').
-routeAll :: Routeable r => r -> Route ()
-routeAll = mroute . runRoute
+routeApp :: ToApplication a => a -> Route ()
+routeApp app = mroute (\req -> Just <$> (toApp app) req)
 
 -- | Matches on the hostname from the 'Request'. The route only successeds on
 -- exact matches.
-routeHost :: Routeable r => S.ByteString -> r -> Route ()
-routeHost host route = mroute $ \req ->
-  if host == serverName req then runRoute route req
+routeHost :: S.ByteString -> Route a -> Route ()
+routeHost host (Route route _) = mroute $ \req ->
+  if host == serverName req then route req
   else return Nothing
 
 -- | Matches if the path is empty. Note that this route checks that 'pathInfo'
 -- is empty, so it works as expected when nested under namespaces or other
 -- routes that pop the 'pathInfo' list.
-routeTop :: Routeable r => r -> Route ()
-routeTop route = mroute $ \req ->
+routeTop :: Route a -> Route ()
+routeTop (Route route _) = mroute $ \req ->
   if null (pathInfo req)  || (T.length . head $ pathInfo req) == 0
-    then runRoute route req
+    then route req
     else return Nothing
 
 -- | Matches on the HTTP request method (e.g. 'GET', 'POST', 'PUT')
-routeMethod :: Routeable r => StdMethod -> r -> Route ()
-routeMethod method route = mroute $ \req ->
+routeMethod :: StdMethod -> Route a -> Route ()
+routeMethod method (Route route _) = mroute $ \req ->
   if renderStdMethod method == requestMethod req then
-    runRoute route req
+    route req
     else return Nothing
 
 -- | Routes the given URL pattern. Patterns can include
@@ -172,31 +166,31 @@ routeMethod method route = mroute $ \req ->
 --
 --  * \/:date\/posts\/:category\/new
 --
-routePattern :: Routeable r => S.ByteString -> r -> Route ()
+routePattern :: S.ByteString -> Route a -> Route ()
 routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
-  in foldr mkRoute (mroute . runRoute $ routeAll route) patternParts
+  in foldr mkRoute (route >> return ()) patternParts
   where mkRoute (':':varName) = routeVar (S8.pack varName)
         mkRoute varName = routeName (S8.pack varName)
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: Routeable r => S.ByteString -> r -> Route ()
-routeName name route = mroute $ \req ->
+routeName :: S.ByteString -> Route a -> Route ()
+routeName name (Route route _) = mroute $ \req ->
   let poppedHdrReq = req { pathInfo = (tail . pathInfo $ req) }
   in if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
-    then runRoute route poppedHdrReq
+    then route poppedHdrReq
     else return Nothing
 
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: Routeable r => S.ByteString -> r -> Route ()
-routeVar varName route = mroute $ \req ->
+routeVar :: S.ByteString -> Route a -> Route ()
+routeVar varName (Route route _) = mroute $ \req ->
   let varVal = S8.pack . T.unpack . head . pathInfo $ req
       poppedHdrReq = req {
           pathInfo = (tail . pathInfo $ req)
         , queryString = (varName, Just varVal):(queryString req)}
-  in if (length $ pathInfo req) > 0 then runRoute route poppedHdrReq
+  in if (length $ pathInfo req) > 0 then route poppedHdrReq
   else return Nothing
 
 {- $Example

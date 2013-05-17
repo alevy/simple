@@ -6,7 +6,7 @@ import qualified Data.ByteString.Char8 as S8 (pack)
 import Web.Simple
 import Web.Simple.Auth
 import Web.Simple.Cache
-import Web.REST (restIndex)
+import Web.REST (restIndex, rest)
 import System.Environment
 import Network.Wai
 import Network.Wai.Middleware.Static
@@ -29,17 +29,17 @@ app runner = do
   settings <- newAppSettings
 
   runner $ methodOverridePost $
-    mkRouter $ do
+    toApp $ do
       routePattern "admin" $ requireAuth $ do
         routeName "posts" $ do
           routePattern ":post_id/comments" $ commentsAdminController settings
-          routeAll $ postsAdminController settings
-        routeTop $ redirectTo "/admin/posts/"
+          routeApp $ postsAdminController settings
+        routeTop . routeApp $ redirectTo "/admin/posts/"
       routeName "posts" $ do
         routePattern ":post_id/comments" $ commentsController settings
-        routeAll $ postsController settings
-      routeTop $ restIndex $ postsController settings
-      routeAll $ staticPolicy (addBase "static") $ const $ return notFound
+        routeApp $ postsController settings
+      routeTop . routeApp $ restIndex $ postsController settings
+      routeApp $ staticPolicy (addBase "static") $ const $ return notFound
 
 main :: IO ()
 main = do

@@ -7,7 +7,6 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
 import Database.PostgreSQL.ORM.Model
-import Database.PostgreSQL.ORM.Relationships
 import Web.Simple
 import Web.Simple.Cache
 import Web.Frank
@@ -18,6 +17,7 @@ import qualified Blog.Models ()
 import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
 
+import Blog.Models
 import Blog.Templates
 import Blog.Views.Comments
 
@@ -43,7 +43,7 @@ commentsAdminController as = do
   get "/" $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "post_id"
     (Just post) <- liftIO $ find conn pid
-    comments <- liftIO $ findMany conn post
+    comments <- liftIO $ allComments conn post
     respond $ okHtml $ renderHtml $ adminTemplate $ listComments post comments
     
   delete ":id" $ withConnection as $ \conn -> do
