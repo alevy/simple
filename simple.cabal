@@ -55,6 +55,7 @@ library
     , base64-bytestring
     , conduit
     , directory
+    , either
     , filepath
     , hashtables
     , wai

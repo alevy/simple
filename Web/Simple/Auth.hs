@@ -15,12 +15,13 @@ type AuthRouter a = (Request -> S8.ByteString
                               -> S8.ByteString
                               -> IO (Maybe Request))
                   -> Route a
-                  -> Route ()
+                  -> Route a
 
 -- | An 'AuthRouter' that uses HTTP basic authentication to authenticate a request
 -- in a particular realm.
 basicAuthRoute :: String -> AuthRouter a
-basicAuthRoute realm testAuth (Route rt _) = Route (\req -> do
+basicAuthRoute realm testAuth next = do
+  req <- request
   didAuthenticate <-
     case lookup hAuthorization (requestHeaders req) of
       Nothing -> return Nothing
@@ -29,12 +30,11 @@ basicAuthRoute realm testAuth (Route rt _) = Route (\req -> do
               | otherwise -> do
                     let up = fmap (S8.split ':') $ decode $ S8.drop 6 authStr
                     case up of
-                      Right (user:pass:[]) -> liftIO $ testAuth req user pass
+                      Right (user:pwd:[]) -> liftIO $ testAuth req user pwd
                       _ -> return Nothing
   case didAuthenticate of
-    Nothing -> return $ Just $ requireBasicAuth realm
-    Just finReq -> rt finReq
-  ) ()
+    Nothing -> respond $ requireBasicAuth realm
+    Just finReq -> replaceRequestWith finReq next
 
 -- | Wraps an 'AuthRouter' to take a simpler authentication function (that just
 -- just takes a username and password, and returns 'True' or 'False'). It also
@@ -43,7 +43,7 @@ basicAuthRoute realm testAuth (Route rt _) = Route (\req -> do
 authRewriteReq :: AuthRouter a
                     -> (S8.ByteString -> S8.ByteString -> IO Bool)
                     -> Route a
-                    -> Route ()
+                    -> Route a
 authRewriteReq authRouter testAuth rt =
   authRouter (\req user pwd -> do
     success <- testAuth user pwd
@@ -61,7 +61,7 @@ basicAuth :: String
           -- ^ Username
           -> S8.ByteString
           -- ^ Password
-          -> Route a -> Route ()
-basicAuth realm user pass = authRewriteReq (basicAuthRoute realm)
-  (\u p -> return $ u == user && p == pass)
+          -> Route a -> Route a
+basicAuth realm user pwd = authRewriteReq (basicAuthRoute realm)
+  (\u p -> return $ u == user && p == pwd)
 

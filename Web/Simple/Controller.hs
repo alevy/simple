@@ -44,18 +44,7 @@ import Network.Wai.Parse
 import Web.Simple.Responses
 import Web.Simple.Router
 
-data ControllerState = ControllerState { csRequest :: Request }
-
--- | A 'Controller' is a 'Reader' monad that contains the HTTP request in its
--- environment. A 'Controller' is 'Routeable' simply by running the 'Reader'.
-type Controller = ReaderT ControllerState (ResourceT IO)
-
-instance ToApplication (Controller Response) where
-  toApp controller = runReaderT controller . ControllerState
-
--- | Reads the underlying 'Request'
-request :: Controller Request
-request = fmap csRequest ask
+type Controller = Route
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
@@ -69,8 +58,8 @@ redirectBackOr :: Response -- ^ Fallback 'Response'
 redirectBackOr def = do
   mrefr <- requestHeader "referer"
   case mrefr of
-    Just refr -> return $ redirectTo $ S8.unpack refr
-    Nothing   -> return def
+    Just refr -> respond $ redirectTo $ S8.unpack refr
+    Nothing   -> respond def
 
 -- | Looks up the parameter name in the request's query string and returns the
 -- value as a 'S8.ByteString' or 'Nothing'.
@@ -105,26 +94,6 @@ instance Parseable String where
 instance Read a => Parseable a where
   parse = read . S8.unpack
 
--- | An alias for 'return' that's helps the the compiler type a code block as a
--- 'Controller'. For example, when using the 'Network.Wai.Frank' routing DSL to
--- define a simple route that justs returns a 'Response', 'respond' can be used
--- to avoid explicit typing of the argument:
---
--- @
---   get \"/\" $ do
---     someSideEffect
---     respond $ okHtml \"Hello World\"
--- @
---
--- instead of:
---
--- @
---   get \"/\" $ (do
---     someSideEffect
---     return $ okHtml \"Hello World\") :: Controller Response
--- @
-respond :: r -> Controller r
-respond = return
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
@@ -137,7 +106,7 @@ requestHeader name = do
 body :: Controller L8.ByteString
 body = do
   bd <- fmap requestBody request
-  lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
+  Route $ lift . lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
 
 -- | Parses a HTML form from the request body. It returns a list of 'Param's as
 -- well as a list of 'File's, which are pairs mapping the name of a /file/ form
@@ -157,5 +126,5 @@ body = do
 -- @
 parseForm :: Controller ([Param], [(S.ByteString, FileInfo FilePath)])
 parseForm = do
-  request >>= lift . (parseRequestBody tempFileBackEnd)
+  request >>= Route . lift . lift . (parseRequestBody tempFileBackEnd)
 

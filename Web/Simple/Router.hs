@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving #-}
 {- |
 
 Conceptually, a route is function that, given an HTTP request, may return
@@ -19,13 +19,16 @@ module Web.Simple.Router
   -- $Example
     ToApplication(..)
   -- * Route Monad
-  , Route(..)
+  , Route(..), request, respond, pass, replaceRequestWith
   -- * Common Routes
   , routeApp, routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
   ) where
 
 import Control.Applicative
+import Control.Monad.Trans
+import Control.Monad.Trans.Either
+import Control.Monad.Reader
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import Data.Monoid
@@ -98,63 +101,71 @@ succeeds for every other request (perhaps for A/B testing):
 @
 
 -}
-data Route a = Route (Request -> ResourceT IO (Maybe Response)) a
 
-mroute :: (Request -> ResourceT IO (Maybe Response)) -> Route ()
-mroute handler = Route handler ()
+newtype Route a = Route (EitherT Response (ReaderT Request (ResourceT IO)) a)
+                    deriving ( Monad, MonadIO, MonadReader Request
+                             , Functor, Applicative)
 
-instance ToApplication (Route a) where
-  toApp (Route rtr _) req = do
-    mres <- rtr req
-    case mres of
-      Just res -> return res
-      Nothing -> return notFound
+pass :: Route ()
+pass = Route $ right ()
 
-instance Monad Route where
-  return a = Route (const $ return Nothing) a
-  (Route rtA valA) >>= fn =
-    let (Route rtB valB) = fn valA
-    in Route (\req -> do
-      resA <- rtA req
-      case resA of
-        Nothing -> rtB req
-        Just _ -> return resA) valB
+respond :: Response -> Route a
+respond = Route . left
+
+runRoute :: Request -> Route a -> ResourceT IO (Either Response a)
+runRoute req (Route router) = runReaderT (runEitherT router) req
+
+request :: Route Request
+request = ask
+
+replaceRequestWith :: Request -> Route a -> Route a
+replaceRequestWith req next = Route $ (lift . lift $ runRoute req next) >>= hoistEither
 
 instance Monoid (Route ()) where
-  mempty = mroute $ const $ return Nothing
-  mappend (Route a _) (Route b _) = mroute $ \req -> do
-    c <- a req
-    case c of
-      Nothing -> b req
-      Just _ -> return c
+  mempty = return ()
+  mappend m1 m2 = m1 >> m2
+
+instance ToApplication (Route a) where
+  toApp r = \req -> do
+    eres <- runRoute req r
+    case eres of
+      Left resp -> return resp
+      Right _ -> return notFound
 
 -- | A route that always matches (useful for converting a 'Routeable' into a
 -- 'Route').
-routeApp :: ToApplication a => a -> Route ()
-routeApp app = mroute (\req -> Just <$> (toApp app) req)
+routeApp :: ToApplication a => a -> Route b
+routeApp app = do
+  req <- request 
+  resp <- Route $ lift . lift $ (toApp app) req
+  respond resp
 
 -- | Matches on the hostname from the 'Request'. The route only successeds on
 -- exact matches.
-routeHost :: S.ByteString -> Route a -> Route ()
-routeHost host (Route route _) = mroute $ \req ->
-  if host == serverName req then route req
-  else return Nothing
+routeHost :: S.ByteString -> Route () -> Route ()
+routeHost host next = do
+  req <- request
+  if host == serverName req then
+    next
+    else pass
 
 -- | Matches if the path is empty. Note that this route checks that 'pathInfo'
 -- is empty, so it works as expected when nested under namespaces or other
 -- routes that pop the 'pathInfo' list.
-routeTop :: Route a -> Route ()
-routeTop (Route route _) = mroute $ \req ->
+routeTop :: Route () -> Route ()
+routeTop next = do
+  req <- request
   if null (pathInfo req)  || (T.length . head $ pathInfo req) == 0
-    then route req
-    else return Nothing
+    then next
+    else pass
 
 -- | Matches on the HTTP request method (e.g. 'GET', 'POST', 'PUT')
-routeMethod :: StdMethod -> Route a -> Route ()
-routeMethod method (Route route _) = mroute $ \req ->
+routeMethod :: StdMethod -> Route () -> Route ()
+routeMethod method next = do
+  req <- request
   if renderStdMethod method == requestMethod req then
-    route req
-    else return Nothing
+    next
+    else pass
 
 -- | Routes the given URL pattern. Patterns can include
 -- directories as well as variable patterns (prefixed with @:@) to be added
@@ -166,7 +177,7 @@ routeMethod method (Route route _) = mroute $ \req ->
 --
 --  * \/:date\/posts\/:category\/new
 --
-routePattern :: S.ByteString -> Route a -> Route ()
+routePattern :: S.ByteString -> Route () -> Route ()
 routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
   in foldr mkRoute (route >> return ()) patternParts
@@ -174,24 +185,27 @@ routePattern pattern route =
         mkRoute varName = routeName (S8.pack varName)
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: S.ByteString -> Route a -> Route ()
-routeName name (Route route _) = mroute $ \req ->
+routeName :: S.ByteString -> Route () -> Route ()
+routeName name next = do
+  req <- request
   let poppedHdrReq = req { pathInfo = (tail . pathInfo $ req) }
-  in if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
-    then route poppedHdrReq
-    else return Nothing
+  if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
+    then replaceRequestWith poppedHdrReq next
+    else pass
 
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: S.ByteString -> Route a -> Route ()
-routeVar varName (Route route _) = mroute $ \req ->
+routeVar :: S.ByteString -> Route () -> Route ()
+routeVar varName next = do
+  req <- request
   let varVal = S8.pack . T.unpack . head . pathInfo $ req
       poppedHdrReq = req {
           pathInfo = (tail . pathInfo $ req)
         , queryString = (varName, Just varVal):(queryString req)}
-  in if (length $ pathInfo req) > 0 then route poppedHdrReq
-  else return Nothing
+  if (length $ pathInfo req) > 0 then
+    replaceRequestWith poppedHdrReq next
+    else pass
 
 {- $Example
  #example#
@@ -203,7 +217,7 @@ in a DSL-like fashion.
 
 'Route's are concatenated using the '>>' operator (or using do-notation).
 In the end, any 'Routeable', including a 'Route' is converted to an
-'Application' and passed to the server using 'mkRouter':
+'Application' and passed to the server using 'mkRoute':
 
 @
 
@@ -220,7 +234,7 @@ In the end, any 'Routeable', including a 'Route' is converted to an
   updateProfile req = ...
 
   main :: IO ()
-  main = runSettings defaultSettings $ mkRouter $ do
+  main = runSettings defaultSettings $ mkRoute $ do
     routeTop mainAction
     routeName \"sessions\" $ do
       routeMethod GET signinForm
