@@ -32,7 +32,6 @@ module Web.Simple.Controller
   ) where
 
 import Control.Monad.Trans.Class
-import Control.Monad.Trans.Reader
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -43,8 +42,6 @@ import Network.Wai
 import Network.Wai.Parse
 import Web.Simple.Responses
 import Web.Simple.Router
-
-type Controller = Route
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
@@ -106,7 +103,7 @@ requestHeader name = do
 body :: Controller L8.ByteString
 body = do
   bd <- fmap requestBody request
-  Route $ lift . lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
+  Controller $ lift . lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
 
 -- | Parses a HTML form from the request body. It returns a list of 'Param's as
 -- well as a list of 'File's, which are pairs mapping the name of a /file/ form
@@ -126,5 +123,5 @@ body = do
 -- @
 parseForm :: Controller ([Param], [(S.ByteString, FileInfo FilePath)])
 parseForm = do
-  request >>= Route . lift . lift . (parseRequestBody tempFileBackEnd)
+  request >>= Controller . lift . lift . (parseRequestBody tempFileBackEnd)
 

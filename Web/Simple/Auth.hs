@@ -14,8 +14,8 @@ import Web.Simple.Router
 type AuthRouter a = (Request -> S8.ByteString
                               -> S8.ByteString
                               -> IO (Maybe Request))
-                  -> Route a
-                  -> Route a
+                  -> Controller a
+                  -> Controller a
 
 -- | An 'AuthRouter' that uses HTTP basic authentication to authenticate a request
 -- in a particular realm.
@@ -42,8 +42,8 @@ basicAuthRoute realm testAuth next = do
 -- name (the first argument to the authentication function).
 authRewriteReq :: AuthRouter a
                     -> (S8.ByteString -> S8.ByteString -> IO Bool)
-                    -> Route a
-                    -> Route a
+                    -> Controller a
+                    -> Controller a
 authRewriteReq authRouter testAuth rt =
   authRouter (\req user pwd -> do
     success <- testAuth user pwd
@@ -61,7 +61,7 @@ basicAuth :: String
           -- ^ Username
           -> S8.ByteString
           -- ^ Password
-          -> Route a -> Route a
+          -> Controller a -> Controller a
 basicAuth realm user pwd = authRewriteReq (basicAuthRoute realm)
   (\u p -> return $ u == user && p == pwd)
 

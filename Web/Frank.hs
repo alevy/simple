@@ -34,26 +34,26 @@ import Web.Simple.Router
 import qualified Data.ByteString as S
 
 -- | Helper method
-frankMethod :: ToApplication a => StdMethod -> S.ByteString -> a -> Route ()
+frankMethod :: ToApplication a => StdMethod -> S.ByteString -> a -> Controller ()
 frankMethod method pattern = routeMethod method . routePattern pattern . routeTop . routeApp
 
 -- | Matches the GET method on the given URL pattern
-get :: ToApplication r => S.ByteString -> r -> Route ()
+get :: ToApplication r => S.ByteString -> r -> Controller ()
 get = frankMethod GET
 
 -- | Matches the POST method on the given URL pattern
-post :: ToApplication r => S.ByteString -> r -> Route ()
+post :: ToApplication r => S.ByteString -> r -> Controller ()
 post = frankMethod POST
 
 -- | Matches the PUT method on the given URL pattern
-put :: ToApplication r => S.ByteString -> r -> Route ()
+put :: ToApplication r => S.ByteString -> r -> Controller ()
 put = frankMethod PUT
 
 -- | Matches the DELETE method on the given URL pattern
-delete :: ToApplication r => S.ByteString -> r -> Route ()
+delete :: ToApplication r => S.ByteString -> r -> Controller ()
 delete = frankMethod DELETE
 
 -- | Matches the OPTIONS method on the given URL pattern
-options :: ToApplication r => S.ByteString -> r -> Route ()
+options :: ToApplication r => S.ByteString -> r -> Controller ()
 options = frankMethod OPTIONS
 

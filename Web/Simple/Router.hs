@@ -18,8 +18,8 @@ module Web.Simple.Router
   -- * Example
   -- $Example
     ToApplication(..)
-  -- * Route Monad
-  , Route(..), request, respond, pass, replaceRequestWith
+  -- * Controller Monad
+  , Controller(..), request, respond, pass, replaceRequestWith
   -- * Common Routes
   , routeApp, routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
@@ -74,8 +74,8 @@ Commonly, route functions that construct a 'Route' only inspect the 'Request'
 and other parameters. For example, 'routeHost' looks at the hostname:
 
 @
-  routeHost :: Routeable r => S.ByteString -> r -> Route ()
-  routeHost host route = Route func ()
+  routeHost :: Routeable r => S.ByteString -> r -> Controller ()
+  routeHost host route = Controller func ()
     where func req = if host == serverName req
                        then runRoute route req
                        else return Nothing
@@ -88,8 +88,8 @@ succeeds for every other request (perhaps for A/B testing):
 
 @
   routeEveryOther :: (Routeable r1, Routeable r2)
-                  => TVar Int -> r1 -> r2 -> Route ()
-  routeEveryOther counter r1 r2 = Route func ()
+                  => TVar Int -> r1 -> r2 -> Controller ()
+  routeEveryOther counter r1 r2 = Controller func ()
     where func req = do
             i <- liftIO . atomically $ do
                     i' <- readTVar counter
@@ -102,30 +102,30 @@ succeeds for every other request (perhaps for A/B testing):
 
 -}
 
-newtype Route a = Route (EitherT Response (ReaderT Request (ResourceT IO)) a)
+newtype Controller a = Controller (EitherT Response (ReaderT Request (ResourceT IO)) a)
                     deriving ( Monad, MonadIO, MonadReader Request
                              , Functor, Applicative)
 
-pass :: Route ()
-pass = Route $ right ()
+pass :: Controller ()
+pass = Controller $ right ()
 
-respond :: Response -> Route a
-respond = Route . left
+respond :: Response -> Controller a
+respond = Controller . left
 
-runRoute :: Request -> Route a -> ResourceT IO (Either Response a)
-runRoute req (Route router) = runReaderT (runEitherT router) req
+runRoute :: Request -> Controller a -> ResourceT IO (Either Response a)
+runRoute req (Controller router) = runReaderT (runEitherT router) req
 
-request :: Route Request
+request :: Controller Request
 request = ask
 
-replaceRequestWith :: Request -> Route a -> Route a
-replaceRequestWith req next = Route $ (lift . lift $ runRoute req next) >>= hoistEither
+replaceRequestWith :: Request -> Controller a -> Controller a
+replaceRequestWith req next = Controller $ (lift . lift $ runRoute req next) >>= hoistEither
 
-instance Monoid (Route ()) where
+instance Monoid (Controller ()) where
   mempty = return ()
   mappend m1 m2 = m1 >> m2
 
-instance ToApplication (Route a) where
+instance ToApplication (Controller a) where
   toApp r = \req -> do
     eres <- runRoute req r
     case eres of
@@ -134,15 +134,15 @@ instance ToApplication (Route a) where
 
 -- | A route that always matches (useful for converting a 'Routeable' into a
 -- 'Route').
-routeApp :: ToApplication a => a -> Route b
+routeApp :: ToApplication a => a -> Controller b
 routeApp app = do
   req <- request 
-  resp <- Route $ lift . lift $ (toApp app) req
+  resp <- Controller $ lift . lift $ (toApp app) req
   respond resp
 
 -- | Matches on the hostname from the 'Request'. The route only successeds on
 -- exact matches.
-routeHost :: S.ByteString -> Route () -> Route ()
+routeHost :: S.ByteString -> Controller () -> Controller ()
 routeHost host next = do
   req <- request
   if host == serverName req then
@@ -152,7 +152,7 @@ routeHost host next = do
 -- | Matches if the path is empty. Note that this route checks that 'pathInfo'
 -- is empty, so it works as expected when nested under namespaces or other
 -- routes that pop the 'pathInfo' list.
-routeTop :: Route () -> Route ()
+routeTop :: Controller () -> Controller ()
 routeTop next = do
   req <- request
   if null (pathInfo req)  || (T.length . head $ pathInfo req) == 0
@@ -160,7 +160,7 @@ routeTop next = do
     else pass
 
 -- | Matches on the HTTP request method (e.g. 'GET', 'POST', 'PUT')
-routeMethod :: StdMethod -> Route () -> Route ()
+routeMethod :: StdMethod -> Controller () -> Controller ()
 routeMethod method next = do
   req <- request
   if renderStdMethod method == requestMethod req then
@@ -177,7 +177,7 @@ routeMethod method next = do
 --
 --  * \/:date\/posts\/:category\/new
 --
-routePattern :: S.ByteString -> Route () -> Route ()
+routePattern :: S.ByteString -> Controller () -> Controller ()
 routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
   in foldr mkRoute (route >> return ()) patternParts
@@ -185,7 +185,7 @@ routePattern pattern route =
         mkRoute varName = routeName (S8.pack varName)
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: S.ByteString -> Route () -> Route ()
+routeName :: S.ByteString -> Controller () -> Controller ()
 routeName name next = do
   req <- request
   let poppedHdrReq = req { pathInfo = (tail . pathInfo $ req) }
@@ -196,7 +196,7 @@ routeName name next = do
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: S.ByteString -> Route () -> Route ()
+routeVar :: S.ByteString -> Controller () -> Controller ()
 routeVar varName next = do
   req <- request
   let varVal = S8.pack . T.unpack . head . pathInfo $ req
