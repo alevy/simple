@@ -1,26 +1,18 @@
 {-# LANGUAGE FlexibleContexts #-}
 module Common where
 
+import Control.Concurrent.MVar
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
-import Data.Pool
 import Database.PostgreSQL.Simple
 import System.Environment
 import Web.Simple.Controller
 
-data AppSettings = AppSettings { appDB :: Pool Connection }
+data AppSettings = AppSettings { appDB :: MVar Connection }
 
 newAppSettings :: IO AppSettings
 newAppSettings = do
-  createConnectionPool Nothing >>= return . AppSettings
-
-createConnectionPool :: Maybe S8.ByteString -> IO (Pool Connection)
-createConnectionPool mconnectStr = do
-  createPool (createConnection mconnectStr)
-             (\c -> rollback c >> close c)
-             1
-             (fromInteger 60)
-             20
+  createConnection Nothing >>= newMVar >>= return . AppSettings
 
 createConnection :: Maybe S8.ByteString -> IO Connection
 createConnection mconnectStr = do
@@ -33,7 +25,9 @@ createConnection mconnectStr = do
 
 withConnection :: AppSettings
                -> (Connection -> Controller b) -> Controller b
-withConnection settings func = withResource (appDB settings) $ \conn -> do
+withConnection settings func = do
+  let dbvar = (appDB settings)
+  conn <- liftIO $ takeMVar dbvar
   liftIO $ begin conn
   res <- func conn
   liftIO $ commit conn
