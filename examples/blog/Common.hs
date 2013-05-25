@@ -6,7 +6,7 @@ import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import Database.PostgreSQL.Simple
 import System.Environment
-import Web.Simple.Controller
+import Web.Simple
 
 data AppSettings = AppSettings { appDB :: MVar Connection }
 
@@ -28,8 +28,6 @@ withConnection :: AppSettings
 withConnection settings func = do
   let dbvar = (appDB settings)
   conn <- liftIO $ takeMVar dbvar
-  liftIO $ begin conn
-  res <- func conn
-  liftIO $ commit conn
+  res <- ensure (liftIO $ putMVar dbvar conn) $ func conn
   return res
 

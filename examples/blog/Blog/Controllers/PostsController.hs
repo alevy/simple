@@ -14,8 +14,7 @@ import Data.Monoid
 import Web.Simple
 import Web.Simple.Cache
 import Web.REST
-import Database.PostgreSQL.ORM.DSL
-import Database.PostgreSQL.ORM.Model
+import Database.PostgreSQL.ORM
 import Data.String
 
 import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
@@ -33,30 +32,33 @@ postsController as = rest $ do
   index $ withConnection as $ \conn -> do
     mpage <- queryParam "offset"
     let page = maybe 0 id mpage
-    posts <- liftIO $ findBy conn $ limit 10 <> offset (page * 10)
+    posts <- liftIO $ dbSelect conn $ setLimit 10
+                                    $ setOffset (page * 10)
+                                    $ modelDBSelect
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
 
   show $ do
     path <- fmap (S8.unpack . rawPathInfo) request
     withConnection as $ \conn -> do
       (Just pid) <- queryParam "id"
-      (Just post) <- liftIO $ find conn pid
+      liftIO $ print pid
+      (Just post) <- liftIO $ findRow conn pid
       comments <- liftIO $ allComments conn post
-      return $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
+      respond $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
 
 postsAdminController as = rest $ do
   index $ withConnection as $ \conn -> do
-    posts <- liftIO $ findAll conn
+    posts <- liftIO $ dbSelect conn modelDBSelect
     respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
 
   edit $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ find conn pid
+    (Just post) <- liftIO $ findRow conn pid
     respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post
 
   update $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ find conn pid
+    (Just post) <- liftIO $ findRow conn pid
     (params, _) <- parseForm
     curTime <- liftIO $ getZonedTime
     let mpost = do
@@ -90,7 +92,7 @@ postsAdminController as = rest $ do
 
   delete $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ (find conn pid :: IO (Maybe P.Post))
+    (Just post) <- liftIO $ (findRow conn pid :: IO (Maybe P.Post))
     liftIO $ destroy conn post
     respond $ redirectTo "/posts"
 

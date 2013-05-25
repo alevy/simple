@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {- |
 
 Conceptually, a route is function that, given an HTTP request, may return
@@ -19,14 +20,14 @@ module Web.Simple.Router
   -- $Example
     ToApplication(..)
   -- * Controller Monad
-  , Controller(..), request, respond, pass, replaceRequestWith
+  , Controller(..), ensure, request, respond, pass, replaceRequestWith
   -- * Common Routes
   , routeApp, routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
   ) where
 
 import Control.Applicative
-import Control.Monad.Trans
+import Control.Monad.Error
 import Control.Monad.Trans.Either
 import Control.Monad.Reader
 import qualified Data.ByteString as S
@@ -105,6 +106,13 @@ succeeds for every other request (perhaps for A/B testing):
 newtype Controller a = Controller (EitherT Response (ReaderT Request (ResourceT IO)) a)
                     deriving ( Monad, MonadIO, MonadReader Request
                              , Functor, Applicative)
+
+ensure :: Controller a -> Controller b -> Controller b
+ensure finalize act = do
+  req <- request
+  ea <- Controller $ lift . lift $ runRoute req act
+  finalize
+  Controller $ hoistEither ea
 
 pass :: Controller ()
 pass = Controller $ right ()

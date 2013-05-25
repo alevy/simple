@@ -6,7 +6,7 @@ import Common
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
-import Database.PostgreSQL.ORM.Model
+import Database.PostgreSQL.ORM
 import Web.Simple
 import Web.Simple.Cache
 import Web.Frank
@@ -35,20 +35,20 @@ commentsController as = do
           return $ C.Comment NullKey name email comment pid
     case mcomment of
       Just comment -> withConnection as $ \conn -> do
-        (Just post) <- liftIO $ find conn pid
+        (Just post) <- liftIO $ findRow conn pid
         liftIO $ save conn comment
     redirectBack
 
 commentsAdminController as = do
   get "/" $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "post_id"
-    (Just post) <- liftIO $ find conn pid
+    (Just post) <- liftIO $ findRow conn pid
     comments <- liftIO $ allComments conn post
     respond $ okHtml $ renderHtml $ adminTemplate $ listComments post comments
     
   delete ":id" $ withConnection as $ \conn -> do
     (Just cid) <- queryParam "id"
-    (Just comment) <- liftIO $ (find conn cid :: IO (Maybe C.Comment))
+    (Just comment) <- liftIO $ (findRow conn cid :: IO (Maybe C.Comment))
     liftIO $ destroy conn comment
     redirectBack
 
