@@ -32,7 +32,7 @@ postsController as = rest $ do
   index $ withConnection as $ \conn -> do
     mpage <- queryParam "offset"
     let page = maybe 0 id mpage
-    posts <- liftIO $ dbSelect conn $ setLimit 10
+    posts <- dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
@@ -41,24 +41,23 @@ postsController as = rest $ do
     path <- fmap (S8.unpack . rawPathInfo) request
     withConnection as $ \conn -> do
       (Just pid) <- queryParam "id"
-      liftIO $ print pid
-      (Just post) <- liftIO $ findRow conn pid
-      comments <- liftIO $ allComments conn post
+      (Just post) <- findRow conn pid
+      comments <- allComments conn post
       respond $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
 
 postsAdminController as = rest $ do
   index $ withConnection as $ \conn -> do
-    posts <- liftIO $ dbSelect conn modelDBSelect
+    posts <- findAll conn
     respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
 
   edit $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ findRow conn pid
-    respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post
+    (Just post) <- findRow conn pid
+    respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post []
 
   update $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ findRow conn pid
+    (Just post) <- findRow conn pid
     (params, _) <- parseForm
     curTime <- liftIO $ getZonedTime
     let mpost = do
@@ -68,12 +67,15 @@ postsAdminController as = rest $ do
                         , P.body = fromString $ S8.unpack pBody }
     case mpost of
       Just post -> do
-        liftIO $ save conn post
-        respond $ redirectTo $ P.postUrl (P.postId post)
+        merrs <- save conn post
+        case merrs of
+          Left _ -> respond $ redirectTo $ P.postUrl (P.postId post)
+          Right errs ->
+            respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post errs
       Nothing -> redirectBack
 
   new $ do
-    respond $ okHtml $ renderHtml $ adminTemplate V.new
+    respond $ okHtml $ renderHtml $ adminTemplate $ V.new []
 
   create $ withConnection as $ \conn -> do
     (params, _) <- parseForm
@@ -86,13 +88,16 @@ postsAdminController as = rest $ do
                                   curTime
     case mpost of
       Just post -> do
-        liftIO $ save conn post
-        respond $ redirectTo "/posts/"
+        eerr <- save conn post
+        case eerr of
+          Left _ -> respond $ redirectTo "/posts/"
+          Right errs ->
+            respond $ okHtml $ renderHtml $ adminTemplate $ V.new errs
       Nothing -> redirectBack
 
   delete $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- liftIO $ (findRow conn pid :: IO (Maybe P.Post))
-    liftIO $ destroy conn post
+    (Just post) <- findRow conn pid :: Controller (Maybe P.Post)
+    destroy conn post
     respond $ redirectTo "/posts"
 

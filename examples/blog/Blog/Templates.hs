@@ -37,6 +37,6 @@ adminTemplate html = defaultTemplate $ do
     header ! class_ "banner" $ do
       h2 "Admin interface"
       ul ! class_ "nav" $ do
-        li $ a ! href "/admin/" $ "List posts"
-        li $ a ! href "/admin/new" $ "New Post"
+        li $ a ! href "/admin/posts" $ "List posts"
+        li $ a ! href "/admin/posts/new" $ "New Post"
     html

@@ -6,6 +6,7 @@ import qualified Prelude as Pre
 
 import Control.Monad
 import Data.Maybe
+import Database.PostgreSQL.ORM
 import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (form, label, cite, span)
 
@@ -50,21 +51,27 @@ show post comments = do
       p $ textarea ! name "comment" $ ""
       p $ input ! type_ "submit" ! value "Post comment"
 
-new :: Html
-new =  do
+new :: [InvalidError] -> Html
+new errs =  do
   header $ h2 $ "New Post"
-  form ! class_ "content" ! action "/admin/" ! method "post" $ do
+  when (not $ null errs) $
+    ul ! class_ "errors" $ forM_ errs $ \err ->
+      li $ toHtml $ invalidError err
+  form ! class_ "content" ! action "/admin/posts" ! method "post" $ do
     p $ do
       input ! type_ "text" ! name "title" ! id "title" ! placeholder "title"
     p $ do
       textarea ! name "body" ! id "body " ! placeholder "post body..." $ ""
     input ! type_ "submit" ! value "Submit"
 
-edit :: P.Post -> Html
-edit post =  do
+edit :: P.Post -> [InvalidError] -> Html
+edit post errs =  do
   header $ h2 $ "Edit Post"
+  when (not $ null errs) $
+    ul ! class_ "errors" $ forM_ errs $ \err ->
+      li $ toHtml $ invalidError err
   form ! class_ "content"
-       ! action (toValue $ "/admin/" ++ (Pre.show $ P.postId post))
+       ! action (toValue $ "/admin/posts/" ++ (Pre.show $ P.postId post))
        ! method "post" $ do
     input ! type_ "hidden" ! name "_method" ! value "PUT"
     p $ do
@@ -93,8 +100,8 @@ listPosts posts = do
         th " "
       forM_ posts $ \post -> do
         let pid = P.postId post
-        let destroyUrl = toValue $ "/admin/" ++ (Pre.show pid)
-        let editUrl = toValue $ "/admin/" ++ (Pre.show pid) ++ "/edit"
+        let destroyUrl = toValue $ "/admin/posts/" ++ (Pre.show pid)
+        let editUrl = toValue $ "/admin/posts/" ++ (Pre.show pid) ++ "/edit"
         let commentsUrl = toValue $ "/admin/posts/" ++
                                     (Pre.show pid) ++ "/comments"
         tr $ do
