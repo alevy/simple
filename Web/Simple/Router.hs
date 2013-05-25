@@ -20,7 +20,7 @@ module Web.Simple.Router
   -- $Example
     ToApplication(..)
   -- * Controller Monad
-  , Controller(..), ensure, request, respond, pass, replaceRequestWith
+  , Controller(..), ensure, request, respond, pass, local
   -- * Common Routes
   , routeApp, routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
@@ -126,9 +126,6 @@ runRoute req (Controller router) = runReaderT (runEitherT router) req
 request :: Controller Request
 request = ask
 
-replaceRequestWith :: Request -> Controller a -> Controller a
-replaceRequestWith req next = Controller $ (lift . lift $ runRoute req next) >>= hoistEither
-
 instance Monoid (Controller ()) where
   mempty = return ()
   mappend m1 m2 = m1 >> m2
@@ -196,10 +193,10 @@ routePattern pattern route =
 routeName :: S.ByteString -> Controller () -> Controller ()
 routeName name next = do
   req <- request
-  let poppedHdrReq = req { pathInfo = (tail . pathInfo $ req) }
   if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
-    then replaceRequestWith poppedHdrReq next
+    then local popHdr next
     else pass
+  where popHdr req = req { pathInfo = (tail . pathInfo $ req) }
 
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
@@ -207,13 +204,13 @@ routeName name next = do
 routeVar :: S.ByteString -> Controller () -> Controller ()
 routeVar varName next = do
   req <- request
-  let varVal = S8.pack . T.unpack . head . pathInfo $ req
-      poppedHdrReq = req {
-          pathInfo = (tail . pathInfo $ req)
-        , queryString = (varName, Just varVal):(queryString req)}
   if (length $ pathInfo req) > 0 then
-    replaceRequestWith poppedHdrReq next
+    local popHdr next
     else pass
+  where popHdr req = req {
+              pathInfo = (tail . pathInfo $ req)
+            , queryString = (varName, Just (varVal req)):(queryString req)}
+        varVal req = S8.pack . T.unpack . head . pathInfo $ req
 
 {- $Example
  #example#

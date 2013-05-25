@@ -34,7 +34,7 @@ basicAuthRoute realm testAuth next = do
                       _ -> return Nothing
   case didAuthenticate of
     Nothing -> respond $ requireBasicAuth realm
-    Just finReq -> replaceRequestWith finReq next
+    Just finReq -> local (const finReq) next
 
 -- | Wraps an 'AuthRouter' to take a simpler authentication function (that just
 -- just takes a username and password, and returns 'True' or 'False'). It also
