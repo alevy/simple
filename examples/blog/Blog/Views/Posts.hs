@@ -5,6 +5,7 @@ import Prelude hiding (id, div, show, span)
 import qualified Prelude as Pre
 
 import Control.Monad
+import Data.Text.Encoding (decodeUtf8)
 import Data.Maybe
 import Database.PostgreSQL.ORM
 import Text.Blaze.Html5
@@ -56,7 +57,7 @@ new errs =  do
   header $ h2 $ "New Post"
   when (not $ null errs) $
     ul ! class_ "errors" $ forM_ errs $ \err ->
-      li $ toHtml $ invalidError err
+      li $ toHtml $ decodeUtf8 $ invalidError err
   form ! class_ "content" ! action "/admin/posts" ! method "post" $ do
     p $ do
       input ! type_ "text" ! name "title" ! id "title" ! placeholder "title"
@@ -69,7 +70,7 @@ edit post errs =  do
   header $ h2 $ "Edit Post"
   when (not $ null errs) $
     ul ! class_ "errors" $ forM_ errs $ \err ->
-      li $ toHtml $ invalidError err
+      li $ toHtml $ decodeUtf8 $ invalidError err
   form ! class_ "content"
        ! action (toValue $ "/admin/posts/" ++ (Pre.show $ P.postId post))
        ! method "post" $ do

@@ -36,8 +36,8 @@ instance Model Post where
   modelInfo = defaultModelInfo { modelTable = "posts"
                                , modelColumns = ["id", "title", "body", "posted_at"]}
 
-  modelValid = validateNotEmpty (encodeUtf8 . title)
+  modelValid = validateNotEmpty title
                   "title" "Title cannot be empty"
-            <> validateNotEmpty (encodeUtf8 . body)
+            <> validateNotEmpty body
                   "body"  "Body cannot be empty"
 

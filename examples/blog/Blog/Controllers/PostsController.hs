@@ -6,6 +6,8 @@ import qualified Prelude
 
 import Common
 
+import Control.Exception
+import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as S8
 import Data.Time.LocalTime (getZonedTime)
@@ -32,32 +34,31 @@ postsController as = rest $ do
   index $ withConnection as $ \conn -> do
     mpage <- queryParam "offset"
     let page = maybe 0 id mpage
-    posts <- dbSelect conn $ setLimit 10
+    posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
 
   show $ do
-    path <- fmap (S8.unpack . rawPathInfo) request
     withConnection as $ \conn -> do
       (Just pid) <- queryParam "id"
-      (Just post) <- findRow conn pid
-      comments <- allComments conn post
+      (Just post) <- liftIO $ findRow conn pid
+      comments <- liftIO $ allComments conn post
       respond $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
 
 postsAdminController as = rest $ do
   index $ withConnection as $ \conn -> do
-    posts <- findAll conn
+    posts <- liftIO $ findAll conn
     respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
 
   edit $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- findRow conn pid
+    (Just post) <- liftIO $ findRow conn pid
     respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post []
 
   update $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- findRow conn pid
+    (Just post) <- liftIO $ findRow conn pid
     (params, _) <- parseForm
     curTime <- liftIO $ getZonedTime
     let mpost = do
@@ -67,11 +68,12 @@ postsAdminController as = rest $ do
                         , P.body = fromString $ S8.unpack pBody }
     case mpost of
       Just post -> do
-        merrs <- save conn post
-        case merrs of
-          Left _ -> respond $ redirectTo $ P.postUrl (P.postId post)
-          Right errs ->
-            respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post errs
+        errs <- liftIO $
+                  catch (trySave conn post >> return [])
+                        (\(ValidationError errs) -> return errs)
+        when (not . null $ errs) $
+          respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post errs
+        respond $ redirectTo $ P.postUrl (P.postId post)
       Nothing -> redirectBack
 
   new $ do
@@ -88,16 +90,17 @@ postsAdminController as = rest $ do
                                   curTime
     case mpost of
       Just post -> do
-        eerr <- save conn post
-        case eerr of
-          Left _ -> respond $ redirectTo "/posts/"
-          Right errs ->
-            respond $ okHtml $ renderHtml $ adminTemplate $ V.new errs
+        errs <- liftIO $
+                  catch (trySave conn post >> return [])
+                        (\(ValidationError errs) -> return errs)
+        when (not . null $ errs) $
+          respond $ okHtml $ renderHtml $ adminTemplate $ V.new errs
+        respond $ redirectTo "/posts/"
       Nothing -> redirectBack
 
   delete $ withConnection as $ \conn -> do
     (Just pid) <- queryParam "id"
-    (Just post) <- findRow conn pid :: Controller (Maybe P.Post)
-    destroy conn post
+    (Just post) <- liftIO $ findRow conn pid :: Controller (Maybe P.Post)
+    liftIO $ destroy conn post
     respond $ redirectTo "/posts"
 
