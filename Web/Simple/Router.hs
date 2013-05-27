@@ -104,8 +104,16 @@ succeeds for every other request (perhaps for A/B testing):
 -}
 
 newtype Controller a = Controller (EitherT Response (ReaderT Request (ResourceT IO)) a)
-                    deriving ( Monad, MonadIO, MonadReader Request
+                    deriving ( MonadIO, MonadReader Request
                              , Functor, Applicative)
+
+instance Monad Controller where
+  return = Controller . return
+  (Controller m1) >>= cm2 = Controller $ do
+    r1 <- m1
+    let (Controller r2) = cm2 r1
+    r2
+  fail = const $ respond serverError
 
 ensure :: Controller a -> Controller b -> Controller b
 ensure finalize act = do
