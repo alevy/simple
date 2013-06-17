@@ -24,7 +24,8 @@ module Web.Simple.Controller
   , redirectBack
   , redirectBackOr
   , Parseable
-  , queryParam
+  , queryParam, queryParam', queryParams
+  , readQueryParam, readQueryParam'
   , parseForm
   , respond
   -- * Low level functions
@@ -37,12 +38,17 @@ import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit
-import Data.Conduit.List as CL
+import Data.Conduit.List as CL hiding (map, filter)
+import Data.Maybe
 import Network.HTTP.Types.Header
 import Network.Wai
 import Network.Wai.Parse
+import Data.Text (Text)
+import qualified Data.Text          as Text
+import qualified Data.Text.Encoding as Text
 import Web.Simple.Responses
 import Web.Simple.Router
+import Safe
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
@@ -78,10 +84,23 @@ queryParam :: Parseable a => S8.ByteString -- ^ Parameter name
            -> Controller (Maybe a)
 queryParam varName = do
   qr <- fmap queryString request
-  case lookup varName qr of
-    Just p -> return $ fmap parse p
-    _ -> return Nothing
+  return $ case lookup varName qr of
+    Just p -> Just $ parse $ fromMaybe S.empty p
+    _ -> Nothing
 
+-- | Like 'queryParam', but throws an exception if the parameter is not present.
+queryParam' :: Parseable a => S.ByteString -> Controller a
+queryParam' varName =
+  queryParam varName >>= maybe (fail $ "no parameter " ++ show varName) return
+
+-- | Returns multiple parameter values
+queryParams :: Parseable a => S.ByteString -> Controller [a]
+queryParams varName = request >>= return .
+                                  map (parse . fromMaybe S.empty . snd) .
+                                  filter ((== varName) . fst) .
+                                  queryString
+
+-- | The class of types into which query parameters may be converted
 class Parseable a where
   parse :: S8.ByteString -> a
 
@@ -89,9 +108,27 @@ instance Parseable S8.ByteString where
   parse = id
 instance Parseable String where
   parse = S8.unpack
-instance Read a => Parseable a where
-  parse = read . S8.unpack
+instance Parseable Text where
+  parse = Text.decodeUtf8
 
+-- | Like 'queryParam', but further processes the parameter value with @read@.
+-- If that conversion fails, the result is 'Nothing'.
+readQueryParam :: Read a
+               => S8.ByteString -- ^ Parameter name
+               -> Controller (Maybe a)
+readQueryParam varName =
+  fmap (maybe Nothing (readMay . Text.unpack)) $
+    queryParam varName
+
+-- | Like 'readQueryParam', but throws an exception if the parameter is not present
+-- or cannot be read.
+readQueryParam' :: Read a
+                => S8.ByteString -- ^ Parameter name
+                -> Controller a
+readQueryParam' varName =
+  queryParam' varName >>=
+    maybe (fail $ "cannot read parameter: " ++ show varName) return .
+      readMay . Text.unpack
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
