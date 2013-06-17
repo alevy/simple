@@ -23,6 +23,7 @@ module Web.Simple.Controller
   -- * Utility functions
   , redirectBack
   , redirectBackOr
+  , Parseable
   , queryParam
   , parseForm
   , respond
