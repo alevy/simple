@@ -38,6 +38,7 @@ import qualified Data.Text as T
 import Network.HTTP.Types
 import Network.Wai
 import Web.Simple.Responses
+import System.IO
 
 {- |
 'Routeable' types can be converted into a route function using 'runRoute'.
@@ -113,7 +114,9 @@ instance Monad Controller where
     r1 <- m1
     let (Controller r2) = cm2 r1
     r2
-  fail = const $ respond serverError
+  fail msg = do
+    liftIO $ hPutStrLn stderr $ "Controller: " ++ msg
+    respond serverError
 
 ensure :: Controller a -> Controller b -> Controller b
 ensure finalize act = do
