@@ -52,13 +52,13 @@ import Safe
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
-redirectBack :: Controller Response
+redirectBack :: Controller a
 redirectBack = redirectBackOr (redirectTo "/")
 
 -- | Redirect back to the referer. If the referer header is not present
 -- fallback on the given 'Response'.
 redirectBackOr :: Response -- ^ Fallback 'Response'
-               -> Controller Response
+               -> Controller a
 redirectBackOr def = do
   mrefr <- requestHeader "referer"
   case mrefr of
@@ -110,7 +110,7 @@ readQueryParam :: Read a
                => S8.ByteString -- ^ Parameter name
                -> Controller (Maybe a)
 readQueryParam varName =
-  queryParam varName >>= maybe (return Nothing) (readParamValue varName)
+  queryParam varName >>= maybe (return Nothing) (fmap Just . readParamValue varName)
 
 -- | Like 'readQueryParam', but throws an exception if the parameter is not present.
 readQueryParam' :: Read a
@@ -127,7 +127,8 @@ readQueryParams :: Read a
 readQueryParams varName =
   queryParams varName >>= mapM (readParamValue varName)
 
-readParamValue :: Read a => S8.ByteString -> Text -> Controller a
+readParamValue :: (Read a, Monad m)
+               => S8.ByteString -> Text -> m a
 readParamValue varName =
   maybe (fail $ "cannot read parameter: " ++ show varName) return .
     readMay . Text.unpack
