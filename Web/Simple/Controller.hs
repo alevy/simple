@@ -48,7 +48,6 @@ import qualified Data.Text          as Text
 import qualified Data.Text.Encoding as Text
 import Web.Simple.Responses
 import Web.Simple.Router
-import Safe
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
@@ -132,6 +131,9 @@ readParamValue :: (Read a, Monad m)
 readParamValue varName =
   maybe (fail $ "cannot read parameter: " ++ show varName) return .
     readMay . Text.unpack
+  where readMay s = case [x | (x,rst) <- reads s, ("", "") <- lex rst] of
+                      [x] -> Just x
+                      _ -> Nothing
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
