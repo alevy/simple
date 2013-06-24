@@ -39,6 +39,7 @@ import qualified Data.Text as T
 import Network.HTTP.Types
 import Network.Wai
 import Web.Simple.Responses
+import System.IO
 
 {- |
 'Routeable' types can be converted into a route function using 'runRoute'.

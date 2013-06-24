@@ -23,7 +23,9 @@ module Web.Simple.Controller
   -- * Utility functions
   , redirectBack
   , redirectBackOr
-  , queryParam
+  , Parseable
+  , queryParam, queryParam', queryParams
+  , readQueryParam, readQueryParam', readQueryParams
   , parseForm
   , respond
   -- * Low level functions
@@ -36,22 +38,27 @@ import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Conduit
-import Data.Conduit.List as CL
+import qualified Data.Conduit.List as CL
+import Data.Maybe
 import Network.HTTP.Types.Header
 import Network.Wai
 import Network.Wai.Parse
+import Data.Text (Text)
+import qualified Data.Text          as Text
+import qualified Data.Text.Encoding as Text
 import Web.Simple.Responses
 import Web.Simple.Router
+import Safe
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
-redirectBack :: Controller Response
+redirectBack :: Controller a
 redirectBack = redirectBackOr (redirectTo "/")
 
 -- | Redirect back to the referer. If the referer header is not present
 -- fallback on the given 'Response'.
 redirectBackOr :: Response -- ^ Fallback 'Response'
-               -> Controller Response
+               -> Controller a
 redirectBackOr def = do
   mrefr <- requestHeader "referer"
   case mrefr of
@@ -59,28 +66,34 @@ redirectBackOr def = do
     Nothing   -> respond def
 
 -- | Looks up the parameter name in the request's query string and returns the
--- value as a 'S8.ByteString' or 'Nothing'.
+-- @Parseable@ value or 'Nothing'.
 --
 -- For example, for a request with query string: \"?foo=bar&baz=7\",
--- @
---   queryParam \"foo\"
--- @
---
--- would return /Just "bar"/, but
---
--- @
---   queryParam \"zap\"
--- @
---
--- would return /Nothing/
+-- @queryParam \"foo\"@
+-- would return @Just "bar"@, but
+-- @queryParam \"zap\"@
+-- would return @Nothing@.
 queryParam :: Parseable a => S8.ByteString -- ^ Parameter name
            -> Controller (Maybe a)
 queryParam varName = do
   qr <- fmap queryString request
-  case lookup varName qr of
-    Just p -> return $ fmap parse p
-    _ -> return Nothing
+  return $ case lookup varName qr of
+    Just p -> Just $ parse $ fromMaybe S.empty p
+    _ -> Nothing
 
+-- | Like 'queryParam', but throws an exception if the parameter is not present.
+queryParam' :: Parseable a => S.ByteString -> Controller a
+queryParam' varName =
+  queryParam varName >>= maybe (fail $ "no parameter " ++ show varName) return
+
+-- | Selects all values with the given parameter name
+queryParams :: Parseable a => S.ByteString -> Controller [a]
+queryParams varName = request >>= return .
+                                  map (parse . fromMaybe S.empty . snd) .
+                                  filter ((== varName) . fst) .
+                                  queryString
+
+-- | The class of types into which query parameters may be converted
 class Parseable a where
   parse :: S8.ByteString -> a
 
@@ -88,9 +101,37 @@ instance Parseable S8.ByteString where
   parse = id
 instance Parseable String where
   parse = S8.unpack
-instance Read a => Parseable a where
-  parse = read . S8.unpack
+instance Parseable Text where
+  parse = Text.decodeUtf8
 
+-- | Like 'queryParam', but further processes the parameter value with @read@.
+-- If that conversion fails, an exception is thrown.
+readQueryParam :: Read a
+               => S8.ByteString -- ^ Parameter name
+               -> Controller (Maybe a)
+readQueryParam varName =
+  queryParam varName >>= maybe (return Nothing) (fmap Just . readParamValue varName)
+
+-- | Like 'readQueryParam', but throws an exception if the parameter is not present.
+readQueryParam' :: Read a
+                => S8.ByteString -- ^ Parameter name
+                -> Controller a
+readQueryParam' varName =
+  queryParam' varName >>= readParamValue varName
+
+-- | Like 'queryParams', but further processes the parameter values with @read@.
+-- If any read-conversion fails, an exception is thrown.
+readQueryParams :: Read a
+                => S8.ByteString -- ^ Parameter name
+                -> Controller [a]
+readQueryParams varName =
+  queryParams varName >>= mapM (readParamValue varName)
+
+readParamValue :: (Read a, Monad m)
+               => S8.ByteString -> Text -> m a
+readParamValue varName =
+  maybe (fail $ "cannot read parameter: " ++ show varName) return .
+    readMay . Text.unpack
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
