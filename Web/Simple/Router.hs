@@ -32,6 +32,7 @@ import Control.Monad.Trans.Either
 import Control.Monad.Reader
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Monoid
 import Data.Conduit
 import qualified Data.Text as T
@@ -113,7 +114,7 @@ instance Monad Controller where
     r1 <- m1
     let (Controller r2) = cm2 r1
     r2
-  fail = const $ respond serverError
+  fail = respond . serverError . L8.pack
 
 ensure :: Controller a -> Controller b -> Controller b
 ensure finalize act = do
