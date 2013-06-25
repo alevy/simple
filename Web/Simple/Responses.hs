@@ -123,8 +123,8 @@ notFound = mkHtmlResponse status404 [] html
                        \</BODY></HTML>\n"]
 
 -- | Returns a 500 (Server Error) 'Response'.
-serverError :: Response
-serverError= mkHtmlResponse status500 [] html
+serverError :: L8.ByteString -> Response
+serverError message = mkHtmlResponse status500 [] html
   where html = L8.concat
              [L8.pack
               "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n\
@@ -132,5 +132,6 @@ serverError= mkHtmlResponse status500 [] html
               \<TITLE>500 Internal Server Error</TITLE>\n\
               \</HEAD><BODY>\n\
               \<H1>Internal Server Error</H1>\n\
-              \</BODY></HTML>\n"]
+              \<P>", message,
+              "</P></BODY></HTML>\n"]
 

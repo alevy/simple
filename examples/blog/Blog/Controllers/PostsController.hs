@@ -37,6 +37,7 @@ postsController as = rest $ do
     posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
+    throw $ ValidationError []
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
 
   show $ do

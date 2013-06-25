@@ -61,7 +61,6 @@ library
     , wai
     , wai-extra
     , http-types
-    , safe
     , text
     , transformers
     , bytestring
