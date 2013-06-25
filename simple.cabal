@@ -29,7 +29,7 @@ description:
   See "Web.Simple" for a more detailed introduction.
 license:             GPL-3
 license-file:        LICENSE
-author:              Amit Levy
+author:              Amit Levy, Daniel B. Giffin
 maintainer:          amit@amitlevy.com
 category:            Web
 build-type:          Simple
