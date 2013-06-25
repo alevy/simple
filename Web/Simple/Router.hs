@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 {- |
 
 Conceptually, a route is function that, given an HTTP request, may return
@@ -24,9 +25,11 @@ module Web.Simple.Router
   -- * Common Routes
   , routeApp, routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
+  , catchController, ControllerError
   ) where
 
 import Control.Applicative
+import Control.Exception
 import Control.Monad.Error
 import Control.Monad.Trans.Either
 import Control.Monad.Reader
@@ -35,10 +38,10 @@ import qualified Data.ByteString.Char8 as S8
 import Data.Monoid
 import Data.Conduit
 import qualified Data.Text as T
+import Data.Typeable
 import Network.HTTP.Types
 import Network.Wai
 import Web.Simple.Responses
-import System.IO
 
 {- |
 'Routeable' types can be converted into a route function using 'runRoute'.
@@ -114,9 +117,26 @@ instance Monad Controller where
     r1 <- m1
     let (Controller r2) = cm2 r1
     r2
-  fail msg = do
-    liftIO $ hPutStrLn stderr $ "Controller: " ++ msg
-    respond serverError
+  fail msg = liftIO $ throwIO $ ControllerError msg
+
+-- | The type of error that results from failure in the Controller monad.
+data ControllerError = ControllerError String
+  deriving Typeable
+
+instance Show ControllerError where
+  show (ControllerError msg) = "Controller failed: " ++ msg
+
+instance Exception ControllerError
+
+-- | Run a handler if the given controller produces an exception of the appropriate type
+catchController :: Exception e
+                => Controller a         -- ^ The controller to wrap
+                -> (e -> Controller a)  -- ^ The handler for exceptions
+                -> Controller a
+catchController ctrl handler = do
+  req <- request
+  liftIO (catch (runRouteIO req ctrl)
+                (\e -> runRouteIO req $ handler e)) >>= either respond return
 
 ensure :: Controller a -> Controller b -> Controller b
 ensure finalize act = do
@@ -133,6 +153,9 @@ respond = Controller . left
 
 runRoute :: Request -> Controller a -> ResourceT IO (Either Response a)
 runRoute req (Controller router) = runReaderT (runEitherT router) req
+
+runRouteIO :: Request -> Controller a -> IO (Either Response a)
+runRouteIO req ctrl = runResourceT $ runRoute req ctrl
 
 request :: Controller Request
 request = ask
