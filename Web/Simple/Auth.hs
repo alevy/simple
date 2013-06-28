@@ -7,7 +7,7 @@ import qualified Data.ByteString.Char8 as S8
 import Network.HTTP.Types
 import Network.Wai
 import Web.Simple.Responses
-import Web.Simple.Router
+import Web.Simple.Controller
 
 -- | An 'AuthRouter' authenticates a 'Request' and, if successful, forwards the
 -- 'Request' to the 'Routeable'.

@@ -65,6 +65,7 @@ library
     , transformers
     , bytestring
     , mtl
+    , vault
 
   ghc-options: -Wall -fno-warn-unused-do-bind
 
@@ -74,7 +75,6 @@ library
     Web.Simple.Cache,
     Web.Simple.Controller,
     Web.Simple.Responses,
-    Web.Simple.Router,
     Web.Frank,
     Web.REST
 

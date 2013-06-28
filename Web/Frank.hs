@@ -30,7 +30,7 @@ module Web.Frank
   ) where
 
 import Network.HTTP.Types
-import Web.Simple.Router
+import Web.Simple.Controller
 import qualified Data.ByteString as S
 
 -- | Helper method
