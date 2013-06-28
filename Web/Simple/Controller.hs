@@ -1,12 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-{-
-  {-# LANGUAGE TypeSynonymInstances #-}
-  {-# LANGUAGE FlexibleInstances #-}
-  {-# LANGUAGE OverloadedStrings, OverlappingInstances, UndecidableInstances #-}
--}
-
 {- | 'Controller' provides a convenient syntax for writting 'Application'
   code as a Monadic action with access to an HTTP request, rather than a
   function that takes the request as an argument. This module also defines some
@@ -29,34 +23,33 @@ module Web.Simple.Controller
   -- * Example
   --  $Example
     module Web.Simple.ControllerM
-  , ask, local
+  -- * Controller
   , Controller
   , controllerApp
-  , withApplicationValue
-  , lookupControllerValue
-  , parseForm
-  -- * Low level functions
-  , body
+  -- * ControllerR
+  , ControllerR
+  , controllerRApp
+  , controllerRValue
+  , runControllerRIO
+  , mapControllerRIO
   ) where
 
 import           Control.Applicative
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Either
-import qualified Data.ByteString as S
-import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Conduit
-import qualified Data.Conduit.List as CL
-import qualified Data.Vault as Vault
 import           Network.Wai
-import           Network.Wai.Parse
-import Web.Simple.ControllerM
-import Web.Simple.Responses
+import           Web.Simple.ControllerM
+import           Web.Simple.Responses
 
+-- | A basic Controller
 newtype Controller a =
   Controller (EitherT Response (ReaderT Request (ResourceT IO)) a)
   deriving (Functor, Applicative, Monad, MonadIO, MonadReader Request)
 
 instance ControllerM Controller where
+  request = ask
+  localRequest = local
   pass = Controller $ right ()
   respond = Controller . left
 
@@ -71,10 +64,42 @@ controllerApp ctrl req =
 runController :: Controller a -> Request -> ResourceT IO (Either Response a)
 runController (Controller m) req = runReaderT (runEitherT m) req
 
-{-
-runControllerIO :: Request -> Controller a -> IO (Either Response a)
-runControllerIO ctrl = runResourceT . runController ctrl
--}
+-- | A controller that embeds an application-supplied value, which may
+-- be extracted with 'controllerRValue'.
+newtype ControllerR r a =
+  ControllerR (EitherT Response (ReaderT (r,Request) (ResourceT IO)) a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader (r,Request))
+
+instance ControllerM (ControllerR r) where
+  request = liftM snd ask
+  localRequest f = local (\(r,req) -> (r, f req))
+  pass = ControllerR $ right ()
+  respond = ControllerR . left
+
+-- | Extract the application-specific value
+controllerRValue :: ControllerR r r 
+controllerRValue = liftM fst ask
+
+-- | Convert the controller into an 'Application'
+controllerRApp :: ControllerR r a -> r -> Application
+controllerRApp ctrl r req =
+  runControllerR ctrl r req >>=
+    either return (const $ return notFound) 
+
+runControllerR :: ControllerR r a -> r -> Request -> ResourceT IO (Either Response a)
+runControllerR (ControllerR m) r req = runReaderT (runEitherT m) (r,req)
+
+-- | Run a 'ControllerR' in the @IO@ monad
+runControllerRIO :: ControllerR r a -> r -> Request -> IO (Either Response a)
+runControllerRIO ctrl r = runResourceT . runControllerR ctrl r
+
+-- | Use a function that transforms @IO@ computations to transform a 'ControllerR' computation.
+mapControllerRIO :: (IO a -> IO a) -> ControllerR r b -> ControllerR r b
+mapControllerRIO f ctrl = do
+  r <- controllerRValue
+  req <- request
+  res <- liftIO $ f $ runControllerRIO ctrl r req
+  ControllerR $ hoistEither res
 
 {-
 ensure :: Controller a -> Controller b -> Controller b
@@ -84,50 +109,6 @@ ensure finalize act = do
   finalize
   Controller $ hoistEither ea
 -}
-
-{-
-instance Monoid (Controller ()) where
-  mempty = return ()
-  mappend m1 m2 = m1 >> m2
--}
-
--- | Parses a HTML form from the request body. It returns a list of 'Param's as
--- well as a list of 'File's, which are pairs mapping the name of a /file/ form
--- field to a 'FileInfo' pointing to a temporary file with the contents of the
--- upload.
---
--- @
---   myController = do
---     (prms, files) <- parseForm
---     let mPicFile = lookup \"profile_pic\" files
---     case mPicFile of
---       Just (picFile) -> do
---         sourceFile (fileContent picFile) $$
---           sinkFile (\"images/\" ++ (fileName picFile))
---         respond $ redirectTo \"/\"
---       Nothing -> redirectBack
--- @
-parseForm :: Controller ([Param], [(S.ByteString, FileInfo FilePath)])
-parseForm = do
-  request >>= Controller . lift . lift . (parseRequestBody tempFileBackEnd)
-
--- | Place an arbitrary value in an @Application@, to be extricated by 'lookupApplicationValue'
-withApplicationValue :: Vault.Key a -> a -> Middleware
-withApplicationValue key x app req =
-  app $ req { vault = Vault.insert key x (vault req) }
-
--- | Extract an arbitrary value from an application
-lookupApplicationValue :: Vault.Key a -> Request -> Maybe a
-lookupApplicationValue key req = Vault.lookup key $ vault req
-
-lookupControllerValue :: Vault.Key a -> Controller (Maybe a)
-lookupControllerValue key = request >>= return . lookupApplicationValue key
-
--- | Reads and returns the body of the HTTP request.
-body :: Controller L8.ByteString
-body = do
-  bd <- fmap requestBody request
-  Controller $ lift . lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
 
 {- $Example
  #example#

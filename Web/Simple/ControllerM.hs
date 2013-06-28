@@ -4,52 +4,76 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE UndecidableInstances #-}
+
+{- | A class of web controllers, and operations on them.
+ -
+ - Simple instances include 'Controller' and 'ControllerR'.
+-}
+
 
 module Web.Simple.ControllerM
   (
   -- * ControllerM Monads
     ControllerM(..)
-  , request
+  , fromApp
   -- * Common Routes
-  , routeApp, routeHost, routeTop, routeMethod
+  , routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
-  -- * Inspecting query parameters
+  -- * Inspecting query
   , Parseable
   , queryParam, queryParam', queryParams
   , readQueryParam, readQueryParam', readQueryParams
+  , parseForm
   -- * Redirection via referrer
   , redirectBack
   , redirectBackOr
-  -- -- * Utilities
-  -- , guard, guardM, guardReq
   -- * Integrating other WAI components
   , ToApplication(..)
+  -- * Low-level utilities
+  , body
+  -- , guard, guardM, guardReq
   ) where
 
 import           Control.Monad.Reader hiding (guard)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
+import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Conduit
+import qualified Data.Conduit.List as CL
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import           Network.HTTP.Types
 import           Network.Wai
+import           Network.Wai.Parse
 import           Web.Simple.Responses
 
 -- | The class of monads with "Controller" behavior
-class (MonadIO m, MonadReader Request m) => ControllerM m where
-  pass :: m ()                -- must obey: pass >> c === c
-                              --          , c >> pass === c
-  respond :: Response -> m a  -- must obey: respond r >>= f === respond r
+class (MonadIO m) => ControllerM m where
+  -- | Extract the request
+  request :: m Request
 
-request :: (ControllerM m) => m Request
-request = ask
+  -- | Modify the request for the given computation
+  localRequest :: (Request -> Request) -> m a -> m a
 
--- | A route that always matches.
-routeApp :: (ControllerM m, ToApplication a) => a -> m b
-routeApp app = do
+  -- | Decline to handle the request
+  --
+  -- Must obey:
+  -- @pass >> c === c@
+  -- @c >> pass === c@
+  pass :: m ()
+
+  -- | Provide a response
+  --
+  -- Must obey: @respond r >>= f === respond r@
+  respond :: Response -> m a
+
+-- | Lift an application to a controller
+fromApp :: (ControllerM m, ToApplication a) => a -> m ()
+fromApp app = do
   req <- request 
   resp <- liftIO $ runResourceT $ (toApp app) req
   respond resp
@@ -94,7 +118,7 @@ routeName :: (ControllerM m) => S.ByteString -> m a -> m ()
 routeName name next = do
   req <- request
   if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
-    then local popHdr next >> return ()
+    then localRequest popHdr next >> return ()
     else pass
   where popHdr req = req { pathInfo = (tail . pathInfo $ req) }
 
@@ -105,7 +129,7 @@ routeVar :: (ControllerM m) => S.ByteString -> m a -> m ()
 routeVar varName next = do
   req <- request
   if (length $ pathInfo req) > 0
-    then local popHdr next >> return ()
+    then localRequest popHdr next >> return ()
     else pass
   where popHdr req = req {
               pathInfo = (tail . pathInfo $ req)
@@ -189,6 +213,31 @@ readParamValue varName =
                       [x] -> Just x
                       _ -> Nothing
 
+-- | Parses a HTML form from the request body. It returns a list of 'Param's as
+-- well as a list of 'File's, which are pairs mapping the name of a /file/ form
+-- field to a 'FileInfo' pointing to a temporary file with the contents of the
+-- upload.
+--
+-- @
+--   myController = do
+--     (prms, files) <- parseForm
+--     let mPicFile = lookup \"profile_pic\" files
+--     case mPicFile of
+--       Just (picFile) -> do
+--         sourceFile (fileContent picFile) $$
+--           sinkFile (\"images/\" ++ (fileName picFile))
+--         respond $ redirectTo \"/\"
+--       Nothing -> redirectBack
+-- @
+parseForm :: (ControllerM m) => m ([Param], [(S.ByteString, FileInfo FilePath)])
+parseForm = request >>= liftIO . runResourceT . parseRequestBody tempFileBackEnd
+
+-- | Reads and returns the body of the HTTP request.
+body :: (ControllerM m) => m L8.ByteString
+body = do
+  bd <- liftM requestBody request
+  liftIO $ runResourceT $ bd $$ (CL.consume >>= return . L8.fromChunks)
+
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
 requestHeader :: (ControllerM m) => HeaderName -> m (Maybe S8.ByteString)
@@ -230,3 +279,17 @@ instance ToApplication Application where
 
 instance ToApplication Response where
   toApp = const . return
+
+{-
+class ToController a m where
+  toCtrl :: (ControllerM m) => a -> m ()
+
+instance ToController Application m where
+  toCtrl = fromApp
+
+instance ToController Response where
+  toCtrl = respond
+
+instance (ControllerM m) => ToController (m a) where
+  toCtrl c = c >> return ()
+-}

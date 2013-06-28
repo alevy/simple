@@ -74,6 +74,7 @@ library
     Web.Simple.Auth,
     Web.Simple.Cache,
     Web.Simple.Controller,
+    Web.Simple.ControllerM,
     Web.Simple.Responses,
     Web.Frank,
     Web.REST
