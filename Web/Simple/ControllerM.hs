@@ -53,6 +53,7 @@ import           Web.Simple.Responses
 
 -- | The class of monads with "Controller" behavior
 class (MonadIO m) => ControllerM m where
+
   -- | Extract the request
   request :: m Request
 

@@ -24,14 +24,14 @@ module Web.Simple.Controller
   --  $Example
     module Web.Simple.ControllerM
   -- * Controller
-  , Controller
+  , Controller(..)
   , controllerApp
   -- * ControllerR
-  , ControllerR
+  , ControllerR(..)
   , controllerRApp
   , controllerRValue
   , runControllerRIO
-  , mapControllerRIO
+  -- , mapControllerRIO
   ) where
 
 import           Control.Applicative
@@ -93,6 +93,7 @@ runControllerR (ControllerR m) r req = runReaderT (runEitherT m) (r,req)
 runControllerRIO :: ControllerR r a -> r -> Request -> IO (Either Response a)
 runControllerRIO ctrl r = runResourceT . runControllerR ctrl r
 
+{-
 -- | Use a function that transforms @IO@ computations to transform a 'ControllerR' computation.
 mapControllerRIO :: (IO a -> IO a) -> ControllerR r b -> ControllerR r b
 mapControllerRIO f ctrl = do
@@ -100,6 +101,7 @@ mapControllerRIO f ctrl = do
   req <- request
   res <- liftIO $ f $ runControllerRIO ctrl r req
   ControllerR $ hoistEither res
+-}
 
 {-
 ensure :: Controller a -> Controller b -> Controller b
