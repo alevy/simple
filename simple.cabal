@@ -65,7 +65,7 @@ library
     , transformers
     , bytestring
     , mtl
-    , vault
+    , monad-peel
 
   ghc-options: -Wall -fno-warn-unused-do-bind
 

@@ -31,10 +31,11 @@ module Web.Simple.Controller
   , controllerRApp
   , controllerRValue
   , runControllerRIO
-  -- , mapControllerRIO
   ) where
 
 import           Control.Applicative
+import           Control.Exception.Peel
+import           Control.Monad.IO.Peel
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Either
 import           Data.Conduit
@@ -76,6 +77,14 @@ instance ControllerM (ControllerR r) where
   pass = ControllerR $ right ()
   respond = ControllerR . left
 
+instance MonadPeelIO (ControllerR r) where
+  peelIO = do
+    r <- controllerRValue
+    req <- request
+    return $ \ctrl -> do
+      res <- runControllerRIO ctrl r req
+      return $ ControllerR $ hoistEither res
+
 -- | Extract the application-specific value
 controllerRValue :: ControllerR r r 
 controllerRValue = liftM fst ask
@@ -92,16 +101,6 @@ runControllerR (ControllerR m) r req = runReaderT (runEitherT m) (r,req)
 -- | Run a 'ControllerR' in the @IO@ monad
 runControllerRIO :: ControllerR r a -> r -> Request -> IO (Either Response a)
 runControllerRIO ctrl r = runResourceT . runControllerR ctrl r
-
-{-
--- | Use a function that transforms @IO@ computations to transform a 'ControllerR' computation.
-mapControllerRIO :: (IO a -> IO a) -> ControllerR r b -> ControllerR r b
-mapControllerRIO f ctrl = do
-  r <- controllerRValue
-  req <- request
-  res <- liftIO $ f $ runControllerRIO ctrl r req
-  ControllerR $ hoistEither res
--}
 
 {-
 ensure :: Controller a -> Controller b -> Controller b

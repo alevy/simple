@@ -29,6 +29,9 @@ module Web.Simple.ControllerM
   -- * Redirection via referrer
   , redirectBack
   , redirectBackOr
+  -- * Exception handling
+  , ControllerException
+  , module Control.Exception.Peel
   -- * Integrating other WAI components
   , ToApplication(..)
   -- * Low-level utilities
@@ -36,6 +39,7 @@ module Web.Simple.ControllerM
   -- , guard, guardM, guardReq
   ) where
 
+import           Control.Exception.Peel
 import           Control.Monad.Reader hiding (guard)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
@@ -46,6 +50,7 @@ import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import           Data.Typeable
 import           Network.HTTP.Types
 import           Network.Wai
 import           Network.Wai.Parse
@@ -162,7 +167,7 @@ queryParam varName = do
 queryParam' :: (ControllerM m, Parseable a)
             => S.ByteString -> m a
 queryParam' varName =
-  queryParam varName >>= maybe (fail $ "no parameter " ++ show varName) return
+  queryParam varName >>= maybe (err $ "no parameter " ++ show varName) return
 
 -- | Selects all values with the given parameter name
 queryParams :: (ControllerM m, Parseable a)
@@ -208,7 +213,7 @@ readQueryParams varName =
 
 readParamValue :: (ControllerM m, Read a) => S8.ByteString -> Text -> m a
 readParamValue varName =
-  maybe (fail $ "cannot read parameter: " ++ show varName) return .
+  maybe (err $ "cannot read parameter: " ++ show varName) return .
     readMay . T.unpack
   where readMay s = case [x | (x,rst) <- reads s, ("", "") <- lex rst] of
                       [x] -> Just x
@@ -280,6 +285,17 @@ instance ToApplication Application where
 
 instance ToApplication Response where
   toApp = const . return
+
+data ControllerException = ControllerException String
+  deriving (Typeable)
+
+instance Show ControllerException where
+  show (ControllerException msg) = "Controller: " ++ msg
+
+instance Exception ControllerException
+
+err :: (ControllerM m) => String -> m a
+err = throwIO . ControllerException
 
 {-
 class ToController a m where
