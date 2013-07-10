@@ -21,7 +21,7 @@
 module Web.Simple.Controller
   (
   -- * Example
-  --  $Example
+  -- $Example
     module Web.Simple.ControllerM
   -- * Controller
   , Controller(..)
