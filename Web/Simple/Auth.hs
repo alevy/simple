@@ -7,7 +7,7 @@ import qualified Data.ByteString.Char8 as S8
 import Network.HTTP.Types
 import Network.Wai
 import Web.Simple.Responses
-import Web.Simple.Router
+import Web.Simple.Controller
 
 -- | An 'AuthRouter' authenticates a 'Request' and, if successful, forwards the
 -- 'Request' to the 'Routeable'.
@@ -34,7 +34,7 @@ basicAuthRoute realm testAuth next = do
                       _ -> return Nothing
   case didAuthenticate of
     Nothing -> respond $ requireBasicAuth realm
-    Just finReq -> local (const finReq) next
+    Just finReq -> localRequest (const finReq) next
 
 -- | Wraps an 'AuthRouter' to take a simpler authentication function (that just
 -- just takes a username and password, and returns 'True' or 'False'). It also

@@ -65,6 +65,7 @@ library
     , transformers
     , bytestring
     , mtl
+    , monad-peel
 
   ghc-options: -Wall -fno-warn-unused-do-bind
 
@@ -73,8 +74,8 @@ library
     Web.Simple.Auth,
     Web.Simple.Cache,
     Web.Simple.Controller,
+    Web.Simple.ControllerM,
     Web.Simple.Responses,
-    Web.Simple.Router,
     Web.Frank,
     Web.REST
 

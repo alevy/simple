@@ -13,9 +13,8 @@ together.
 
 -}
 module Web.Simple (
-    module Web.Simple.Router
+    module Web.Simple.Responses
   , module Web.Simple.Controller
-  , module Web.Simple.Responses
   -- * Overview
   -- $Overview
 
@@ -35,7 +34,6 @@ module Web.Simple (
   -- $Migrations
   ) where
 
-import Web.Simple.Router
 import Web.Simple.Responses
 import Web.Simple.Controller
 

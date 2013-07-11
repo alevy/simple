@@ -10,7 +10,7 @@ import Prelude hiding (show)
 import Control.Monad.Trans.State
 import Control.Monad.Identity
 import Web.Simple.Responses
-import Web.Simple.Router
+import Web.Simple.Controller
 import Network.HTTP.Types
 import Network.Wai (Application)
 
@@ -48,19 +48,19 @@ rest :: RESTControllerM a -> REST
 rest rcontroller = snd . runIdentity $ runStateT rcontroller defaultREST
 
 instance ToApplication REST where
-  toApp rst = toApp $ do
+  toApp rst = controllerApp $ do
     routeMethod GET $ do
-      routeTop . routeApp $ restIndex rst
-      routeName "new" . routeApp $ restNew rst
+      routeTop . fromApp $ restIndex rst
+      routeName "new" . fromApp $ restNew rst
       routeVar "id" $ do
-        routeTop . routeApp $ restShow rst
-        routeName "edit" . routeApp $ restEdit rst
+        routeTop . fromApp $ restShow rst
+        routeName "edit" . fromApp $ restEdit rst
 
-    routeMethod POST $ routeTop . routeApp $ restCreate rst
+    routeMethod POST $ routeTop . fromApp $ restCreate rst
 
-    routeMethod DELETE $ routeVar "id" . routeApp $ restDelete rst
+    routeMethod DELETE $ routeVar "id" . fromApp $ restDelete rst
 
-    routeMethod PUT $ routeVar "id" . routeApp $ restUpdate rst
+    routeMethod PUT $ routeVar "id" . fromApp $ restUpdate rst
 
 instance ToApplication (RESTControllerM a) where
   toApp = toApp . rest

@@ -1,5 +1,5 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings, OverlappingInstances, UndecidableInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {- | 'Controller' provides a convenient syntax for writting 'Application'
   code as a Monadic action with access to an HTTP request, rather than a
@@ -19,152 +19,132 @@
 -}
 
 module Web.Simple.Controller
-  ( Controller
-  -- * Utility functions
-  , redirectBack
-  , redirectBackOr
-  , Parseable
-  , queryParam, queryParam', queryParams
-  , readQueryParam, readQueryParam', readQueryParams
-  , parseForm
-  , respond
-  -- * Low level functions
-  , request
-  , body
+  (
+  -- * Example
+  -- $Example
+    module Web.Simple.ControllerM
+  -- * Controller
+  , Controller(..)
+  , controllerApp
+  -- * ControllerR
+  , ControllerR(..)
+  , controllerRApp
+  , controllerRValue
+  , runControllerRIO
   ) where
 
-import Control.Monad.Trans.Class
-import qualified Data.ByteString as S
-import qualified Data.ByteString.Char8 as S8
-import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Conduit
-import qualified Data.Conduit.List as CL
-import Data.Maybe
-import Network.HTTP.Types.Header
-import Network.Wai
-import Network.Wai.Parse
-import Data.Text (Text)
-import qualified Data.Text          as Text
-import qualified Data.Text.Encoding as Text
-import Web.Simple.Responses
-import Web.Simple.Router
+import           Control.Applicative
+import           Control.Exception.Peel
+import           Control.Monad.IO.Peel
+import           Control.Monad.Reader
+import           Control.Monad.Trans.Either
+import           Data.Conduit
+import           Network.Wai
+import           Web.Simple.ControllerM
+import           Web.Simple.Responses
 
--- | Redirect back to the referer. If the referer header is not present
--- redirect to root (i.e., @\/@).
-redirectBack :: Controller a
-redirectBack = redirectBackOr (redirectTo "/")
+-- | A basic Controller
+newtype Controller a =
+  Controller (EitherT Response (ReaderT Request (ResourceT IO)) a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader Request)
 
--- | Redirect back to the referer. If the referer header is not present
--- fallback on the given 'Response'.
-redirectBackOr :: Response -- ^ Fallback 'Response'
-               -> Controller a
-redirectBackOr def = do
-  mrefr <- requestHeader "referer"
-  case mrefr of
-    Just refr -> respond $ redirectTo $ S8.unpack refr
-    Nothing   -> respond def
+instance ControllerM Controller where
+  request = ask
+  localRequest = local
+  pass = Controller $ right ()
+  respond = Controller . left
 
--- | Looks up the parameter name in the request's query string and returns the
--- @Parseable@ value or 'Nothing'.
---
--- For example, for a request with query string: \"?foo=bar&baz=7\",
--- @queryParam \"foo\"@
--- would return @Just "bar"@, but
--- @queryParam \"zap\"@
--- would return @Nothing@.
-queryParam :: Parseable a => S8.ByteString -- ^ Parameter name
-           -> Controller (Maybe a)
-queryParam varName = do
-  qr <- fmap queryString request
-  return $ case lookup varName qr of
-    Just p -> Just $ parse $ fromMaybe S.empty p
-    _ -> Nothing
+instance ToApplication (Controller a) where
+  toApp = controllerApp
 
--- | Like 'queryParam', but throws an exception if the parameter is not present.
-queryParam' :: Parseable a => S.ByteString -> Controller a
-queryParam' varName =
-  queryParam varName >>= maybe (fail $ "no parameter " ++ show varName) return
+controllerApp :: Controller a -> Application
+controllerApp ctrl req =
+  runController ctrl req >>=
+    either return (const $ return notFound) 
 
--- | Selects all values with the given parameter name
-queryParams :: Parseable a => S.ByteString -> Controller [a]
-queryParams varName = request >>= return .
-                                  map (parse . fromMaybe S.empty . snd) .
-                                  filter ((== varName) . fst) .
-                                  queryString
+runController :: Controller a -> Request -> ResourceT IO (Either Response a)
+runController (Controller m) req = runReaderT (runEitherT m) req
 
--- | The class of types into which query parameters may be converted
-class Parseable a where
-  parse :: S8.ByteString -> a
+-- | A controller that embeds an application-supplied value, which may
+-- be extracted with 'controllerRValue'.
+newtype ControllerR r a =
+  ControllerR (EitherT Response (ReaderT (r,Request) (ResourceT IO)) a)
+  deriving (Functor, Applicative, Monad, MonadIO, MonadReader (r,Request))
 
-instance Parseable S8.ByteString where
-  parse = id
-instance Parseable String where
-  parse = S8.unpack
-instance Parseable Text where
-  parse = Text.decodeUtf8
+instance ControllerM (ControllerR r) where
+  request = liftM snd ask
+  localRequest f = local (\(r,req) -> (r, f req))
+  pass = ControllerR $ right ()
+  respond = ControllerR . left
 
--- | Like 'queryParam', but further processes the parameter value with @read@.
--- If that conversion fails, an exception is thrown.
-readQueryParam :: Read a
-               => S8.ByteString -- ^ Parameter name
-               -> Controller (Maybe a)
-readQueryParam varName =
-  queryParam varName >>= maybe (return Nothing) (fmap Just . readParamValue varName)
+instance MonadPeelIO (ControllerR r) where
+  peelIO = do
+    r <- controllerRValue
+    req <- request
+    return $ \ctrl -> do
+      res <- runControllerRIO ctrl r req
+      return $ ControllerR $ hoistEither res
 
--- | Like 'readQueryParam', but throws an exception if the parameter is not present.
-readQueryParam' :: Read a
-                => S8.ByteString -- ^ Parameter name
-                -> Controller a
-readQueryParam' varName =
-  queryParam' varName >>= readParamValue varName
+-- | Extract the application-specific value
+controllerRValue :: ControllerR r r 
+controllerRValue = liftM fst ask
 
--- | Like 'queryParams', but further processes the parameter values with @read@.
--- If any read-conversion fails, an exception is thrown.
-readQueryParams :: Read a
-                => S8.ByteString -- ^ Parameter name
-                -> Controller [a]
-readQueryParams varName =
-  queryParams varName >>= mapM (readParamValue varName)
+-- | Convert the controller into an 'Application'
+controllerRApp :: ControllerR r a -> r -> Application
+controllerRApp ctrl r req =
+  runControllerR ctrl r req >>=
+    either return (const $ return notFound) 
 
-readParamValue :: (Read a, Monad m)
-               => S8.ByteString -> Text -> m a
-readParamValue varName =
-  maybe (fail $ "cannot read parameter: " ++ show varName) return .
-    readMay . Text.unpack
-  where readMay s = case [x | (x,rst) <- reads s, ("", "") <- lex rst] of
-                      [x] -> Just x
-                      _ -> Nothing
+runControllerR :: ControllerR r a -> r -> Request -> ResourceT IO (Either Response a)
+runControllerR (ControllerR m) r req = runReaderT (runEitherT m) (r,req)
 
--- | Returns the value of the given request header or 'Nothing' if it is not
--- present in the HTTP request.
-requestHeader :: HeaderName -> Controller (Maybe S8.ByteString)
-requestHeader name = do
+-- | Run a 'ControllerR' in the @IO@ monad
+runControllerRIO :: ControllerR r a -> r -> Request -> IO (Either Response a)
+runControllerRIO ctrl r = runResourceT . runControllerR ctrl r
+
+{-
+ensure :: Controller a -> Controller b -> Controller b
+ensure finalize act = do
   req <- request
-  return $ lookup name $ requestHeaders req
+  ea <- Controller $ lift . lift $ runController act req
+  finalize
+  Controller $ hoistEither ea
+-}
 
--- | Reads and returns the body of the HTTP request.
-body :: Controller L8.ByteString
-body = do
-  bd <- fmap requestBody request
-  Controller $ lift . lift $ bd $$ (CL.consume >>= return . L8.fromChunks)
+{- $Example
+ #example#
 
--- | Parses a HTML form from the request body. It returns a list of 'Param's as
--- well as a list of 'File's, which are pairs mapping the name of a /file/ form
--- field to a 'FileInfo' pointing to a temporary file with the contents of the
--- upload.
---
--- @
---   myController = do
---     (prms, files) <- parseForm
---     let mPicFile = lookup \"profile_pic\" files
---     case mPicFile of
---       Just (picFile) -> do
---         sourceFile (fileContent picFile) $$
---           sinkFile (\"images/\" ++ (fileName picFile))
---         respond $ redirectTo \"/\"
---       Nothing -> redirectBack
--- @
-parseForm :: Controller ([Param], [(S.ByteString, FileInfo FilePath)])
-parseForm = do
-  request >>= Controller . lift . lift . (parseRequestBody tempFileBackEnd)
+The most basic 'Routeable' types are 'Application' and 'Response'. Reaching
+either of these types marks a termination in the routing lookup. This module
+exposes a monadic type 'Route' which makes it easy to create routing logic
+in a DSL-like fashion.
 
+'Route's are concatenated using the '>>' operator (or using do-notation).
+In the end, any 'Routeable', including a 'Route' is converted to an
+'Application' and passed to the server using 'mkRoute':
+
+@
+
+  mainAction :: Application
+  mainAction req = ...
+
+  signinForm :: Application
+  signinForm req = ...
+
+  login :: Application
+  login req = ...
+
+  updateProfile :: Application
+  updateProfile req = ...
+
+  main :: IO ()
+  main = runSettings defaultSettings $ mkRoute $ do
+    routeTop mainAction
+    routeName \"sessions\" $ do
+      routeMethod GET signinForm
+      routeMethod POST login
+    routeMethod PUT $ routePattern \"users/:id\" updateProfile
+    routeAll $ responseLBS status404 [] \"Are you in the right place?\"
+@
+
+-}
