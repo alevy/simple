@@ -1,6 +1,6 @@
-{-# LANGUAGE FlexibleInstances, GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, FlexibleInstances,
+             GeneralizedNewtypeDeriving #-}
+
 {- |
 
 Conceptually, a route is function that, given an HTTP request, may return
@@ -14,7 +14,6 @@ decisions can depend on side-effects (e.g. a random number or counter for A/B
 testing, IP geolocation lookup etc').
 
 -}
-
 module Web.Simple.Router
   (
   -- * Example

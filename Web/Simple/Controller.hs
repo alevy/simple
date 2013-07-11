@@ -1,5 +1,4 @@
-{-# LANGUAGE TypeSynonymInstances, FlexibleInstances #-}
-{-# LANGUAGE OverloadedStrings, OverlappingInstances, UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 
 {- | 'Controller' provides a convenient syntax for writting 'Application'
   code as a Monadic action with access to an HTTP request, rather than a
@@ -17,7 +16,6 @@
           ...
   @
 -}
-
 module Web.Simple.Controller
   ( Controller
   -- * Utility functions
