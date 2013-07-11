@@ -1,16 +1,12 @@
-import Database.PostgreSQL.Migration
+{-# LANGUAGE OverloadedStrings #-}
+import Database.PostgreSQL.Migrations
 import Database.PostgreSQL.Simple
 
-up :: Migration
-up conn = do
-  execute_ conn $
-    add_column "posts" "posted_at timestamp NOT NULL DEFAULT now()"
-  return ()
+up = migrate $
+  add_column "posts" "posted_at" "timestamptz NOT NULL DEFAULT now()"
 
-down :: Migration
-down conn = do
-  execute_ conn $ drop_column "posts" "posted_at"
-  return ()
+down = migrate $
+  drop_column "posts" "posted_at"
 
 main :: IO ()
 main = defaultMain up down

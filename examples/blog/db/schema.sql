@@ -66,7 +66,7 @@ ALTER SEQUENCE posts_id_seq OWNED BY posts.id;
 
 
 CREATE TABLE schema_migrations (
-    version character varying(255)
+    version character varying(28)
 );
 
 
@@ -86,11 +86,6 @@ ALTER TABLE ONLY comments
 
 ALTER TABLE ONLY posts
     ADD CONSTRAINT posts_pkey PRIMARY KEY (id);
-
-
-
-ALTER TABLE ONLY schema_migrations
-    ADD CONSTRAINT schema_migrations_version_key UNIQUE (version);
 
 
 

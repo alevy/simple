@@ -1,19 +1,17 @@
-import Database.PostgreSQL.Migration
+{-# LANGUAGE OverloadedStrings #-}
+import Database.PostgreSQL.Migrations
 import Database.PostgreSQL.Simple
 
-up :: Migration
-up conn = do
-  execute_ conn $
-    create_table "posts" $
-      [ "id  serial PRIMARY KEY"
-      , "title varchar(255)"
-      , "body text" ]
-  return ()
+up :: Connection -> IO ()
+up = migrate $
+  create_table "posts" $
+    [ column "id" "serial PRIMARY KEY"
+    , column "title" "varchar(255)"
+    , column "body" "text" ]
 
-down :: Migration
-down conn = do
-  execute_ conn $ drop_table "posts"
-  return ()
+down :: Connection -> IO ()
+down = migrate $
+  drop_table "posts"
 
 main :: IO ()
 main = defaultMain up down

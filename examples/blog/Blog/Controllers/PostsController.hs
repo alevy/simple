@@ -32,17 +32,16 @@ import Network.Wai
 postsController as = rest $ do
   
   index $ withConnection as $ \conn -> do
-    mpage <- queryParam "offset"
+    mpage <- readQueryParam "offset"
     let page = maybe 0 id mpage
     posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
-    throw $ ValidationError []
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
 
   show $ do
     withConnection as $ \conn -> do
-      (Just pid) <- queryParam "id"
+      pid <- readQueryParam' "id"
       (Just post) <- liftIO $ findRow conn pid
       comments <- liftIO $ allComments conn post
       respond $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
@@ -53,12 +52,12 @@ postsAdminController as = rest $ do
     respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
 
   edit $ withConnection as $ \conn -> do
-    (Just pid) <- queryParam "id"
+    pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid
     respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post []
 
   update $ withConnection as $ \conn -> do
-    (Just pid) <- queryParam "id"
+    pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid
     (params, _) <- parseForm
     curTime <- liftIO $ getZonedTime
@@ -100,7 +99,7 @@ postsAdminController as = rest $ do
       Nothing -> redirectBack
 
   delete $ withConnection as $ \conn -> do
-    (Just pid) <- queryParam "id"
+    pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid :: Controller (Maybe P.Post)
     liftIO $ destroy conn post
     respond $ redirectTo "/posts"

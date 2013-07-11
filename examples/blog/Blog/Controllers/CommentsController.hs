@@ -26,7 +26,7 @@ lookupText k vals = fmap (T.pack . S8.unpack) $ lookup k vals
 
 commentsController as = do
   post "/" $ do
-    (Just pid) <- queryParam "post_id"
+    pid <- readQueryParam' "post_id"
     (params, _) <- parseForm
     let mcomment = do
           name <- lookupText "name" params
@@ -41,13 +41,13 @@ commentsController as = do
 
 commentsAdminController as = do
   get "/" $ withConnection as $ \conn -> do
-    (Just pid) <- queryParam "post_id"
+    pid <- readQueryParam' "post_id"
     (Just post) <- liftIO $ findRow conn pid
     comments <- liftIO $ allComments conn post
     respond $ okHtml $ renderHtml $ adminTemplate $ listComments post comments
     
   delete ":id" $ withConnection as $ \conn -> do
-    (Just cid) <- queryParam "id"
+    cid <- readQueryParam' "id"
     (Just comment) <- liftIO $ (findRow conn cid :: IO (Maybe C.Comment))
     liftIO $ destroy conn comment
     redirectBack
