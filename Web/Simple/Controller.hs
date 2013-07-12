@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
 
 {- | 'Controller' provides a convenient syntax for writting 'Application'
-  code as a Monadic action with access to an HTTP request, rather than a
-  function that takes the request as an argument. This module also defines some
+  code as a Monadic action with access to an HTTP request as well as app
+  specific data (e.g. a database connection pool, app configuration etc.)
+  This module also defines some
   helper functions that leverage this feature. For example, 'redirectBack'
   reads the underlying request to extract the referer and returns a redirect
   response:
@@ -24,12 +24,9 @@ module Web.Simple.Controller
   -- * Example
   -- $Example
   -- * Controller Monad
-    Controller(..)
-  , fromApp
-  , controllerApp
-  , appState
-  , runControllerIO
-  , request, respond, localRequest
+    Controller(..), runController, runControllerIO
+  , controllerApp, controllerState
+  , request, localRequest, respond
   -- * Common Routes
   , routeHost, routeTop, routeMethod
   , routePattern, routeName, routeVar
@@ -46,6 +43,7 @@ module Web.Simple.Controller
   , module Control.Exception.Peel
   -- * Integrating other WAI components
   , ToApplication(..)
+  , fromApp
   -- * Low-level utilities
   , body
   -- , guard, guardM, guardReq
@@ -53,9 +51,9 @@ module Web.Simple.Controller
 
 import           Control.Applicative
 import           Control.Exception.Peel
+import           Control.Monad hiding (guard)
+import           Control.Monad.IO.Class
 import           Control.Monad.IO.Peel
-import           Control.Monad.Reader hiding (guard)
-import           Control.Monad.Trans.Either
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -71,31 +69,71 @@ import           Network.Wai
 import           Network.Wai.Parse
 import           Web.Simple.Responses
 
--- | A controller that embeds an application-supplied value, which may
--- be extracted with 'controllerRValue'.
+-- | The Controller Monad is both a Reader-like monad which, when run, computes
+-- either a 'Response' or a result. Within the Controller Monad, the remainder
+-- of the computation can be short-circuited by 'respond'ing with a 'Response'.
 newtype Controller r a =
-  Controller (EitherT Response (ReaderT (r,Request) (ResourceT IO)) a)
-  deriving (Functor, Applicative, Monad, MonadIO, MonadReader (r,Request))
+  Controller ((r,Request) -> ResourceT IO (Either Response a))
+
+instance Functor (Controller r) where
+  fmap f (Controller act) = Controller $ \st -> do
+    eaf <- act st
+    case eaf of
+      Left resp -> return $ Left resp
+      Right result -> return $ Right $ f result
+
+instance Applicative (Controller r) where
+  pure a = Controller $ \_ -> return $ Right a
+  (Controller fn) <*> (Controller act) =
+    Controller $ \st -> do
+      eact <- act st
+      case eact of
+        Left resp -> return $ Left resp
+        Right result -> do
+          ef <- fn st
+          either (return . Left) (\f -> return . Right $ f result) ef
+
+instance Monad (Controller r) where
+  return = pure
+  (Controller act) >>= fn = Controller $ \st -> do
+    eres <- act st
+    case eres of
+      Left resp -> return $ Left resp
+      Right result -> do
+        let (Controller fres) = fn result
+        fres st
+
+instance MonadIO (Controller r) where
+  liftIO act = Controller $ \_ -> fmap Right $ liftIO act
+
+hoistEither :: Either Response a -> Controller r a
+hoistEither eith = Controller $ \_ -> return eith
 
 instance MonadPeelIO (Controller r) where
   peelIO = do
-    r <- appState
+    r <- controllerState
     req <- request
     return $ \ctrl -> do
       res <- runControllerIO ctrl r req
-      return $ Controller $ hoistEither res
+      return $ hoistEither res
+
+ask :: Controller r (r, Request)
+ask = Controller $ \rd -> return (Right rd)
 
 -- | Extract the request
 request :: Controller r Request
 request = liftM snd ask
+
+local :: ((r, Request) -> (r, Request)) -> Controller r a -> Controller r a
+local f (Controller act) = Controller $ \st -> act (f st)
 
 -- | Modify the request for the given computation
 localRequest :: (Request -> Request) -> Controller r a -> Controller r a
 localRequest f = local (\(r,req) -> (r, f req))
 
 -- | Extract the application-specific state
-appState :: Controller r r 
-appState = liftM fst ask
+controllerState :: Controller r r 
+controllerState = liftM fst ask
 
 -- | Convert the controller into an 'Application'
 controllerApp :: r -> Controller r a -> Application
@@ -104,7 +142,7 @@ controllerApp r ctrl req =
     either return (const $ return notFound) 
 
 runController :: Controller r a -> r -> Request -> ResourceT IO (Either Response a)
-runController (Controller m) r req = runReaderT (runEitherT m) (r,req)
+runController (Controller fun) r req = fun (r,req)
 
 -- | Run a 'Controller' in the @IO@ monad
 runControllerIO :: Controller r a -> r -> Request -> IO (Either Response a)
@@ -115,13 +153,13 @@ runControllerIO ctrl r = runResourceT . runController ctrl r
 -- @pass >> c === c@
 -- @c >> pass === c@
 pass :: Controller r ()
-pass = Controller $ right ()
+pass = Controller $ \_ -> return (Right ())
 
 -- | Provide a response
 --
 -- @respond r >>= f === respond r@
 respond :: Response -> Controller r a
-respond = Controller . left
+respond resp = Controller $ \_ -> return $ Left resp
 
 
 -- | Lift an application to a controller

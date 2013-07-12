@@ -26,7 +26,7 @@ createConnection mconnectStr = do
 
 withConnection :: (Connection -> Controller AppSettings b) -> Controller AppSettings b
 withConnection func = do
-  dbvar <- appDB `fmap` appState
+  dbvar <- appDB `fmap` controllerState
   bracket (liftIO $ takeMVar dbvar) (liftIO . (putMVar dbvar)) $ \conn -> do
     res <- func conn
     return res

@@ -55,7 +55,6 @@ library
     , base64-bytestring
     , conduit
     , directory
-    , either
     , filepath
     , hashtables
     , wai
@@ -64,7 +63,6 @@ library
     , text
     , transformers
     , bytestring
-    , mtl
     , monad-peel
 
   ghc-options: -Wall -fno-warn-unused-do-bind

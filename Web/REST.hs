@@ -7,8 +7,9 @@ module Web.REST
 
 import Prelude hiding (show)
 
+import Control.Monad
 import Control.Monad.Trans.State
-import Control.Monad.Identity
+import Data.Functor.Identity
 import Web.Simple.Responses
 import Web.Simple.Controller
 import Network.HTTP.Types
