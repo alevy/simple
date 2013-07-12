@@ -2,6 +2,7 @@
 module Common where
 
 import Control.Concurrent.MVar
+import Control.Exception.Peel
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import Database.PostgreSQL.Simple
@@ -23,11 +24,10 @@ createConnection mconnectStr = do
     Just str -> return str
   connectPostgreSQL dbUrl
 
-withConnection :: AppSettings
-               -> (Connection -> Controller b) -> Controller b
-withConnection settings func = do
-  let dbvar = (appDB settings)
-  conn <- liftIO $ takeMVar dbvar
-  res <- ensure (liftIO $ putMVar dbvar conn) $ func conn
-  return res
+withConnection :: (Connection -> Controller AppSettings b) -> Controller AppSettings b
+withConnection func = do
+  dbvar <- appDB `fmap` appState
+  bracket (liftIO $ takeMVar dbvar) (liftIO . (putMVar dbvar)) $ \conn -> do
+    res <- func conn
+    return res
 

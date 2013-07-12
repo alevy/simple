@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 module Web.REST
-  ( REST(..), RESTController, rest
+  ( REST(..), RESTController, rest, routeREST
   , index, show, create, update, delete
   , edit, new
   ) where
@@ -12,86 +12,75 @@ import Control.Monad.Identity
 import Web.Simple.Responses
 import Web.Simple.Controller
 import Network.HTTP.Types
-import Network.Wai (Application)
 
-data REST = REST
-  { restIndex   :: Application
-  , restShow    :: Application
-  , restCreate  :: Application
-  , restUpdate  :: Application
-  , restDelete  :: Application
-  , restEdit    :: Application
-  , restNew     :: Application
+data REST r = REST
+  { restIndex   :: Controller r ()
+  , restShow    :: Controller r ()
+  , restCreate  :: Controller r ()
+  , restUpdate  :: Controller r ()
+  , restDelete  :: Controller r ()
+  , restEdit    :: Controller r ()
+  , restNew     :: Controller r ()
   }
 
-defaultREST :: REST
+defaultREST :: REST r
 defaultREST = REST
-  { restIndex   = toApp $ notFound
-  , restShow    = toApp $ notFound
-  , restCreate  = toApp $ notFound
-  , restUpdate  = toApp $ notFound
-  , restDelete  = toApp $ notFound
-  , restEdit    = toApp $ notFound
-  , restNew     = toApp $ notFound
+  { restIndex   = respond $ notFound
+  , restShow    = respond $ notFound
+  , restCreate  = respond $ notFound
+  , restUpdate  = respond $ notFound
+  , restDelete  = respond $ notFound
+  , restEdit    = respond $ notFound
+  , restNew     = respond $ notFound
   }
 
-type RESTControllerM a = StateT REST Identity a
+type RESTControllerM r a = StateT (REST r) Identity a
 
-{- instance Routeable (RESTControllerM a) where
-  runRoute controller = rt
-    where rt req = do
-            let (_, st) = runIdentity $ runStateT controller defaultREST
-            runRoute st req
--}
-
-rest :: RESTControllerM a -> REST
+rest :: RESTControllerM r a -> REST r
 rest rcontroller = snd . runIdentity $ runStateT rcontroller defaultREST
 
-instance ToApplication REST where
-  toApp rst = controllerApp $ do
-    routeMethod GET $ do
-      routeTop . fromApp $ restIndex rst
-      routeName "new" . fromApp $ restNew rst
-      routeVar "id" $ do
-        routeTop . fromApp $ restShow rst
-        routeName "edit" . fromApp $ restEdit rst
+routeREST :: REST r -> Controller r ()
+routeREST rst = do
+  routeMethod GET $ do
+    routeTop $ restIndex rst
+    routeName "new" $ restNew rst
+    routeVar "id" $ do
+      routeTop $ restShow rst
+      routeName "edit" $ restEdit rst
 
-    routeMethod POST $ routeTop . fromApp $ restCreate rst
+  routeMethod POST $ routeTop $ restCreate rst
 
-    routeMethod DELETE $ routeVar "id" . fromApp $ restDelete rst
+  routeMethod DELETE $ routeVar "id" $ restDelete rst
 
-    routeMethod PUT $ routeVar "id" . fromApp $ restUpdate rst
+  routeMethod PUT $ routeVar "id" $ restUpdate rst
 
-instance ToApplication (RESTControllerM a) where
-  toApp = toApp . rest
+type RESTController r = RESTControllerM r ()
 
-type RESTController = RESTControllerM ()
-
-index :: ToApplication r => r -> RESTController
+index :: Controller r a -> RESTController r
 index route = modify $ \controller ->
-  controller { restIndex = toApp route }
+  controller { restIndex = void route }
 
-create :: ToApplication r => r -> RESTController
+create :: Controller r a -> RESTController r
 create route = modify $ \controller ->
-  controller { restCreate = toApp route }
+  controller { restCreate = void route }
 
-edit :: ToApplication r => r -> RESTController
+edit :: Controller r a -> RESTController r
 edit route = modify $ \controller ->
-  controller { restEdit = toApp route }
+  controller { restEdit = void route }
 
-new :: ToApplication r => r -> RESTController
+new :: Controller r a -> RESTController r
 new route = modify $ \controller ->
-  controller { restNew = toApp route }
+  controller { restNew = void route }
 
-show :: ToApplication r => r -> RESTController
+show :: Controller r a -> RESTController r
 show route = modify $ \controller ->
-  controller { restShow = toApp route }
+  controller { restShow = void route }
 
-update :: ToApplication r => r -> RESTController
+update :: Controller r a -> RESTController r
 update route = modify $ \controller ->
-  controller { restUpdate = toApp route }
+  controller { restUpdate = void route }
 
-delete :: ToApplication r => r -> RESTController
+delete :: Controller r a -> RESTController r
 delete route = modify $ \controller ->
-  controller { restDelete = toApp route }
+  controller { restDelete = void route }
 

@@ -24,7 +24,7 @@ import Blog.Views.Comments
 lookupText :: S8.ByteString -> [(S8.ByteString, S8.ByteString)] -> Maybe T.Text
 lookupText k vals = fmap (T.pack . S8.unpack) $ lookup k vals
 
-commentsController as = do
+commentsController = do
   post "/" $ do
     pid <- readQueryParam' "post_id"
     (params, _) <- parseForm
@@ -34,19 +34,19 @@ commentsController as = do
           comment <- lookupText "comment" params
           return $ C.Comment NullKey name email comment pid
     case mcomment of
-      Just comment -> withConnection as $ \conn -> do
+      Just comment -> withConnection $ \conn -> do
         (Just post) <- liftIO $ findRow conn pid
         liftIO $ save conn comment
     redirectBack
 
-commentsAdminController as = do
-  get "/" $ withConnection as $ \conn -> do
+commentsAdminController = do
+  get "/" $ withConnection $ \conn -> do
     pid <- readQueryParam' "post_id"
     (Just post) <- liftIO $ findRow conn pid
     comments <- liftIO $ allComments conn post
     respond $ okHtml $ renderHtml $ adminTemplate $ listComments post comments
     
-  delete ":id" $ withConnection as $ \conn -> do
+  delete ":id" $ withConnection $ \conn -> do
     cid <- readQueryParam' "id"
     (Just comment) <- liftIO $ (findRow conn cid :: IO (Maybe C.Comment))
     liftIO $ destroy conn comment

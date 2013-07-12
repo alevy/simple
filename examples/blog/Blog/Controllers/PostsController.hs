@@ -6,7 +6,6 @@ import qualified Prelude
 
 import Common
 
-import Control.Exception
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as S8
@@ -29,9 +28,9 @@ import Blog.Templates
 
 import Network.Wai
 
-postsController as = rest $ do
+postsController = rest $ do
   
-  index $ withConnection as $ \conn -> do
+  index $ withConnection $ \conn -> do
     mpage <- readQueryParam "offset"
     let page = maybe 0 id mpage
     posts <- liftIO $ dbSelect conn $ setLimit 10
@@ -40,23 +39,23 @@ postsController as = rest $ do
     respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
 
   show $ do
-    withConnection as $ \conn -> do
+    withConnection $ \conn -> do
       pid <- readQueryParam' "id"
       (Just post) <- liftIO $ findRow conn pid
       comments <- liftIO $ allComments conn post
       respond $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
 
-postsAdminController as = rest $ do
-  index $ withConnection as $ \conn -> do
+postsAdminController = rest $ do
+  index $ withConnection $ \conn -> do
     posts <- liftIO $ findAll conn
     respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
 
-  edit $ withConnection as $ \conn -> do
+  edit $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid
     respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post []
 
-  update $ withConnection as $ \conn -> do
+  update $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid
     (params, _) <- parseForm
@@ -79,7 +78,7 @@ postsAdminController as = rest $ do
   new $ do
     respond $ okHtml $ renderHtml $ adminTemplate $ V.new []
 
-  create $ withConnection as $ \conn -> do
+  create $ withConnection $ \conn -> do
     (params, _) <- parseForm
     curTime <- liftIO $ getZonedTime
     let mpost = do
@@ -98,9 +97,9 @@ postsAdminController as = rest $ do
         respond $ redirectTo "/posts/"
       Nothing -> redirectBack
 
-  delete $ withConnection as $ \conn -> do
+  delete $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
-    (Just post) <- liftIO $ findRow conn pid :: Controller (Maybe P.Post)
+    (Just post) <- liftIO $ findRow conn pid :: Controller AppSettings (Maybe P.Post)
     liftIO $ destroy conn post
     respond $ redirectTo "/posts"
 

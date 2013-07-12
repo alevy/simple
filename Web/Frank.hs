@@ -30,29 +30,29 @@ module Web.Frank
   ) where
 
 import Network.HTTP.Types
-import Web.Simple.ControllerM
+import Web.Simple.Controller
 import qualified Data.ByteString as S
 
 -- | Helper method
-frankMethod :: (ControllerM m) => StdMethod -> S.ByteString -> m a -> m ()
+frankMethod :: StdMethod -> S.ByteString -> Controller r a -> Controller r ()
 frankMethod method pattern = routeMethod method . routePattern pattern . routeTop
 
 -- | Matches the GET method on the given URL pattern
-get :: (ControllerM m) => S.ByteString -> m a -> m ()
+get :: S.ByteString -> Controller r a -> Controller r ()
 get = frankMethod GET
 
 -- | Matches the POST method on the given URL pattern
-post :: (ControllerM m) => S.ByteString -> m a -> m ()
+post :: S.ByteString -> Controller r a -> Controller r ()
 post = frankMethod POST
 
 -- | Matches the PUT method on the given URL pattern
-put :: (ControllerM m) => S.ByteString -> m a -> m ()
+put :: S.ByteString -> Controller r a -> Controller r ()
 put = frankMethod PUT
 
 -- | Matches the DELETE method on the given URL pattern
-delete :: (ControllerM m) => S.ByteString -> m a -> m ()
+delete :: S.ByteString -> Controller r a -> Controller r ()
 delete = frankMethod DELETE
 
 -- | Matches the OPTIONS method on the given URL pattern
-options :: (ControllerM m) => S.ByteString -> m a -> m ()
+options :: S.ByteString -> Controller r a -> Controller r ()
 options = frankMethod OPTIONS

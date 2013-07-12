@@ -21,6 +21,7 @@ executable blog
     directory,
     filepath,
     gravatar,
+    monad-peel,
     simple >= 0.4.1,
     wai,
     wai-middleware-static,

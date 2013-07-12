@@ -11,15 +11,15 @@ import Web.Simple.Controller
 
 -- | An 'AuthRouter' authenticates a 'Request' and, if successful, forwards the
 -- 'Request' to the 'Routeable'.
-type AuthRouter a = (Request -> S8.ByteString
+type AuthRouter r a = (Request -> S8.ByteString
                               -> S8.ByteString
                               -> IO (Maybe Request))
-                  -> Controller a
-                  -> Controller a
+                  -> Controller r a
+                  -> Controller r a
 
 -- | An 'AuthRouter' that uses HTTP basic authentication to authenticate a request
 -- in a particular realm.
-basicAuthRoute :: String -> AuthRouter a
+basicAuthRoute :: String -> AuthRouter r a
 basicAuthRoute realm testAuth next = do
   req <- request
   didAuthenticate <-
@@ -40,10 +40,10 @@ basicAuthRoute realm testAuth next = do
 -- just takes a username and password, and returns 'True' or 'False'). It also
 -- adds an \"X-User\" header to the 'Request' with the authenticated user\'s
 -- name (the first argument to the authentication function).
-authRewriteReq :: AuthRouter a
+authRewriteReq :: AuthRouter r a
                     -> (S8.ByteString -> S8.ByteString -> IO Bool)
-                    -> Controller a
-                    -> Controller a
+                    -> Controller r a
+                    -> Controller r a
 authRewriteReq authRouter testAuth rt =
   authRouter (\req user pwd -> do
     success <- testAuth user pwd
@@ -61,7 +61,7 @@ basicAuth :: String
           -- ^ Username
           -> S8.ByteString
           -- ^ Password
-          -> Controller a -> Controller a
+          -> Controller r a -> Controller r a
 basicAuth realm user pwd = authRewriteReq (basicAuthRoute realm)
   (\u p -> return $ u == user && p == pwd)
 
