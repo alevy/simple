@@ -1,5 +1,8 @@
-{-# LANGUAGE DeriveDataTypeable #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
+
+-- | The `smpl` utility for helping a user setup a Simple web project.
+module Main (main) where
+
 import Prelude hiding (writeFile, FilePath)
 import qualified Data.ByteString.Char8 as S8
 import Network.Wai.Handler.DevelServer (runQuit)

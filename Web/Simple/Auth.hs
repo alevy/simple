@@ -1,5 +1,10 @@
-{-# LANGUAGE OverloadedStrings, Rank2Types #-}
-module Web.Simple.Auth where
+{-# LANGUAGE OverloadedStrings #-}
+
+-- | Provides HTTP Basic Authentication.
+module Web.Simple.Auth
+  ( AuthRouter
+  , basicAuthRoute, basicAuth, authRewriteReq
+  ) where
 
 import Control.Monad.IO.Class (liftIO)
 import Data.ByteString.Base64

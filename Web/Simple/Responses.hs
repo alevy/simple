@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 -- | This module defines some convenience functions for creating responses.
 module Web.Simple.Responses
   ( ok, okHtml, okJson
