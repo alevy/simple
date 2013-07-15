@@ -25,7 +25,7 @@ module Web.Simple.Controller
   -- $Example
   -- * Controller Monad
     Controller(..), runController, runControllerIO
-  , controllerApp, controllerState
+  , controllerApp, controllerState, localState
   , request, localRequest, respond
   -- * Common Routes
   , routeHost, routeTop, routeMethod
@@ -134,6 +134,10 @@ localRequest f = local (\(r,req) -> (r, f req))
 -- | Extract the application-specific state
 controllerState :: Controller r r 
 controllerState = liftM fst ask
+
+-- | Modify the application state for the given computation
+localState :: (r -> r) -> Controller r a -> Controller r a
+localState f = local (\(r,req) -> (f r, req))
 
 -- | Convert the controller into an 'Application'
 controllerApp :: r -> Controller r a -> Application
