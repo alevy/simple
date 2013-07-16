@@ -6,9 +6,10 @@ module Web.Simple.Auth
   , basicAuthRoute, basicAuth, authRewriteReq
   ) where
 
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad
 import Data.ByteString.Base64
 import qualified Data.ByteString.Char8 as S8
+import Data.Maybe
 import Network.HTTP.Types
 import Network.Wai
 import Web.Simple.Responses
@@ -17,8 +18,8 @@ import Web.Simple.Controller
 -- | An 'AuthRouter' authenticates a 'Request' and, if successful, forwards the
 -- 'Request' to the 'Routeable'.
 type AuthRouter r a = (Request -> S8.ByteString
-                              -> S8.ByteString
-                              -> IO (Maybe Request))
+                               -> S8.ByteString
+                               -> Controller r (Maybe Request))
                   -> Controller r a
                   -> Controller r a
 
@@ -27,26 +28,22 @@ type AuthRouter r a = (Request -> S8.ByteString
 basicAuthRoute :: String -> AuthRouter r a
 basicAuthRoute realm testAuth next = do
   req <- request
-  didAuthenticate <-
-    case lookup hAuthorization (requestHeaders req) of
-      Nothing -> return Nothing
-      Just authStr
-              | S8.take 5 authStr /= "Basic" -> return Nothing
-              | otherwise -> do
-                    let up = fmap (S8.split ':') $ decode $ S8.drop 6 authStr
-                    case up of
-                      Right (user:pwd:[]) -> liftIO $ testAuth req user pwd
-                      _ -> return Nothing
-  case didAuthenticate of
-    Nothing -> respond $ requireBasicAuth realm
-    Just finReq -> localRequest (const finReq) next
+  let authStr = fromMaybe "" $ lookup hAuthorization (requestHeaders req)
+  when (S8.take 5 authStr /= "Basic") requireAuth
+
+  case fmap (S8.split ':') $ decode $ S8.drop 6 authStr of
+    Right (user:pwd:[]) -> do
+      mfin <- testAuth req user pwd
+      maybe requireAuth (\finReq -> localRequest (const finReq) next) mfin
+    _ -> requireAuth
+  where requireAuth = respond $ requireBasicAuth realm
 
 -- | Wraps an 'AuthRouter' to take a simpler authentication function (that just
 -- just takes a username and password, and returns 'True' or 'False'). It also
 -- adds an \"X-User\" header to the 'Request' with the authenticated user\'s
 -- name (the first argument to the authentication function).
 authRewriteReq :: AuthRouter r a
-                    -> (S8.ByteString -> S8.ByteString -> IO Bool)
+                    -> (S8.ByteString -> S8.ByteString -> Controller r Bool)
                     -> Controller r a
                     -> Controller r a
 authRewriteReq authRouter testAuth rt =
@@ -55,7 +52,8 @@ authRewriteReq authRouter testAuth rt =
     if success then
       return $ Just $ transReq req user
       else return Nothing) rt
-  where transReq req user = req { requestHeaders = ("X-User", user):(requestHeaders req)}
+  where transReq req user = req
+          { requestHeaders = ("X-User", user):(requestHeaders req)}
 
 -- | A 'Route' that uses HTTP basic authentication to authenticate a request for a realm
 -- with the given username ans password. The request is rewritten with an 'X-User' header
