@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simple
-version:             0.4.2
+version:             0.5.0
 synopsis: A minimalist web framework for the WAI server interface
 description:
 

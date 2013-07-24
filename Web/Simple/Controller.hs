@@ -202,7 +202,7 @@ routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
   in foldr mkRoute (route >> return ()) patternParts
   where mkRoute (':':varName) = routeVar (S8.pack varName)
-        mkRoute varName = routeName (S8.pack varName)
+        mkRoute name = routeName (S8.pack name)
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
 routeName :: S.ByteString -> Controller r a -> Controller r ()
@@ -219,9 +219,10 @@ routeName name next = do
 routeVar :: S.ByteString -> Controller r a -> Controller r ()
 routeVar varName next = do
   req <- request
-  if (length $ pathInfo req) > 0
-    then localRequest popHdr next >> return ()
-    else pass
+  case pathInfo req of
+    [] -> pass
+    x:_ | T.null x -> pass
+        | otherwise -> localRequest popHdr next >> return ()
   where popHdr req = req {
               pathInfo = (tail . pathInfo $ req)
             , queryString = (varName, Just (varVal req)):(queryString req)}
