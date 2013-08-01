@@ -25,10 +25,10 @@ module Web.Simple.Controller
   -- $Example
   -- * Controller Monad
     Controller(..), runController, runControllerIO
-  , controllerApp, controllerState
+  , controllerApp, controllerState, localState
   , request, localRequest, respond
   -- * Common Routes
-  , routeHost, routeTop, routeMethod
+  , routeHost, routeTop, routeMethod, routeAccept
   , routePattern, routeName, routeVar
   -- * Inspecting query
   , Parseable
@@ -59,6 +59,7 @@ import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Conduit
 import qualified Data.Conduit.List as CL
+import           Data.List (find)
 import           Data.Maybe
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -135,6 +136,10 @@ localRequest f = local (\(r,req) -> (r, f req))
 controllerState :: Controller r r 
 controllerState = liftM fst ask
 
+-- | Modify the application state for the given computation
+localState :: (r -> r) -> Controller r a -> Controller r a
+localState f = local (\(r,req) -> (f r, req))
+
 -- | Convert the controller into an 'Application'
 controllerApp :: r -> Controller r a -> Application
 controllerApp r ctrl req =
@@ -186,6 +191,11 @@ routeTop = guardReq $ \req -> null (pathInfo req) ||
 -- | Matches on the HTTP request method (e.g. 'GET', 'POST', 'PUT')
 routeMethod :: StdMethod -> Controller r a -> Controller r ()
 routeMethod method = guardReq $ (renderStdMethod method ==) . requestMethod
+
+-- | Matches if the request's Content-Type exactly matches the given string
+routeAccept :: S8.ByteString -> Controller r a -> Controller r ()
+routeAccept contentType = guardReq (isJust . find matching . requestHeaders)
+ where matching hdr = fst hdr == hAccept && snd hdr == contentType
 
 -- | Routes the given URL pattern. Patterns can include
 -- directories as well as variable patterns (prefixed with @:@) to be added
