@@ -169,10 +169,7 @@ respond resp = Controller $ \_ -> return $ Left resp
 
 -- | Lift an application to a controller
 fromApp :: ToApplication a => a -> Controller r ()
-fromApp app = do
-  req <- request 
-  resp <- liftIO $ runResourceT $ (toApp app) req
-  respond resp
+fromApp app = Controller (\(_, req) -> Left `fmap` ((toApp app) req))
 
 -- | Matches on the hostname from the 'Request'. The route only succeeds on
 -- exact matches.
@@ -332,13 +329,13 @@ readParamValue varName =
 --       Nothing -> redirectBack
 -- @
 parseForm :: Controller r ([Param], [(S.ByteString, FileInfo FilePath)])
-parseForm = request >>= liftIO . runResourceT . parseRequestBody tempFileBackEnd
+parseForm = Controller $ \(_, req) -> do
+  Right `fmap` parseRequestBody tempFileBackEnd req
 
 -- | Reads and returns the body of the HTTP request.
 body :: Controller r L8.ByteString
-body = do
-  bd <- liftM requestBody request
-  liftIO $ runResourceT $ bd $$ (CL.consume >>= return . L8.fromChunks)
+body = Controller $ \(_, req) -> do
+  Right `fmap` (requestBody req $$ CL.consume >>= return . L8.fromChunks)
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
