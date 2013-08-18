@@ -1,0 +1,18 @@
+name:                {{pkgname}}
+version:             0.0.0.0
+--author:              YOUR NAME
+--maintainer:          your@email.com
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.8
+
+executable {{pkgname}}
+  main-is: Main.hs
+  ghc-options: -threaded -O2
+  build-depends:
+    base
+    , simple >= 0.5.0
+    , unix
+    , wai
+    , warp
+

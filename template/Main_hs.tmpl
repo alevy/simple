@@ -1,0 +1,17 @@
+{-# LANGUAGE OverloadedStrings #-}
+module Main where
+import Web.Simple
+import Network.Wai.Handler.Warp
+import System.Posix.Env
+
+app runner = do
+  -- TODO: App initialization code goes here
+  runner $ controllerApp () $ do
+    -- TODO: routes go here
+    respond $ okHtml "Hello World"
+
+main :: IO ()
+main = do
+  port <- read `fmap` getEnvDefault "PORT" "3000"
+  app (run port)
+
