@@ -120,9 +120,8 @@ server. To create a new /Simple/ app in a directory called \"example_app\", run:
   $ smpl create example_app
 @
 
-This will create a directory called \"example_app\" with an empty subdirectory
-called \"migrate\" (more on that later) and a single Haskell source file,
-\"Main.hs\":
+This will create a directory called \"example_app\" containing a /.cabal/ file
+and and a single Haskell source file, \"Main.hs\":
 
 @
 \{\-\# LANGUAGE OverloadedStrings #\-\}
@@ -130,8 +129,19 @@ called \"migrate\" (more on that later) and a single Haskell source file,
 module Main where
 
 import Web.Simple
+import Network.Wai.Handler.Warp
+import System.Posix.Env
 
-app runner = runner $ controllerApp () $ okHtml \"Hello World\"
+app :: (Application -> IO ()) -> IO ()
+app runner = runner $ do
+  -- TODO: App initialization code here
+  controllerApp () $ do
+    respond $ okHtml \"Hello World\"
+
+main :: IO ()
+main = do
+  port <- read \`fmap\` getEnvDefault \"PORT\" \"3000\"
+  app (run port)
 @
 
 The `app` function is the entry point to your application. The argument is a
@@ -152,6 +162,49 @@ Pointing your browser to <http://localhost:3000> should display
 
 {- $Controllers
 #controllers#
+
+What is this 'controllerApp' business? The basic type in /Simple/ is a
+'Controller' which contains both a 'Request' and app specific state.
+'controllerApp' takes an initial application state (/unit/ in the example above)
+and transforms a 'Controller' into a WAI 'Application' so it can be run by a
+server like warp.
+
+A 'Controller' is a 'Monad' that can perform actions in 'IO' (using 'liftIO'),
+access the underlying 'request' or application state (via 'controllerState').
+Finally, a 'Controller' can 'respond' to a request. 'respond' short-circuits
+the rest of the computation and returns the 'Response' to the client.
+'controllerApp' transforms a 'Controller' into a WAI application by running the
+'Controller'. If the 'Controller' does not call 'respond', 'controllerApp'
+defaults to responding to the client with a 404 not found. For example:
+
+@
+controllerApp () $ do
+  liftIO $ putStrLn \"Responding to request\"
+  respond $ okHtml \"Hello World\"
+  liftIO $ putStrLn \"This message is never actually printed\"
+@
+
+When run, this code will always print the first message
+(\"Responding to request\") and respond with a 200 page containing \"Hello
+World\", but never print the second message. Short-circuiting the computation
+in this way allows us to respond in different ways based on the request:
+
+@
+controllerApp () $ do
+  path \<- rawPathInfo \<$> request
+  when (path == \"/timeofday\") $ do
+    timeStr \<- liftIO $ S8.pack . show \<$> getClockTime
+    respond $ okHtml timeStr
+  when (path == \"/whoami\") $
+    user \<- liftIO $ S8.pack \<$> getLoginName
+    respond $ okHtml user
+@
+
+This controller will respond with the current time if the path \"/timeofday\"
+is requested, and the user running the server if the path \"/whoami\" is
+requested. If neither of those paths match, it will respond with a 404
+(NOT FOUND).
+
  -}
 
 {- $Routing
@@ -168,11 +221,11 @@ or some monadic value.
 For example, let\'s extend the example using the 'Monad' syntax:
 
 @
-app runner = runner $ mkRouter $ do
-                routeTop $ do
-                  routeHost \"localhost\" $ okHtml \"Hello, localhost!\"
-                  routeHost \"test.lvh.me\" $ okHtml \"Hello, test.lvh.me!\"
-                routeName \"advice\" $ okHtml \"Be excellent to each other!\"
+controllerApp () $ do
+  routeTop $ do
+    routeHost \"localhost\" $ respond $ okHtml \"Hello, localhost!\"
+    routeHost \"test.lvh.me\" $ respond $ okHtml \"Hello, test.lvh.me!\"
+  routeName \"advice\" $ okHtml \"Be excellent to each other!\"
 @
 
 Now, the app will respond differently depending on whether the client is
