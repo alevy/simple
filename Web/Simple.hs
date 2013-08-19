@@ -21,17 +21,11 @@ module Web.Simple (
   -- * Tutorial
   -- $Tutorial
 
-  -- ** Routing
-  -- $Routing
-
-  -- ** Responses
-  -- $Responses
-
   -- ** Controllers
   -- $Controllers
 
-  -- ** Migrations
-  -- $Migrations
+  -- ** Routing
+  -- $Routing
   ) where
 
 import Web.Simple.Responses
@@ -43,33 +37,34 @@ import Web.Simple.Controller
 WAI applications are functions of type 'Network.Wai.Application' - given a
 client 'Network.Wai.Request' they return a 'Network.Wai.Response' to return to
 the client (i.e. an HTTP status code, headers, body etc\'). A /Simple/
-application is composed of a set of 'Routeable's -- a typeclass similar to an
-'Network.Wai.Application' except it returns a 'Maybe' 'Network.Wai.Response'.
+application 'Controller' -- a wrapper around WAI\'s 'Network.Wai.Application'
+either returns a monadic value, or a 'Network.Wai.Response'. This allows
+'Controller's to be chained together to create arbitrary complex routes. If a
+'Controller' \"matches\" a route (e.g., based on the HTTP path, hostname,
+cookies etc), it can 'respond' which shortcircuits the remaining execution and
+immediately send the response back to the client. If none, of the 'Controller's
+match, an HTTP 404 (NOT FOUND) response will be returned.
 
-The simplest instance of 'Routeable' is a 'Network.Wai.Application' itself.
-This is a 'Routeable' that always succeeds. A 'Controller' is an 'Application',
-but it internalizes the 'Network.Wai.Request' argument in a
-'Control.Monad.Trans.ReaderT' and provides some convenience methods for
-accessing properties of the request (e.g. parsing form data). More
-interestingly, 'Route's can decide whether to respond to the 'Network.Wai.Request' dynamically, based on
-the contents of the 'Network.Wai.Request' or any external input (e.g. time of
-day, a database query etc\'). For example, 'routeHost' falls-through to it\'s
-second argument (another 'Routeable') if the \"Host\" header in the client\'s
-'Network.Wai.Request' matches the first argument:
+For example, this is a trivial \Simple\ app that notices whether the incoming
+request was for the hostname \"hackage.haskell.org\" or \"www.haskell.org\":
 
 @
-  routeHost \"hackage.haskell.org\" myHackageApp
+  routeHost \"hackage.haskell.org\" $ do
+    respond $ okHtml \"Welcome to Hackage\"
+
+  routeHost \"www.haskell.org\" $ do
+    respond $ okHtml \"You\'ve reached the Haskell Language home page\"
 @
 
-There are other 'Route's for matching based on the request path, the HTTP
-method, and it\'s easy to write other 'Route's. 'Route' is also an instance of
-'Monad' and 'Data.Monoid.Monoid' so they can be chained together to route
-requests in a single application to different controllers. If the first 'Route'
-fails, the next is tried until there are no more 'Route's. Thus, a /Simple/ app
-might look something like this:
+'routeHost' is a combinator that matches the a request based on the \"Host\"
+header and defers to the passed in 'Controller' or returns '()'. There are
+other built-in combinators for matching based on the request path, the HTTP
+method, and it\'s easy to write your own combinators. You can chain such
+combinators together monadically or using 'mappend' (since 'Controller' is an
+instance of 'Monoid'). A typical /Simple/ app looks something like this:
 
 @
-  mkRouter $ do
+  controllerApp () $ do
     routeTop $ do
       ... handle home page ...
     routeName \"posts\" $ do
@@ -79,17 +74,18 @@ might look something like this:
         ... create new post ...
 @
 
-where 'mkRouter' generates an 'Network.Wai.Application' from a 'Routeable'
+where 'controllerApp' generates an 'Network.Wai.Application' from a 'Controller'
 returning a 404 (not found) response if all routes fail.
 
-It\'s convenient to specialize sets of these 'Route's for some common patters.
-This package includes the "Web.Frank" module which provide an API to create
+This package also includes the "Web.Frank" module which provide an API to create
 applications similar to the Sinatra framework for Ruby, and the "Web.REST"
-module to create RESTful applications similar to Ruby on Rails. The example
-above could be rewritten using "Web.Frank" as such:
+module to create RESTful applications similar to Ruby on Rails. Neither of
+these modules is \"special\", in the sense that they are merely implemented in
+terms of 'Controller's. The example above could be rewritten using "Web.Frank"
+as such:
 
 @
-  mkRouter $ do
+  controllerApp () $ do
     get \"/\" $ do
       ... display home page ...
     get \"/posts\" $ do
@@ -98,17 +94,15 @@ above could be rewritten using "Web.Frank" as such:
       ... create new post ...
 @
 
-This package is broken down into the following modules:
+\Simple\ is broken down into the following modules:
 
 @
   Web
   |-- "Web.Simple" - Re-exports most common modules
-  |   |-- "Web.Simple.Router" - defines 'Routeable' and base 'Route's
-  |   |-- "Web.Simple.Controller" - Monad for writing controller bodies
+  |   |-- "Web.Simple.Controller" - Base monad and built-in routing combinators
   |   |-- "Web.Simple.Responses" - Common HTTP responses
-  |   |-- "Web.Simple.Auth" - 'Routeable's for authentication
+  |   |-- "Web.Simple.Auth" - 'Controller's for authentication
   |   |-- "Web.Simple.Cache" - in memory and filesystem cache utilities
-  |   +-- "Web.Simple.Migrations"
   |-- "Web.Frank" - Sinatra style 'Route's
   +-- "Web.REST" - Monad for creating RESTful controllers
 @
@@ -137,7 +131,7 @@ module Main where
 
 import Web.Simple
 
-app runner = runner $ mkRouter $ okHtml \"Hello World\"
+app runner = runner $ controllerApp () $ okHtml \"Hello World\"
 @
 
 The `app` function is the entry point to your application. The argument is a
@@ -156,6 +150,10 @@ Pointing your browser to <http://localhost:3000> should display
 \"Hello World\"!
 -}
 
+{- $Controllers
+#controllers#
+ -}
+
 {- $Routing
 #routing#
 
@@ -163,12 +161,9 @@ An app that does the same thing for every request is not very useful (well, it
 might be, but if it is, even /Simple/ is not simple enough for you). We want to
 build applications that do perform different actions based on properties of the
 client\'s request - e.g., the path requests, GET or POST requests, the \"Host\"
-header, etc\'. With /Simple/ we can accomplish this with 'Route's.
-'Route's are an instance of the 'Routeable' typeclass, and encapsulate a
-function from a 'Request' to a 'Maybe' 'Response'. If the request matches the
-'Route', it will fallthrough (usually to an underlying 'Routeable' like a
-'Controller' or another 'Route'). 'Route' is also an instance of 'Monad' and
-'Data.Monoid.Monoid' so you can easily chain and nest 'Route's.
+header, etc\'. /Simple/\'s 'Controller's are flexible to accomplish this.
+'Controller's encapsulate a function from a 'Request' to 'Either' a 'Response'
+or some monadic value.
 
 For example, let\'s extend the example using the 'Monad' syntax:
 
@@ -206,28 +201,3 @@ can easily implement your own patterns as well.
 
 -}
 
-{- $Responses
-#responses#
-
-You may have notice that our examples all included lines such as
-
-@
-  okHtml \"Some response body\"
-@
-
-'okHtml' is one of a few helper functions to construct HTTP responses.
-Specifically, it return a 'Network.Wai.Response' with status 200 (OK),
-conetent-type \"text\/html\" and the argument as the response body. The module
-"Web.Simple.Responses" contains other response helpers, such as 'notFound',
-'redirectTo', 'serverError', etc\'.
-
--}
-
-{- $Controllers
-#controllers#
-
--}
-
-{- $Migrations
-#migrations#
--}

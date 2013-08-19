@@ -403,20 +403,20 @@ In the end, any 'Routeable', including a 'Route' is converted to an
 
 @
 
-  mainAction :: Application
-  mainAction req = ...
+  mainAction :: Controller () ()
+  mainAction = ...
 
-  signinForm :: Application
+  signinForm :: Controller () ()
   signinForm req = ...
 
-  login :: Application
-  login req = ...
+  login :: Controller () ()
+  login = ...
 
-  updateProfile :: Application
-  updateProfile req = ...
+  updateProfile :: Controller () ()
+  updateProfile = ...
 
   main :: IO ()
-  main = runSettings defaultSettings $ mkRoute $ do
+  main = run 3000 $ controllerApp () $ do
     routeTop mainAction
     routeName \"sessions\" $ do
       routeMethod GET signinForm

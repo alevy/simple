@@ -7,7 +7,7 @@ details) and a 'ToApplication':
 
 @
   main :: IO ()
-  main = runSettings defaultSettings $ mkRouter $ do
+  main = run 3000 $ controllerApp () $ do
     get \"\/\" $ do
       req <- request
       return $ okHtml $ fromString $
