@@ -46,5 +46,8 @@ main = do
   env <- getEnvironment
   let port = maybe 3000 read $ lookup "PORT" env
   putStrLn $ "Starting server on port " ++ (show port)
-  app (run port . logStdout)
+  let logger = case lookup "ENV" env of
+                 Just "development" -> logStdoutDev
+                 _ -> logStdout
+  app (run port . logger)
 
