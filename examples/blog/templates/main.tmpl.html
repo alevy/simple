@@ -1,29 +1,88 @@
 <!DOCTYPE HTML>
 <html>
   <head>
-    <title>Simple B&#955og</title>
-    <link rel="stylesheet" type="text/css" href="/css/style.css">
+    <title>Blog</title>
+    <style>
+      html, body {
+        height: 100%;
+      }
+
+      body {
+        width: 400px;
+        margin: 0 auto;
+        font-family: sans-serif;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      h2 a {
+        text-decoration: none;
+        color: #333;
+      }
+
+      article {
+        padding-top: 15px;
+      }
+
+      header > time {
+        float: right;
+      }
+
+      footer {
+        display: inline-block;
+        font-size: 9px;
+        position: fixed;
+        bottom: 0px;
+        right: 0px;
+        padding: 2px;
+      }
+
+      footer a {
+        display: inline-block;
+        height: 20px;
+        width: 60px;
+        line-height: 20px;
+        text-align: center;
+        background-color: #770;
+        border-radius: 3px 3px 0 0;
+        text-decoration: none;
+        color: #fff;
+        opacity: 0.8;
+      }
+
+      .comments {
+        border-top: 1px solid #ccc;
+      }
+
+      ol#comments {
+        padding: 0;
+      }
+
+      ol#comments > li {
+        list-style: none;
+
+      }
+
+      .comment-author img {
+        display: block;
+      }
+
+    </style>
 </head>
 <body>
-  <header id="sidebar">
-    <a href="/"><img src="/images/haskell-logoc.svg" class="logo"></a>
-    <h1><a href="/">Simple B&#955og</a></h1>
-    <h2>the simple framework</h2>
-    <h3>
-      this blog demostrates the basic capabilities
-      of the simple web framework.
-    </h3>
-    <ul class="nav">
-      <li><a href="/">Home</a></li>
-      <li><a href="/admin">Admin</a></li>
-    </ul>
-  </header>
-  <section id="river">
+  <h1><a href="/">Blog</a></h1>
+  <section>
 {% content %}
   </section>
   <footer>
-    Made with the <a href="http://gitstar.com/alevy/simple">simple</a>
-    web framework.
+    <a href="/admin">admin</a>
   </footer>
 </body>
 </html>
