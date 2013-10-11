@@ -2,7 +2,10 @@
 
 module Main where
 
+import Control.Monad
 import qualified Data.ByteString.Char8 as S8 (pack)
+import Database.PostgreSQL.Devel
+import Database.PostgreSQL.Migrate
 import Web.Simple
 import Web.Simple.Auth
 import Web.Simple.Cache
@@ -15,6 +18,7 @@ import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.MethodOverridePost
 import Network.Wai.Middleware.RequestLogger
 import System.FilePath
+import System.IO
 
 import Blog.Common
 import Blog.Controllers.CommentsController
@@ -47,8 +51,13 @@ main = do
   env <- getEnvironment
   let port = maybe 3000 read $ lookup "PORT" env
   putStrLn $ "Starting server on port " ++ (show port)
-  let logger = case lookup "ENV" env of
-                 Just "development" -> logStdoutDev
-                 _ -> logStdout
+  let dev = maybe False (== "development") $ lookup "ENV" env
+  let logger = if dev then logStdoutDev else logStdout
+  when dev $ void $ do
+    setLocalDB "db/development"
+    initLocalDB "db/development"
+    startLocalDB "db/development"
+    initializeDb
+    runMigrationsForDir stdout defaultMigrationsDir
   app (run port . logger)
 

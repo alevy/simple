@@ -24,7 +24,7 @@ data AppSettings = AppSettings { appDB :: MVar Connection
 
 newAppSettings :: INotify -> IO AppSettings
 newAppSettings inotify = do
-  db <- newMVar =<< createConnection Nothing
+  db <- newMVar =<< createConnection
   tmpl <- newIORef =<< generateTemplate
   let watcher = addWatch inotify [Modify] "templates/main.tmpl.html" $ const $
                   do
@@ -39,14 +39,11 @@ generateTemplate = do
   tmpl <- L.readFile "templates/main.tmpl.html"
   return $ \content -> L.replace (S8.pack "{% content %}") content tmpl
 
-createConnection :: Maybe S8.ByteString -> IO Connection
-createConnection mconnectStr = do
-  dbUrl <- case mconnectStr of
-    Nothing -> do
-      env <- getEnvironment
-      return $ maybe S8.empty S8.pack $ lookup "DATABASE_URL" env
-    Just str -> return str
-  connectPostgreSQL dbUrl
+createConnection :: IO Connection
+createConnection = do
+  env <- getEnvironment
+  let envConnect = maybe S8.empty S8.pack $ lookup "DATABASE_URL" env
+  connectPostgreSQL envConnect
 
 withConnection :: (Connection -> Controller AppSettings b) -> Controller AppSettings b
 withConnection func = do

@@ -1,1 +1,1 @@
-web: dist/build/blog/blog
+web: ./dist/build/blog/blog
