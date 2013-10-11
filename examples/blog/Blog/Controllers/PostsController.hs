@@ -4,8 +4,6 @@ module Blog.Controllers.PostsController where
 import Prelude hiding (show)
 import qualified Prelude
 
-import Common
-
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as S8
@@ -18,13 +16,11 @@ import Web.REST
 import Database.PostgreSQL.ORM
 import Data.String
 
-import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
-
+import Blog.Common
 import Blog.Models
 import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
 import qualified Blog.Views.Posts as V
-import Blog.Templates
 
 import Network.Wai
 
@@ -36,24 +32,24 @@ postsController = rest $ do
     posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
-    respond $ okHtml $ renderHtml $ defaultTemplate $ V.index posts
+    respondTemplate $ V.index posts
 
   show $ do
     withConnection $ \conn -> do
       pid <- readQueryParam' "id"
       (Just post) <- liftIO $ findRow conn pid
       comments <- liftIO $ allComments conn post
-      respond $ okHtml $ renderHtml $ defaultTemplate $ V.show post comments
+      respondTemplate $ V.show post comments
 
 postsAdminController = rest $ do
   index $ withConnection $ \conn -> do
     posts <- liftIO $ findAll conn
-    respond $ okHtml $ renderHtml $ adminTemplate $ V.listPosts posts
+    respondAdminTemplate $ V.listPosts posts
 
   edit $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid
-    respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post []
+    respondTemplate $ V.edit post []
 
   update $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
@@ -71,12 +67,12 @@ postsAdminController = rest $ do
                   catch (trySave conn post >> return [])
                         (\(ValidationError errs) -> return errs)
         when (not . null $ errs) $
-          respond $ okHtml $ renderHtml $ adminTemplate $ V.edit post errs
+          respondAdminTemplate $ V.edit post errs
         respond $ redirectTo $ P.postUrl (P.postId post)
       Nothing -> redirectBack
 
   new $ do
-    respond $ okHtml $ renderHtml $ adminTemplate $ V.new []
+    respondAdminTemplate $ V.new []
 
   create $ withConnection $ \conn -> do
     (params, _) <- parseForm
@@ -93,7 +89,7 @@ postsAdminController = rest $ do
                   catch (trySave conn post >> return [])
                         (\(ValidationError errs) -> return errs)
         when (not . null $ errs) $
-          respond $ okHtml $ renderHtml $ adminTemplate $ V.new errs
+          respondAdminTemplate $ V.new errs
         respond $ redirectTo "/posts/"
       Nothing -> redirectBack
 

@@ -8,6 +8,7 @@ import Web.Simple.Auth
 import Web.Simple.Cache
 import Web.REST (restIndex, rest, routeREST)
 import System.Environment
+import System.INotify
 import Network.Wai
 import Network.Wai.Middleware.Static
 import Network.Wai.Handler.Warp
@@ -15,18 +16,18 @@ import Network.Wai.Middleware.MethodOverridePost
 import Network.Wai.Middleware.RequestLogger
 import System.FilePath
 
-import Common
+import Blog.Common
 import Blog.Controllers.CommentsController
 import Blog.Controllers.PostsController
 
-app runner = do
+app runner = withINotify $ \inotify -> do
   env <- getEnvironment
   let adminUser = maybe "admin" S8.pack $ lookup "ADMIN_USERNAME" env
   let adminPassword = maybe "password" S8.pack $ lookup "ADMIN_PASSWORD" env
 
   let requireAuth = basicAuth "Simple Blog Admin" adminUser adminPassword
   
-  settings <- newAppSettings
+  settings <- newAppSettings inotify
 
   runner $ methodOverridePost $
     controllerApp settings $ do

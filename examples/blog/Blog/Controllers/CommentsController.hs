@@ -1,8 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Blog.Controllers.CommentsController where
 
-import Common
-
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
@@ -11,14 +9,12 @@ import Web.Simple
 import Web.Simple.Cache
 import Web.Frank
 
-import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
-
+import Blog.Common
 import qualified Blog.Models ()
 import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
 
 import Blog.Models
-import Blog.Templates
 import Blog.Views.Comments
 
 lookupText :: S8.ByteString -> [(S8.ByteString, S8.ByteString)] -> Maybe T.Text
@@ -44,7 +40,7 @@ commentsAdminController = do
     pid <- readQueryParam' "post_id"
     (Just post) <- liftIO $ findRow conn pid
     comments <- liftIO $ allComments conn post
-    respond $ okHtml $ renderHtml $ adminTemplate $ listComments post comments
+    respondAdminTemplate $ listComments post comments
     
   delete ":id" $ withConnection $ \conn -> do
     cid <- readQueryParam' "id"
