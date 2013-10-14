@@ -3,3 +3,4 @@
 .env
 dist/
 cache/
+db/development

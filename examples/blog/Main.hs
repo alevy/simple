@@ -50,14 +50,15 @@ main :: IO ()
 main = do
   env <- getEnvironment
   let port = maybe 3000 read $ lookup "PORT" env
-  putStrLn $ "Starting server on port " ++ (show port)
   let dev = maybe False (== "development") $ lookup "ENV" env
   let logger = if dev then logStdoutDev else logStdout
   when dev $ void $ do
-    setLocalDB "db/development"
+    putStrLn "Starting dev database..."
     initLocalDB "db/development"
     startLocalDB "db/development"
+    setLocalDB "db/development"
     initializeDb
     runMigrationsForDir stdout defaultMigrationsDir
+  putStrLn $ "Starting server on port " ++ (show port)
   app (run port . logger)
 
