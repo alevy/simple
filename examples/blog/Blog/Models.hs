@@ -1,8 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses, OverloadedStrings #-}
 module Blog.Models where
 
-import Control.Monad.IO.Class
-import Control.Applicative
 import Database.PostgreSQL.Simple
 import Database.PostgreSQL.ORM
 

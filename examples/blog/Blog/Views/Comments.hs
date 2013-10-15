@@ -5,7 +5,6 @@ import Prelude hiding (id, div, show, span)
 import qualified Prelude as Pre
 
 import Control.Monad
-import Data.Maybe
 import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (form, label, cite, span)
 import Network.Gravatar

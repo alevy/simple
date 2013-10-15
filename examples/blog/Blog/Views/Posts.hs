@@ -6,13 +6,12 @@ import qualified Prelude as Pre
 
 import Control.Monad
 import Data.Text.Encoding (decodeUtf8)
-import Data.Maybe
 import Database.PostgreSQL.ORM
 import Text.Blaze.Html5
 import Text.Blaze.Html5.Attributes hiding (form, label, cite, span)
 
-import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
+import qualified Blog.Models.Comment as C
 import Blog.Views.Comments
 
 index :: [P.Post] -> Html
@@ -29,6 +28,7 @@ postPartial post = do
       h2 $ a ! href (toValue postUrl) $ toHtml $ P.title post
     div ! class_ "content" $ toHtml $ P.markdownBody post
 
+show :: P.Post -> [C.Comment] -> Html
 show post comments = do
   postPartial post
   div ! class_ "comments content" $ do

@@ -88,16 +88,16 @@ session = do
     Nothing -> do
       cookies <- (maybe [] parseCookies) `fmap` requestHeader hCookie
       sess <- case lookup "session" cookies of
-                Just session -> do
+                Just sessionCookie -> do
                   sessionKey <- appSessionKey `fmap` controllerState
-                  return $ parseSession sessionKey session
+                  return $ parseSession sessionKey sessionCookie
                 Nothing -> return M.empty
       putState $ cs {appSession = Just sess}
       return sess
 
 parseSession :: S8.ByteString -> S8.ByteString -> Session
-parseSession secret session =
-  let (b64, serial) = S8.splitAt 44 session
+parseSession secret sessionCookie =
+  let (b64, serial) = S8.splitAt 44 sessionCookie
       mdigest = digestFromByteString $ either (const S8.empty) id $ decode b64
   in case mdigest of
        Nothing -> M.empty
@@ -107,8 +107,8 @@ parseSession secret session =
            else M.empty
 
 dumpSession :: S8.ByteString -> Session -> S8.ByteString
-dumpSession secret session =
-  let serial = renderSimpleQuery False $ M.toList session
+dumpSession secret sess =
+  let serial = renderSimpleQuery False $ M.toList sess
       digest = hmacGetDigest $ hmacAlg SHA256 secret serial
       b64 = encode $ toBytes digest
   in b64 `S8.append` serial

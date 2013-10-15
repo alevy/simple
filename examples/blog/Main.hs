@@ -3,13 +3,10 @@
 module Main where
 
 import Control.Monad
-import qualified Data.ByteString.Char8 as S8 (pack)
 import Database.PostgreSQL.Devel
 import Database.PostgreSQL.Migrate
 import Web.Simple
-import Web.Simple.Auth
-import Web.Simple.Cache
-import Web.REST (restIndex, rest, routeREST)
+import Web.REST (restIndex, routeREST)
 import System.Environment
 import System.INotify
 import Network.Wai
@@ -17,7 +14,6 @@ import Network.Wai.Middleware.Static
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.MethodOverridePost
 import Network.Wai.Middleware.RequestLogger
-import System.FilePath
 import System.IO
 
 import Blog.Auth
@@ -25,13 +21,8 @@ import Blog.Common
 import Blog.Controllers.CommentsController
 import Blog.Controllers.PostsController
 
+app :: (Application -> IO ()) -> IO ()
 app runner = withINotify $ \inotify -> do
-  env <- getEnvironment
-  let adminUser = maybe "admin" S8.pack $ lookup "ADMIN_USERNAME" env
-  let adminPassword = maybe "password" S8.pack $ lookup "ADMIN_PASSWORD" env
-
-  let requireAuth = basicAuth "Simple Blog Admin" adminUser adminPassword
-  
   settings <- newAppSettings inotify
 
   runner $ methodOverridePost $

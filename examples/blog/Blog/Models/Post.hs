@@ -2,12 +2,8 @@
 {-# LANGUAGE DeriveGeneric #-}
 module Blog.Models.Post where
 
-import Control.Applicative
-import Data.Maybe
 import Data.Monoid
-import Data.Text (Text, unpack, replace)
-import Data.Text.Encoding
-import qualified Data.Text as T
+import Data.Text (Text, unpack)
 import Data.Time.LocalTime
 import Data.Time.Format
 import Database.PostgreSQL.ORM

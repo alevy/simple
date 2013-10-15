@@ -9,22 +9,16 @@ import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as S8
 import Data.Text.Encoding
 import Data.Time.LocalTime (getZonedTime)
-import Data.Maybe
-import Data.Monoid
 import Web.Simple
-import Web.Simple.Cache
 import Web.REST
 import Database.PostgreSQL.ORM
-import Data.String
 
 import Blog.Common
 import Blog.Models
-import qualified Blog.Models.Comment as C
 import qualified Blog.Models.Post as P
 import qualified Blog.Views.Posts as V
 
-import Network.Wai
-
+postsController :: REST AppSettings
 postsController = rest $ do
   
   index $ withConnection $ \conn -> do
@@ -42,6 +36,7 @@ postsController = rest $ do
       comments <- liftIO $ allComments conn post
       respondTemplate $ V.show post comments
 
+postsAdminController :: REST AppSettings
 postsAdminController = rest $ do
   index $ withConnection $ \conn -> do
     posts <- liftIO $ findAll conn
@@ -56,20 +51,19 @@ postsAdminController = rest $ do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid
     (params, _) <- parseForm
-    curTime <- liftIO $ getZonedTime
     let mpost = do
           pTitle <- lookup "title" params
           pBody <- lookup "body" params
           return $ post { P.title = decodeUtf8 pTitle
                         , P.body = decodeUtf8 pBody }
     case mpost of
-      Just post -> do
+      Just p -> do
         errs <- liftIO $
-                  catch (trySave conn post >> return [])
+                  catch (trySave conn p >> return [])
                         (\(ValidationError errs) -> return errs)
         when (not . null $ errs) $
-          respondAdminTemplate $ V.edit post errs
-        respond $ redirectTo $ S8.pack $ P.postUrl (P.postId post)
+          respondAdminTemplate $ V.edit p errs
+        respond $ redirectTo $ S8.pack $ P.postUrl (P.postId p)
       Nothing -> redirectBack
 
   new $ do

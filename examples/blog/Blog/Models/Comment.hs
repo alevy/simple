@@ -1,7 +1,6 @@
 {-# LANGUAGE TypeFamilies, DeriveGeneric, OverloadedStrings #-}
 module Blog.Models.Comment where
 
-import Control.Applicative
 import Data.Text (Text)
 import Database.PostgreSQL.ORM.Model
 
