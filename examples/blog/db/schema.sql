@@ -1,5 +1,6 @@
 
 SET statement_timeout = 0;
+SET lock_timeout = 0;
 SET client_encoding = 'SQL_ASCII';
 SET standard_conforming_strings = on;
 SET check_function_bodies = false;

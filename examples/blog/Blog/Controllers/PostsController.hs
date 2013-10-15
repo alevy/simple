@@ -7,6 +7,7 @@ import qualified Prelude
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import qualified Data.ByteString.Char8 as S8
+import Data.Text.Encoding
 import Data.Time.LocalTime (getZonedTime)
 import Data.Maybe
 import Data.Monoid
@@ -59,8 +60,8 @@ postsAdminController = rest $ do
     let mpost = do
           pTitle <- lookup "title" params
           pBody <- lookup "body" params
-          return $ post { P.title = fromString $ S8.unpack pTitle
-                        , P.body = fromString $ S8.unpack pBody }
+          return $ post { P.title = decodeUtf8 pTitle
+                        , P.body = decodeUtf8 pBody }
     case mpost of
       Just post -> do
         errs <- liftIO $
@@ -80,8 +81,8 @@ postsAdminController = rest $ do
     let mpost = do
           pTitle <- lookup "title" params
           pBody <- lookup "body" params
-          return $ P.Post NullKey (fromString $ S8.unpack pTitle)
-                                  (fromString $ S8.unpack pBody)
+          return $ P.Post NullKey (decodeUtf8 pTitle)
+                                  (decodeUtf8 pBody)
                                   curTime
     case mpost of
       Just post -> do

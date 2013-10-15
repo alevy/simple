@@ -58,7 +58,8 @@ new errs =  do
   when (not $ null errs) $
     ul ! class_ "errors" $ forM_ errs $ \err ->
       li $ toHtml $ decodeUtf8 $ invalidError err
-  form ! class_ "content" ! action "/admin/posts" ! method "post" $ do
+  form ! class_ "content" ! action "/admin/posts"
+       ! method "post" ! acceptCharset "UTF-8" $ do
     p $ do
       input ! type_ "text" ! name "title" ! id "title" ! placeholder "title"
     p $ do
@@ -73,7 +74,7 @@ edit post errs =  do
       li $ toHtml $ decodeUtf8 $ invalidError err
   form ! class_ "content"
        ! action (toValue $ "/admin/posts/" ++ (Pre.show $ P.postId post))
-       ! method "post" $ do
+       ! method "post" ! acceptCharset "UTF-8" $ do
     input ! type_ "hidden" ! name "_method" ! value "PUT"
     p $ do
       input ! type_ "text" ! name "title" ! id "title"

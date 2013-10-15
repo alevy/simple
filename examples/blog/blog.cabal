@@ -18,9 +18,13 @@ executable blog
   build-depends:
     base,
     authenticate,
+    base64-bytestring,
     blaze-builder,
+    byteable,
     bytestring,
     cookie,
+    containers,
+    cryptohash,
     directory,
     filepath,
     gravatar,

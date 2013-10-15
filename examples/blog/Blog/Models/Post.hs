@@ -27,7 +27,8 @@ postedAtStr post = formatTime defaultTimeLocale "%B %e, %C%y %R" $
                     postedAt post
 
 markdownBody :: Post -> Html
-markdownBody = (writeHtml def) . (readMarkdown def) . unpack . body
+markdownBody = (writeHtml def) . (readMarkdown def)
+               . (filter (/= '\r')) . unpack . body
 
 postUrl :: DBKey -> String
 postUrl pid = "/posts/" ++ (show pid)

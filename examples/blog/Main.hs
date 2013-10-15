@@ -35,7 +35,7 @@ app runner = withINotify $ \inotify -> do
   settings <- newAppSettings inotify
 
   runner $ methodOverridePost $
-    controllerApp settings $ do
+    controllerApp settings $ withSession $ do
       handleOpenId handleLogin      
       routeName "login" loginPage
       routePattern "logout" logout

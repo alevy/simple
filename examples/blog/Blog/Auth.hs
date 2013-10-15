@@ -17,7 +17,6 @@ import Network.Wai
 import Text.Blaze.Html5 (form, input, (!), h2, div)
 import Text.Blaze.Html5.Attributes
   (type_, method, action, name, placeholder, value, class_)
-import Web.Cookie
 import Web.Frank
 import Web.Simple
 import Web.Authenticate.OpenId
@@ -31,7 +30,8 @@ handleOpenId loginHandler = do
               <$> queryString <$> request
     oidr <- liftIO $ withManager $ authenticateClaimed prms
     case identifier <$> oirClaimed oidr of
-      Just openid -> loginHandler openid
+      Just openid -> do
+        loginHandler openid
       _ -> respond forbidden
   get "auth/login" $ do
     claimedId <- queryParam' "openid_identifier"
@@ -40,50 +40,28 @@ handleOpenId loginHandler = do
                     completePage Nothing []
     respond $ redirectTo $ encodeUtf8 fu
 
-handleLogin :: T.Text -> Controller a ()
+handleLogin :: T.Text -> Controller AppSettings ()
 handleLogin openid = do
-  cookies <- (maybe [] parseCookies) <$> requestHeader "Cookie"
-  let ret = fromMaybe "/" $ lookup "return_to" cookies
-      userCookie = def
-                     { setCookieName = "user"
-                     , setCookiePath = Just "/"
-                     , setCookieValue = encodeUtf8 openid }
-      delRetCookie = def
-                       { setCookieName = "return_to"
-                       , setCookiePath = Just "/"
-                       , setCookieValue = ""
-                       , setCookieMaxAge = Just 0}
-  respond $ addCookie userCookie $ addCookie delRetCookie $ redirectTo ret
+  ret <- fromMaybe "/" `fmap` sessionLookup "return_to"
+  sessionDelete "return_to"
+  sessionInsert "user" $ encodeUtf8 openid
+  respond $ redirectTo ret
 
-logout :: Controller a ()
+logout :: Controller AppSettings ()
 logout = do
-    let cookie =  def
-                  { setCookieName = "user"
-                  , setCookiePath = Just "/"
-                  , setCookieValue = ""
-                  , setCookieMaxAge = Just 0}
-    respond $ addCookie cookie $ redirectTo "/"
+  sessionDelete "user"
+  respond $ redirectTo "/"
 
-addCookie :: SetCookie -> Response -> Response
-addCookie cookie resp =
-  let (stat, hdrs, src) = responseSource resp
-      hd = ("Set-Cookie", toByteString . renderSetCookie $ cookie)
-  in ResponseSource stat (hd:hdrs) src
-
-requiresAdmin :: S8.ByteString -> Controller a b -> Controller a b
+requiresAdmin :: S8.ByteString
+              -> Controller AppSettings b -> Controller AppSettings b
 requiresAdmin loginUrl cnt = do
-  cookies <- (maybe [] parseCookies) <$> requestHeader "Cookie"
-  if (isJust $ lookup "user" cookies) then
+  muser <- sessionLookup "user"
+  if isJust muser then
     cnt
     else do
       req <- request
-      let cookie = def
-                     { setCookieName = "return_to"
-                     , setCookiePath = Just "/"
-                     , setCookieValue = rawPathInfo req }
-      respond $
-        addCookie cookie $
-        redirectTo loginUrl
+      sessionInsert "return_to" $ rawPathInfo req
+      respond $ redirectTo loginUrl
 
 loginPage :: Controller AppSettings ()
 loginPage = respondTemplate $ do
