@@ -25,7 +25,7 @@ module Web.Simple.Controller
   -- $Example
   -- * Controller Monad
     Controller(..), runController, runControllerIO
-  , controllerApp, controllerState, localState
+  , controllerApp, controllerState, putState
   , request, localRequest, respond
   , requestHeader
   -- * Common Routes
@@ -71,45 +71,47 @@ import           Network.Wai
 import           Network.Wai.Parse
 import           Web.Simple.Responses
 
--- | The Controller Monad is both a Reader-like monad which, when run, computes
+
+type ControllerState r = (r, Request)
+
+-- | The Controller Monad is both a State-like monad which, when run, computes
 -- either a 'Response' or a result. Within the Controller Monad, the remainder
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
 newtype Controller r a =
-  Controller ((r,Request) -> ResourceT IO (Either Response a))
+  Controller (ControllerState r ->
+              ResourceT IO (Either Response a, ControllerState r))
 
 instance Functor (Controller r) where
-  fmap f (Controller act) = Controller $ \st -> do
-    eaf <- act st
+  fmap f (Controller act) = Controller $ \st0 -> do
+    (eaf, st) <- act st0
     case eaf of
-      Left resp -> return $ Left resp
-      Right result -> return $ Right $ f result
+      Left resp -> return (Left resp, st)
+      Right result -> return (Right $ f result, st)
 
 instance Applicative (Controller r) where
-  pure a = Controller $ \_ -> return $ Right a
-  (Controller fn) <*> (Controller act) =
-    Controller $ \st -> do
-      eact <- act st
-      case eact of
-        Left resp -> return $ Left resp
-        Right result -> do
-          ef <- fn st
-          either (return . Left) (\f -> return . Right $ f result) ef
+  pure a = Controller $ \st -> return $ (Right a, st)
+  (<*>) = ap
 
 instance Monad (Controller r) where
   return = pure
-  (Controller act) >>= fn = Controller $ \st -> do
-    eres <- act st
+  (Controller act) >>= fn = Controller $ \st0 -> do
+    (eres, st) <- act st0
     case eres of
-      Left resp -> return $ Left resp
+      Left resp -> return (Left resp, st)
       Right result -> do
         let (Controller fres) = fn result
         fres st
 
 instance MonadIO (Controller r) where
-  liftIO act = Controller $ \_ -> fmap Right $ liftIO act
+  liftIO act = Controller $ \st -> liftIO act >>= \r -> return (Right r, st)
+
+liftResourceT :: ResourceT IO a -> Controller r a
+liftResourceT act = Controller $ \st -> do
+  a <- act
+  return (Right a, st)
 
 hoistEither :: Either Response a -> Controller r a
-hoistEither eith = Controller $ \_ -> return eith
+hoistEither eith = Controller $ \st -> return (eith, st)
 
 instance MonadPeelIO (Controller r) where
   peelIO = do
@@ -120,14 +122,16 @@ instance MonadPeelIO (Controller r) where
       return $ hoistEither res
 
 ask :: Controller r (r, Request)
-ask = Controller $ \rd -> return (Right rd)
+ask = Controller $ \rd -> return (Right rd, rd)
 
 -- | Extract the request
 request :: Controller r Request
 request = liftM snd ask
 
 local :: ((r, Request) -> (r, Request)) -> Controller r a -> Controller r a
-local f (Controller act) = Controller $ \st -> act (f st)
+local f (Controller act) = Controller $ \st@(_, r) -> do
+  (eres, (req, _)) <- act (f st)
+  return (eres, (req, r))
 
 -- | Modify the request for the given computation
 localRequest :: (Request -> Request) -> Controller r a -> Controller r a
@@ -137,9 +141,8 @@ localRequest f = local (\(r,req) -> (r, f req))
 controllerState :: Controller r r 
 controllerState = liftM fst ask
 
--- | Modify the application state for the given computation
-localState :: (r -> r) -> Controller r a -> Controller r a
-localState f = local (\(r,req) -> (f r, req))
+putState :: r -> Controller r ()
+putState r = Controller $ \(_, req) -> return (Right (), (r, req))
 
 -- | Convert the controller into an 'Application'
 controllerApp :: r -> Controller r a -> Application
@@ -148,7 +151,7 @@ controllerApp r ctrl req =
     either return (const $ return notFound) 
 
 runController :: Controller r a -> r -> Request -> ResourceT IO (Either Response a)
-runController (Controller fun) r req = fun (r,req)
+runController (Controller fun) r req = fst `fmap` fun (r,req)
 
 -- | Run a 'Controller' in the @IO@ monad
 runControllerIO :: Controller r a -> r -> Request -> IO (Either Response a)
@@ -159,18 +162,21 @@ runControllerIO ctrl r = runResourceT . runController ctrl r
 -- @pass >> c === c@
 -- @c >> pass === c@
 pass :: Controller r ()
-pass = Controller $ \_ -> return (Right ())
+pass = Controller $ \st -> return (Right (), st)
 
 -- | Provide a response
 --
 -- @respond r >>= f === respond r@
 respond :: Response -> Controller r a
-respond resp = Controller $ \_ -> return $ Left resp
+respond resp = Controller $ \st -> return (Left resp, st)
 
 
 -- | Lift an application to a controller
 fromApp :: ToApplication a => a -> Controller r ()
-fromApp app = Controller (\(_, req) -> Left `fmap` ((toApp app) req))
+fromApp app = do
+  req <- request
+  resp <- liftResourceT $ (toApp app) req
+  respond resp
 
 -- | Matches on the hostname from the 'Request'. The route only succeeds on
 -- exact matches.
@@ -330,13 +336,15 @@ readParamValue varName =
 --       Nothing -> redirectBack
 -- @
 parseForm :: Controller r ([Param], [(S.ByteString, FileInfo FilePath)])
-parseForm = Controller $ \(_, req) -> do
-  Right `fmap` parseRequestBody tempFileBackEnd req
+parseForm = do
+  req <- request
+  liftResourceT $ parseRequestBody tempFileBackEnd req
 
 -- | Reads and returns the body of the HTTP request.
 body :: Controller r L8.ByteString
-body = Controller $ \(_, req) -> do
-  Right `fmap` (requestBody req $$ CL.consume >>= return . L8.fromChunks)
+body = do
+  req <- request
+  liftResourceT $ L8.fromChunks `fmap` (requestBody req $$ CL.consume)
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
