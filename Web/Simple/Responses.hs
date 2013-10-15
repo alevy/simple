@@ -56,8 +56,8 @@ movedTo url = mkHtmlResponse status301 [(hLocation, S8.pack url)] html
                        \</BODY></HTML>\n"]
 
 -- | Given a URL returns a 303 (See Other) 'Response' redirecting to that URL.
-redirectTo :: String -> Response
-redirectTo url = mkHtmlResponse status303 [(hLocation, S8.pack url)] html
+redirectTo :: S8.ByteString -> Response
+redirectTo url = mkHtmlResponse status303 [(hLocation, url)] html
   where html = L8.concat
              [L8.pack
               "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n\
@@ -66,7 +66,7 @@ redirectTo url = mkHtmlResponse status303 [(hLocation, S8.pack url)] html
               \</HEAD><BODY>\n\
               \<H1>See Other</H1>\n\
               \<P>The document has moved <A HREF=\""
-             , L8.pack url
+             , L8.fromChunks [url]
              , L8.pack "\">here</A>\n\
                        \</BODY></HTML>\n"]
 

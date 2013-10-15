@@ -27,6 +27,7 @@ module Web.Simple.Controller
     Controller(..), runController, runControllerIO
   , controllerApp, controllerState, localState
   , request, localRequest, respond
+  , requestHeader
   -- * Common Routes
   , routeHost, routeTop, routeMethod, routeAccept
   , routePattern, routeName, routeVar
@@ -354,7 +355,7 @@ redirectBackOr :: Response -- ^ Fallback response
 redirectBackOr def = do
   mrefr <- requestHeader "referer"
   case mrefr of
-    Just refr -> respond $ redirectTo $ S8.unpack refr
+    Just refr -> respond $ redirectTo refr
     Nothing   -> respond def
 
 -- guard
