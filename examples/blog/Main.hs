@@ -20,6 +20,7 @@ import Network.Wai.Middleware.RequestLogger
 import System.FilePath
 import System.IO
 
+import Blog.Auth
 import Blog.Common
 import Blog.Controllers.CommentsController
 import Blog.Controllers.PostsController
@@ -35,7 +36,11 @@ app runner = withINotify $ \inotify -> do
 
   runner $ methodOverridePost $
     controllerApp settings $ do
-      routePattern "admin" $ requireAuth $ do
+      handleOpenId handleLogin      
+      routeName "login" loginPage
+      routePattern "logout" logout
+
+      routePattern "admin" $ requiresAdmin "/login" $ do
         routeName "posts" $ do
           routePattern ":post_id/comments" $ commentsAdminController
           routeREST $ postsAdminController

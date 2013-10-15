@@ -68,7 +68,7 @@ postsAdminController = rest $ do
                         (\(ValidationError errs) -> return errs)
         when (not . null $ errs) $
           respondAdminTemplate $ V.edit post errs
-        respond $ redirectTo $ P.postUrl (P.postId post)
+        respond $ redirectTo $ S8.pack $ P.postUrl (P.postId post)
       Nothing -> redirectBack
 
   new $ do

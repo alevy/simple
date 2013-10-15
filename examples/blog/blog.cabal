@@ -17,11 +17,16 @@ executable blog
   ghc-options: -threaded -O2
   build-depends:
     base,
+    authenticate,
+    blaze-builder,
     bytestring,
+    cookie,
     directory,
     filepath,
     gravatar,
     hinotify,
+    http-conduit,
+    http-types,
     monad-peel,
     simple >= 0.4.1,
     stringsearch,
