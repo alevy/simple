@@ -1,7 +1,6 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
 module Web.Simple.Session where
 
-import Control.Monad
 import Control.Monad.IO.Class
 import Blaze.ByteString.Builder
 import Crypto.Hash
@@ -11,7 +10,6 @@ import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import Data.Map (Map)
 import qualified Data.Map as M
-import Network.Wai
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.URI
 import Web.Cookie
@@ -26,6 +24,10 @@ class HasSession hs where
 
   getSession :: hs -> Maybe Session
   setSession :: Session -> Controller hs ()
+
+instance HasSession (Maybe Session) where
+  getSession = id
+  setSession = putState . Just
 
 withSession :: HasSession hs => Controller hs a -> Controller hs a
 withSession (Controller act) = do

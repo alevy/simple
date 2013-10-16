@@ -17,10 +17,9 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
+  ghc-options: -Wall
   exposed-modules:
     Web.Simple.Session
-  other-extensions:
-    FlexibleContexts, OverloadedStrings
   build-depends:
       base < 6
     , blaze-builder
