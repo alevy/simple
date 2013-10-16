@@ -6,10 +6,10 @@ import Control.Monad
 import Database.PostgreSQL.Devel
 import Database.PostgreSQL.Migrate
 import Web.Simple
+import Web.Simple.Session
 import Web.REST (restIndex, routeREST)
 import System.Environment
 import System.INotify
-import Network.Wai
 import Network.Wai.Middleware.Static
 import Network.Wai.Handler.Warp
 import Network.Wai.Middleware.MethodOverridePost

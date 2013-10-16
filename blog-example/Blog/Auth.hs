@@ -10,12 +10,12 @@ import qualified Data.Text as T
 import Data.Text.Encoding
 import Data.Maybe
 import Network.HTTP.Conduit (withManager)
-import Network.Wai
 import Text.Blaze.Html5 (form, input, (!), h2, div)
 import Text.Blaze.Html5.Attributes
   (type_, method, action, name, placeholder, value, class_)
 import Web.Frank
 import Web.Simple
+import Web.Simple.Session
 import Web.Authenticate.OpenId
 
 import Blog.Common

@@ -15,6 +15,7 @@ together.
 module Web.Simple (
     module Web.Simple.Responses
   , module Web.Simple.Controller
+  , module Network.Wai
   -- * Overview
   -- $Overview
 
@@ -28,6 +29,7 @@ module Web.Simple (
   -- $Routing
   ) where
 
+import Network.Wai
 import Web.Simple.Responses
 import Web.Simple.Controller
 
