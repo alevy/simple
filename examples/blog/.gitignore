@@ -1,6 +1,0 @@
-*.hi
-*.o
-.env
-dist/
-cache/
-db/development
