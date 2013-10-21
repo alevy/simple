@@ -25,6 +25,12 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 
+CREATE TABLE admins (
+    openid character varying(255) NOT NULL
+);
+
+
+
 CREATE TABLE comments (
     id integer NOT NULL,
     name character varying(255) NOT NULL,
@@ -81,6 +87,11 @@ ALTER TABLE ONLY comments ALTER COLUMN id SET DEFAULT nextval('comments_id_seq':
 
 
 ALTER TABLE ONLY posts ALTER COLUMN id SET DEFAULT nextval('posts_id_seq'::regclass);
+
+
+
+ALTER TABLE ONLY admins
+    ADD CONSTRAINT admins_pkey PRIMARY KEY (openid);
 
 
 
