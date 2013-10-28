@@ -20,7 +20,13 @@ type Session = Map S.ByteString S.ByteString
 
 class HasSession hs where
   sessionKey :: Controller hs S.ByteString
-  sessionKey = liftIO $ S8.pack `fmap` getEnv "SESSION_KEY"
+  sessionKey = liftIO $ do
+    env <- getEnvironment
+    case lookup "SESSION_KEY" env of
+      Just key -> return $ S8.pack key
+      Nothing -> return $ maybe
+                  (error "SESSION_KEY environment variable not set")
+                  (const "test-session-key") $ lookup "ENV" env
 
   getSession :: hs -> Maybe Session
   setSession :: Session -> Controller hs ()

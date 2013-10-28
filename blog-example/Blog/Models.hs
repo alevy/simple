@@ -14,4 +14,3 @@ postComments = has
 allComments :: Connection -> P.Post -> IO [C.Comment]
 allComments = findAssoc postComments
 
-

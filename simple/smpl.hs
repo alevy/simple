@@ -12,6 +12,7 @@ import System.Console.CmdArgs
 import System.Directory
 import System.FilePath
 import System.Environment
+import System.SetEnv
 import System.Process
 
 import Paths_simple
@@ -26,11 +27,12 @@ data Smpl =
 
 main :: IO ()
 main = do
+    setEnv "ENV" "development"
     myenv <- getEnvironment
     let myport = maybe 3000 read $ lookup "PORT" myenv
     let develMode = cmdArgsMode $ modes
                   [ Server { port = myport &= typ "PORT"
-                           , moduleName = "Main" &= typ "MODULE"
+                           , moduleName = "Application" &= typ "MODULE"
                                         &= explicit &= name "module"
                            } &= auto
                   , Create { appName = "" &= argPos 0 &= typ "APP_NAME" } ]

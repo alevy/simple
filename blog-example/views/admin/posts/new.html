@@ -1,0 +1,15 @@
+<header><h2>New Post</h2></header>
+$if(@)$
+<ul class="errors">
+$for(err in @)$
+  <li>$err.error$</li>
+$endfor$
+</ul>
+$endif$
+<form class="content" action="/admin/posts"
+  method="post" acceptCharset="UTF-8">
+  <p><input type="text" name="title" id="title" placeholder="title"/></p>
+  <p><textarea name="body" id="body" placeholder="post body..."></textarea></p>
+  <input type="submit" value="Submit"/>
+</form>
+

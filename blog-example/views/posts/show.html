@@ -1,0 +1,43 @@
+<article>
+  <header>
+    <time>$formatTime(post.postedAt)$</time>
+    <h2><a href="/posts/$post.postId$">$post.title$</a></h2>
+  </header>
+  <div class="content">
+    $markdown(post.body)$
+  </div>
+</article>
+<div class="comments content">
+  <h5>$length(comments)$ comment(s)</h5>
+  <ol id="comments">
+    $for(comment in comments)$
+    <li>
+      <div class="comment">
+        <div class="comment-author vcard">
+          <img src="$gravatar(comment.email, 48)$"/>
+          <cite class="fn">$comment.name$</cite>
+          <span class="says">says:</span>
+        </div>
+        <p>$comment.comment$</p>
+      </div>
+    </li>
+    <hr/>
+    $endfor$
+  </ol>
+  <h4>Leave a comment...</h4>
+  <form action="/posts/$post.postId$/comments" method="POST">
+    <p>
+      <label for="name">Name<sup>*</sup></label>
+      <input type="text" name="name" placeholder="Jane Smith"/>
+    </p>
+    <p>
+      <label for="email">Email<sup>*</sup></label>
+      <input type="email" name="email" placeholder="jane@thesmiths.net"/>
+    </p>
+    <p>
+      <textarea name="comment">
+      </textarea>
+    </p>
+    <p><input type="submit" value="Post comment"/></p>
+  </form>
+</div>

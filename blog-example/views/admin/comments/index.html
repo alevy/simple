@@ -1,0 +1,21 @@
+<header><h2>Comments: <em>$post.title$</em></h2></header>
+<div class="content">
+  <ol id="comments">
+  $for(comment in comments)$
+  <li>
+    <div class="comment">
+      <div class="comment-author vcard">
+        <img src="$gravatar(comment.email, 48)$" name="$comment.name$"/>
+        <cite class="fn">$comment.name$</cite>
+      </div>
+      <p>$comment.comment$</p>
+    </div>
+    <form action="/admin/posts/$post.postId$/comments/$commend.commentId$"
+      method="POST">
+      <input type="hidden" name="_method" value="DELETE"/>
+      <p><input type="submit" value="Delete"></p>
+    </form>
+  </li>
+  $endfor$
+  </ol>
+</div>

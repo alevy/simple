@@ -1,28 +1,26 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings #-}
-module Blog.Common where
+{-# LANGUAGE FlexibleContexts, OverloadedStrings, ScopedTypeVariables  #-}
+module Blog.Common
+  ( AppSettings, newAppSettings
+  , module Web.Simple.PostgreSQL
+  ) where
 
-import Control.Concurrent.MVar
-import Control.Exception.Peel
-import Control.Monad.IO.Class
-import qualified Data.ByteString.Char8 as S8
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Search as L
-import Data.IORef
-import Database.PostgreSQL.Simple
-import System.Environment
-import System.INotify
+import Control.Applicative
 import Web.Simple
+import Web.Simple.PostgreSQL
+import Web.Simple.Templates
 import Web.Simple.Session
-import Text.Blaze.Html
-import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
+import Blog.Helpers
 
-import Blog.Templates
-
-type LBS = L.ByteString
-
-data AppSettings = AppSettings { appDB :: MVar Connection
-                               , appTemplate :: IORef (LBS -> LBS)
+data AppSettings = AppSettings { appDB :: PostgreSQLConn
                                , appSession :: Maybe Session }
+
+newAppSettings :: IO AppSettings
+newAppSettings = do
+  db <- createPostgreSQLConn
+  return $ AppSettings { appDB = db , appSession = Nothing }
+
+instance HasPostgreSQL AppSettings where
+  postgreSQLConn = appDB
 
 instance HasSession AppSettings where
   getSession = appSession
@@ -30,44 +28,7 @@ instance HasSession AppSettings where
     cs <- controllerState
     putState $ cs { appSession = Just sess }
 
-newAppSettings :: INotify -> IO AppSettings
-newAppSettings inotify = do
-  db <- newMVar =<< createConnection
-  tmpl <- newIORef =<< generateTemplate
-  let watcher = addWatch inotify [Modify] "templates/main.tmpl.html" $ const $
-                  do
-                    putStrLn "Reloading main template..."
-                    writeIORef tmpl =<< generateTemplate
-                    watcher >> return ()
-  watcher
-  return $ AppSettings { appDB = db
-                       , appTemplate = tmpl
-                       , appSession = Nothing }
-                       
-
-generateTemplate :: IO (LBS -> LBS)
-generateTemplate = do
-  tmpl <- L.readFile "templates/main.tmpl.html"
-  return $ \content -> L.replace (S8.pack "{% content %}") content tmpl
-
-createConnection :: IO Connection
-createConnection = do
-  env <- getEnvironment
-  let envConnect = maybe S8.empty S8.pack $ lookup "DATABASE_URL" env
-  connectPostgreSQL envConnect
-
-withConnection :: (Connection -> Controller AppSettings b) -> Controller AppSettings b
-withConnection func = do
-  dbvar <- appDB `fmap` controllerState
-  bracket (liftIO $ takeMVar dbvar) (liftIO . (putMVar dbvar)) $ \conn -> do
-    res <- func conn
-    return res
-
-respondTemplate :: Html -> Controller AppSettings a
-respondTemplate content = do
-  tmplFunc <- liftIO . readIORef =<< fmap appTemplate controllerState
-  respond $ okHtml $ tmplFunc $ renderHtml content
-
-respondAdminTemplate :: Html -> Controller AppSettings a
-respondAdminTemplate = respondTemplate . adminTemplate
+instance HasTemplates AppSettings where
+  defaultLayout = Just <$> getTemplate "templates/main.html"
+  functionMap = return helperFunctions
 

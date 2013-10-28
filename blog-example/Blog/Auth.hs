@@ -6,24 +6,23 @@ import Prelude hiding (div)
 import Control.Applicative
 import Control.Monad
 import Control.Monad.IO.Class
+import Data.Aeson
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
 import Data.Text.Encoding
 import Data.Maybe
 import Database.PostgreSQL.Simple
 import Network.HTTP.Conduit (withManager)
-import Text.Blaze.Html5 (form, input, (!), h2, div)
-import Text.Blaze.Html5.Attributes
-  (type_, method, action, name, placeholder, value, class_)
 import Web.Frank
 import Web.Simple
 import Web.Simple.Session
+import Web.Simple.Templates
 import Web.Authenticate.OpenId
 
 import Blog.Common
 
-handleOpenId :: (T.Text -> Controller a ()) -> Controller a ()
-handleOpenId loginHandler = do
+openIdController :: (T.Text -> Controller a ()) -> Controller a ()
+openIdController loginHandler = do
   get "auth/finalize" $ do
     prms <- (map (\(k,(Just v)) -> (decodeUtf8 k, decodeUtf8 v)))
               <$> queryString <$> request
@@ -34,7 +33,12 @@ handleOpenId loginHandler = do
       _ -> respond forbidden
   get "auth/login" $ do
     claimedId <- queryParam' "openid_identifier"
-    let completePage = "http://localhost:5000/auth/finalize"
+    (Just host) <- requestHeader "Host"
+    secure <- isSecure <$> request
+    let completePage = decodeUtf8 $
+          if secure then
+            S8.concat ["https://", host, "/auth/finalize"]
+            else S8.concat ["http://", host, "/auth/finalize"]
     fu <- liftIO $ withManager $ getForwardUrl claimedId
                     completePage Nothing []
     respond $ redirectTo $ encodeUtf8 fu
@@ -67,11 +71,5 @@ requiresAdmin loginUrl cnt = do
       respond $ redirectTo loginUrl
 
 loginPage :: Controller AppSettings ()
-loginPage = respondTemplate $ do
-  div ! class_ "login_form" $ do
-    h2 "Login with OpenId"
-    form ! action "/auth/login" ! method "GET" $ do
-      input ! type_ "text" ! name "openid_identifier"
-            ! placeholder "http://"
-      input ! type_ "submit" ! value "Login"
+loginPage = render "views/login.html" Null
 

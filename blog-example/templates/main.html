@@ -1,0 +1,100 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Blog</title>
+    <style>
+      body {
+        width: 25em;
+        font-size: 13pt;
+        margin: 0 auto;
+        font-family: sans-serif;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      h1 a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      h2 a {
+        text-decoration: none;
+        color: #333;
+      }
+
+      article {
+        padding-top: 15px;
+      }
+
+      article .content {
+        font-family: "Libre Baskerville", serif;
+      }
+
+      header > time {
+        float: right;
+      }
+
+      footer {
+        display: inline-block;
+        font-size: 9px;
+        position: fixed;
+        bottom: 0px;
+        right: 0px;
+        padding: 2px;
+      }
+
+      footer a {
+        display: inline-block;
+        height: 20px;
+        width: 60px;
+        line-height: 20px;
+        text-align: center;
+        background-color: #770;
+        border-radius: 3px 3px 0 0;
+        text-decoration: none;
+        color: #fff;
+        opacity: 0.8;
+      }
+
+      .comments {
+        border-top: 1px solid #ccc;
+      }
+
+      ol#comments {
+        padding: 0;
+      }
+
+      ol#comments > li {
+        list-style: none;
+
+      }
+
+      .comment-author img {
+        display: block;
+      }
+
+      .login_form input {
+        display: block;
+        margin-bottom: 10px;
+      }
+
+      .login_form input[name="openid_identifier"] {
+        width: 85%;
+        background: url(http://wiki.openid.net/f/openid-16x16.gif) no-repeat scroll left center;
+        padding-left: 16px;
+      }
+    </style>
+</head>
+<body>
+  <h1><a href="/">Blog</a></h1>
+  <section>
+$yield$
+  </section>
+  <footer>
+    <a href="/admin">admin</a>
+  </footer>
+</body>
+</html>

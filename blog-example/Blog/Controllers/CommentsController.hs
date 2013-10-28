@@ -2,18 +2,20 @@
 module Blog.Controllers.CommentsController where
 
 import Control.Monad.IO.Class
+import Data.Aeson
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
 import Database.PostgreSQL.ORM
 import Web.Simple
+import Web.Simple.Templates
 import Web.Frank
 
 import Blog.Common
 import qualified Blog.Models ()
 import qualified Blog.Models.Comment as C
 
+import Blog.Auth
 import Blog.Models
-import Blog.Views.Comments
 
 lookupText :: S8.ByteString -> [(S8.ByteString, S8.ByteString)] -> Maybe T.Text
 lookupText k vals = fmap (T.pack . S8.unpack) $ lookup k vals
@@ -35,12 +37,14 @@ commentsController = do
     redirectBack
 
 commentsAdminController :: Controller AppSettings ()
-commentsAdminController = do
+commentsAdminController = requiresAdmin "/login" $ do
   get "/" $ withConnection $ \conn -> do
     pid <- readQueryParam' "post_id"
     (Just p) <- liftIO $ findRow conn pid
     comments <- liftIO $ allComments conn p
-    respondAdminTemplate $ listComments p comments
+    renderLayout "templates/admin.html"
+      "views/admin/comments/index.html" $
+        object ["post" .= p, "comments" .= comments]
     
   delete ":id" $ withConnection $ \conn -> do
     cid <- readQueryParam' "id"

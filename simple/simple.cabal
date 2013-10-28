@@ -50,6 +50,7 @@ executable smpl
     , directory
     , filepath
     , process
+    , setenv
     , stringsearch
 
 library

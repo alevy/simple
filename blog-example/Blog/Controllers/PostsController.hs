@@ -6,17 +6,19 @@ import qualified Prelude
 
 import Control.Monad
 import Control.Monad.IO.Class (liftIO)
+import Data.Aeson
 import qualified Data.ByteString.Char8 as S8
 import Data.Text.Encoding
 import Data.Time.LocalTime (getZonedTime)
-import Web.Simple
-import Web.REST
 import Database.PostgreSQL.ORM
+import Web.Simple
+import Web.Simple.Templates
+import Web.REST
 
+import Blog.Auth
 import Blog.Common
 import Blog.Models
 import qualified Blog.Models.Post as P
-import qualified Blog.Views.Posts as V
 
 postsController :: REST AppSettings
 postsController = rest $ do
@@ -27,25 +29,30 @@ postsController = rest $ do
     posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
-    respondTemplate $ V.index posts
+    render "views/posts/index.html" (posts :: [P.Post])
 
   show $ do
     withConnection $ \conn -> do
       pid <- readQueryParam' "id"
       (Just post) <- liftIO $ findRow conn pid
       comments <- liftIO $ allComments conn post
-      respondTemplate $ V.show post comments
+      render "views/posts/show.html" $
+        object ["post" .= post, "comments" .= comments]
 
-postsAdminController :: REST AppSettings
-postsAdminController = rest $ do
+postsAdminController :: Controller AppSettings ()
+postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
   index $ withConnection $ \conn -> do
-    posts <- liftIO $ findAll conn
-    respondAdminTemplate $ V.listPosts posts
+    posts <- liftIO $ findAll conn :: Controller AppSettings [P.Post]
+    renderLayout "templates/admin.html"
+      "views/admin/posts/index.html" posts
 
   edit $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
-    (Just post) <- liftIO $ findRow conn pid
-    respondTemplate $ V.edit post []
+    (Just post) <- liftIO $
+      findRow conn pid :: Controller AppSettings (Maybe P.Post)
+    renderLayout "templates/admin.html"
+      "views/admin/posts/edit.html" $
+        object ["post" .= post]
 
   update $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
@@ -62,12 +69,14 @@ postsAdminController = rest $ do
                   catch (trySave conn p >> return [])
                         (\(ValidationError errs) -> return errs)
         when (not . null $ errs) $
-          respondAdminTemplate $ V.edit p errs
+          renderLayout "templates/admin.html"
+            "views/admin/posts/edit.html" $
+              object ["post" .= post, "errors" .= errs]
         respond $ redirectTo $ S8.pack $ P.postUrl (P.postId p)
       Nothing -> redirectBack
 
-  new $ do
-    respondAdminTemplate $ V.new []
+  new $ renderLayout "templates/admin.html"
+    "views/admin/posts/new.html" $ Null
 
   create $ withConnection $ \conn -> do
     (params, _) <- parseForm
@@ -81,10 +90,10 @@ postsAdminController = rest $ do
     case mpost of
       Just post -> do
         errs <- liftIO $
-                  catch (trySave conn post >> return [])
-                        (\(ValidationError errs) -> return errs)
+                  either id (const []) `fmap` (trySave conn post)
         when (not . null $ errs) $
-          respondAdminTemplate $ V.new errs
+          renderLayout "templates/admin.html"
+            "views/admin/posts/new.html" errs
         respond $ redirectTo "/posts/"
       Nothing -> redirectBack
 

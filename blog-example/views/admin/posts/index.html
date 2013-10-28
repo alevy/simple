@@ -1,0 +1,28 @@
+<header><h2>Posts</h2></header>
+<div class="content">
+  <table class="admin-posts-list">
+    <tr>
+      <th>Title</th>
+      <th>Posted</th>
+      <th colspan=3></th>
+    </tr>
+    $for(post in @)$
+    <tr>
+      <td class="title">$post.title$</td>
+      <td class="date"><time>$formatTime(post.postedAt)$</time></td>
+      <td class="action">
+        <a href="/admin/posts/$post.postId$/edit">edit</a>
+      </td>
+      <td class="action">
+        <a href="/admin/posts/$post.postId$/comments">comments</a>
+      </td>
+      <td class="action">
+        <form actions="/admin/posts/$post.postedId$" method="POST">
+          <input type="hidden" name="_method" value="DELETE"/>
+          <input type="submit" value="Delete"/>
+        </form>
+      </td>
+    </tr>
+    $endfor$
+  </table>
+</div>

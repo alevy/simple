@@ -1,0 +1,11 @@
+$for(post in @)$
+<article>
+  <header>
+    <time>$formatTime(post.postedAt)$</time>
+    <h2><a href="/posts/$post.postId$">$post.title$</a></h2>
+  </header>
+  <div class="content">
+    $markdown(post.body)$
+  </div>
+</article>
+$endfor$
