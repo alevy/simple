@@ -19,7 +19,8 @@ cabal-version:       >=1.10
 library
   ghc-options: -Wall -fno-warn-unused-do-bind
   exposed-modules:
-    Web.Simple.Templates
+      Web.Simple.Templates
+    , Web.Simple.Templates.Language
   build-depends:
       base < 6
     , aeson
