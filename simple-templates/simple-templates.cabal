@@ -17,6 +17,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
+  hs-source-dirs: src
   ghc-options: -Wall -fno-warn-unused-do-bind
   exposed-modules:
       Web.Simple.Templates
@@ -34,4 +35,17 @@ library
     , unordered-containers
     , vector
   default-language:    Haskell2010
+
+test-suite test-simple-templates
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Spec.hs
+  build-depends:
+      base < 6
+    , aeson
+    , attoparsec
+    , HUnit
+    , hspec
+    , simple-templates
+    , vector
 
