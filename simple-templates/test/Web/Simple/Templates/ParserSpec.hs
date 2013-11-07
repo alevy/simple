@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Web.Simple.Templates.LanguageSpec where
+module Web.Simple.Templates.ParserSpec where
 
 import Data.Aeson
 import qualified Data.Attoparsec.Text as A
@@ -7,10 +7,11 @@ import Data.Maybe
 import qualified Data.Vector as V
 import Test.HUnit
 import Test.Hspec
-import Web.Simple.Templates.Language
+import Web.Simple.Templates.Parser
+import Web.Simple.Templates.Types
 
 spec :: Spec
-spec = describe "Web.Simple.Templates.Language" $ do
+spec = describe "Web.Simple.Templates.Parser" $ do
   describe "pEscapedDollar" $ do
     it "reads $$ as escaped dollar" $ do
       let parsedStr = A.parseOnly pEscapedDollar "$$"

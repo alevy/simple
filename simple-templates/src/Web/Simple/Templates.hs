@@ -18,6 +18,7 @@ import Network.Mime
 import System.FilePath
 import Web.Simple (Controller, ok, respond)
 import Web.Simple.Templates.Language
+import Web.Simple.Templates.Types
 
 class HasTemplates hs where
   defaultLayout :: Controller hs (Maybe Template)
@@ -27,40 +28,42 @@ class HasTemplates hs where
   functionMap = return H.empty
 
   getTemplate :: FilePath -> Controller hs Template
-{-  getTemplate fp = do
+  getTemplate fp = do
     eres <- compileTemplate . decodeUtf8 <$> liftIO (S.readFile fp)
     case eres of
       Left str -> fail str
-      Right tmpl -> return tmpl-}
+      Right tmpl -> return tmpl
 
   render :: ToJSON a => FilePath -> a -> Controller hs ()
-{-  render fp val = do
+  render fp val = do
     mlayout <- defaultLayout
     case mlayout of
       Nothing -> renderPlain fp val
-      Just layout -> renderLayout' layout fp val-}
+      Just layout -> renderLayout' layout fp val
 
   renderPlain :: ToJSON a => FilePath -> a -> Controller hs ()
-{-  renderPlain fp val = do
+  renderPlain fp val = do
     fm <- functionMap
     tmpl <- getTemplate fp
     let pageContent =
-          L.fromChunks . (:[]) . encodeUtf8 $ unTemplate tmpl fm $ toJSON val
+          L.fromChunks . (:[]) . encodeUtf8 $
+            unTemplate tmpl fm $ toJSON val
     let mime = defaultMimeLookup $ T.pack $ takeFileName fp
-    respond $ ok mime pageContent-}
+    respond $ ok mime pageContent
 
   renderLayout :: ToJSON a => FilePath -> FilePath -> a -> Controller hs ()
-{-  renderLayout lfp fp val = do
+  renderLayout lfp fp val = do
     layout <- getTemplate lfp
-    renderLayout' layout fp val-}
+    renderLayout' layout fp val
 
   renderLayout' :: ToJSON a => Template -> FilePath -> a -> Controller hs ()
-{-  renderLayout' layout fp val = do
+  renderLayout' layout fp val = do
     fm <- functionMap
     tmpl <- getTemplate fp
     let pageContent =
-          L.fromChunks . (:[]) . encodeUtf8 $ unTemplate tmpl fm $ toJSON val
+          L.fromChunks . (:[]) . encodeUtf8 $
+            unTemplate tmpl fm $ toJSON val
     let mime = defaultMimeLookup $ T.pack $ takeFileName fp
     respond $ ok mime $ L.fromChunks . (:[]) . encodeUtf8 $
-      unTemplate layout fm $ object ["yield" .= pageContent, "page" .= val]-}
+      unTemplate layout fm $ object ["yield" .= pageContent, "page" .= val]
 
