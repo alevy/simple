@@ -23,6 +23,8 @@ library
   build-depends:
       base < 6
     , bytestring
+    , directory
+    , filepath
     , postgresql-simple
     , postgresql-orm
     , simple >= 0.6

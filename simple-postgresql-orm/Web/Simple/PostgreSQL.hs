@@ -7,7 +7,9 @@ import qualified Data.ByteString.Char8 as S8
 import Database.PostgreSQL.Devel
 import Database.PostgreSQL.Migrate
 import Database.PostgreSQL.Simple
+import System.Directory
 import System.Environment
+import System.FilePath
 import System.IO
 import Web.Simple
 
@@ -21,10 +23,12 @@ createPostgreSQLConn = do
   env <- getEnvironment
   let dev = maybe False (== "development") $ lookup "ENV" env
   when dev $ void $ do
+    cwd <- getCurrentDirectory
+    let dbdir = cwd </> "db" </> "development"
     putStrLn "Starting dev database..."
-    initLocalDB "db/development"
-    startLocalDB "db/development"
-    setLocalDB "db/development"
+    initLocalDB dbdir
+    startLocalDB dbdir
+    setLocalDB dbdir
     initializeDb
     runMigrationsForDir stdout defaultMigrationsDir
   let envConnect = maybe S8.empty S8.pack $ lookup "DATABASE_URL" env
