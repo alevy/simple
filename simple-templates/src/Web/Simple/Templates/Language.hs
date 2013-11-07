@@ -68,12 +68,12 @@ astForLoop fm global varName lst body msep =
         go (v:[]) accm =
           let scope = replaceVar global varName v
               nv = evaluateAST fm scope body
-          in valueToText v <> valueToText nv <> accm
+          in accm <> valueToText nv
         go (v:x1:xs) accm =
           let scope = replaceVar global varName v
               nv = evaluateAST fm scope body
               accmN =
-                valueToText v <> valueToText nv <> valueToText sep <> accm
+                accm <> valueToText nv <> valueToText sep
           in go (x1:xs) accmN
 
 replaceVar :: Value -> Identifier -> Value -> Value
