@@ -38,6 +38,7 @@ cabal-version:       >=1.9.2
 data-files: template/*.tmpl
 
 executable smpl
+  hs-source-dirs: src
   Main-Is: smpl.hs
   ghc-options: -Wall
   build-depends:
@@ -54,6 +55,7 @@ executable smpl
     , stringsearch
 
 library
+  hs-source-dirs: src
   build-depends:
       base < 6
     , base64-bytestring
