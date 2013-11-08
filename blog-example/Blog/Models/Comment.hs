@@ -3,6 +3,7 @@ module Blog.Models.Comment where
 
 import Data.Aeson
 import Data.Text (Text)
+import Data.Time.LocalTime
 import Database.PostgreSQL.ORM.Model
 
 import GHC.Generics
@@ -13,7 +14,8 @@ data Comment = Comment { commentId :: DBKey
                        , name :: Text
                        , email :: Text
                        , comment :: Text
-                       , postId :: DBRef Post }
+                       , postId :: DBRef Post
+                       , commentedAt :: ZonedTime }
                   deriving (Show, Generic)
 
 instance ToJSON Comment
@@ -24,5 +26,6 @@ instance Model Comment where
                                                 , "name"
                                                 , "email"
                                                 , "comment"
-                                                , "post_id"]}
+                                                , "post_id"
+                                                , "commented_at"]}
 

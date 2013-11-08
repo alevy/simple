@@ -5,6 +5,7 @@ import Control.Monad.IO.Class
 import Data.Aeson
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text as T
+import Data.Time.LocalTime
 import Database.PostgreSQL.ORM
 import Web.Simple
 import Web.Simple.Templates
@@ -25,11 +26,12 @@ commentsController = do
   post "/" $ do
     pid <- readQueryParam' "post_id"
     (params, _) <- parseForm
+    curTime <- liftIO $ getZonedTime
     let mcomment = do
           name <- lookupText "name" params
           email <- lookupText "email" params
           comment <- lookupText "comment" params
-          return $ C.Comment NullKey name email comment pid
+          return $ C.Comment NullKey name email comment pid curTime
     case mcomment of
       Just comment -> withConnection $ \conn -> do
         liftIO $ save conn comment

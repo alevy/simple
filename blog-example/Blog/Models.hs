@@ -12,5 +12,6 @@ postComments :: Association P.Post C.Comment
 postComments = has
 
 allComments :: Connection -> P.Post -> IO [C.Comment]
-allComments = findAssoc postComments
+allComments conn post = dbSelect conn $
+  setOrderBy "commented_at desc" $ assocWhere postComments post
 

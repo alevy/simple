@@ -36,7 +36,8 @@ CREATE TABLE comments (
     name character varying(255) NOT NULL,
     email character varying(255) NOT NULL,
     comment text NOT NULL,
-    post_id integer
+    post_id integer,
+    commented_at timestamp with time zone DEFAULT now() NOT NULL
 );
 
 

@@ -2,6 +2,7 @@
 module Blog.Helpers where
 
 import Data.Aeson
+import Data.Maybe
 import Data.Text (Text, unpack)
 import Data.Time.LocalTime
 import Data.Time.Format
@@ -23,8 +24,10 @@ valueArrayLength = toJSON . length
 gravatarUrl :: Text -> Maybe Int -> Value
 gravatarUrl email size = toJSON $ gravatar (def {gSize = fmap Size size}) email
 
-timeFormatter :: ZonedTime -> Value
-timeFormatter t = toJSON $ formatTime defaultTimeLocale "%B %e, %C%y %R" t
+timeFormatter :: ZonedTime -> Maybe String -> Value
+timeFormatter t mfmt =
+  let fmt = fromMaybe "%B %e, %C%y %l:%M%P" mfmt
+  in toJSON $ formatTime defaultTimeLocale fmt t
 
 markdown :: Text -> Value
 markdown = toJSON . (writeHtmlString def) . (readMarkdown def)

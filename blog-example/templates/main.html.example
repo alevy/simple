@@ -19,10 +19,10 @@
     </ul>
   </header>
   <section id="river">
-{% content %}
+$yield$
   </section>
   <footer>
-    Made with the <a href="http://gitstar.com/alevy/simple">simple</a>
+    Made with the <a href="http://simple.cx">simple</a>
     web framework.
   </footer>
 </body>

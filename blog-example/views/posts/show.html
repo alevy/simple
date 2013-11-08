@@ -15,12 +15,17 @@
       <div class="comment">
         <div class="comment-author vcard">
           <img src="$gravatar(comment.email, 48)$"/>
+          at
+          <time>$formatTime(comment.commentedAt, "%l:%M%P")$</time>
+          on
+          <time>$formatTime(comment.commentedAt, "%m/%d/%y")$</time>
           <cite class="fn">$comment.name$</cite>
-          <span class="says">says:</span>
+          <span class="says">said:</span>
         </div>
         <p>$comment.comment$</p>
       </div>
     </li>
+    $sep$
     <hr/>
     $endfor$
   </ol>
