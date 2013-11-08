@@ -35,12 +35,18 @@ fromJSONStrict val = case fromJSON val of
 
 #define TOFUNCTION(types, conds) \
 instance (conds) => ToFunction (types -> Value) where { \
-  toFunction f = Function $ \(a:as) -> call (toFunction (f $ fromJSONStrict a)) as; \
+  toFunction f = Function $ \args -> \
+    case args of { \
+      [] -> call (toFunction (f $ fromJSONStrict Null)) [] ; \
+      a:as -> call (toFunction (f $ fromJSONStrict a)) as} ; \
 }
 
 
 instance (FromJSON a) => ToFunction (a -> Value) where
-  toFunction f = Function $ \(a:_) -> toJSON $ f $ fromJSONStrict a
+  toFunction f = Function $ \args ->
+    case args of
+      [] -> toJSON $ f $ fromJSONStrict Null
+      a:_ -> toJSON $ f $ fromJSONStrict a
 
 TypesConds(TOFUNCTION)
 
