@@ -45,7 +45,7 @@ commentsAdminController = requiresAdmin "/login" $ do
     (Just p) <- liftIO $ findRow conn pid
     comments <- liftIO $ allComments conn p
     renderLayout "templates/admin.html"
-      "views/admin/comments/index.html" $
+      "admin/comments/index.html" $
         object ["post" .= p, "comments" .= comments]
     
   delete ":id" $ withConnection $ \conn -> do

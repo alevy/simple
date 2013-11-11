@@ -29,14 +29,14 @@ postsController = rest $ do
     posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
-    render "views/posts/index.html" (posts :: [P.Post])
+    render "posts/index.html" (posts :: [P.Post])
 
   show $ do
     withConnection $ \conn -> do
       pid <- readQueryParam' "id"
       (Just post) <- liftIO $ findRow conn pid
       comments <- liftIO $ allComments conn post
-      render "views/posts/show.html" $
+      render "posts/show.html" $
         object ["post" .= post, "comments" .= comments]
 
 postsAdminController :: Controller AppSettings ()
@@ -44,14 +44,14 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
   index $ withConnection $ \conn -> do
     posts <- liftIO $ findAll conn :: Controller AppSettings [P.Post]
     renderLayout "templates/admin.html"
-      "views/admin/posts/index.html" posts
+      "admin/posts/index.html" posts
 
   edit $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $
       findRow conn pid :: Controller AppSettings (Maybe P.Post)
     renderLayout "templates/admin.html"
-      "views/admin/posts/edit.html" $
+      "admin/posts/edit.html" $
         object ["post" .= post]
 
   update $ withConnection $ \conn -> do
@@ -70,13 +70,13 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
                         (\(ValidationError errs) -> return errs)
         when (not . null $ errs) $
           renderLayout "templates/admin.html"
-            "views/admin/posts/edit.html" $
+            "admin/posts/edit.html" $
               object ["post" .= post, "errors" .= errs]
         respond $ redirectTo $ S8.pack $ P.postUrl (P.postId p)
       Nothing -> redirectBack
 
   new $ renderLayout "templates/admin.html"
-    "views/admin/posts/new.html" $ Null
+    "admin/posts/new.html" $ Null
 
   create $ withConnection $ \conn -> do
     (params, _) <- parseForm
@@ -93,7 +93,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
                   either id (const []) `fmap` (trySave conn post)
         when (not . null $ errs) $
           renderLayout "templates/admin.html"
-            "views/admin/posts/new.html" errs
+            "admin/posts/new.html" errs
         respond $ redirectTo "/posts/"
       Nothing -> redirectBack
 

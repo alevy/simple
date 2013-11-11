@@ -22,7 +22,8 @@ valueArrayLength :: [Value] -> Value
 valueArrayLength = toJSON . length
 
 gravatarUrl :: Text -> Maybe Int -> Value
-gravatarUrl email size = toJSON $ gravatar (def {gSize = fmap Size size}) email
+gravatarUrl email size = toJSON $
+  gravatar (def {gSize = fmap Size size, gDefault = Just Wavatar}) email
 
 timeFormatter :: ZonedTime -> Maybe String -> Value
 timeFormatter t mfmt =

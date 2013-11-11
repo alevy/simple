@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts, OverloadedStrings, ScopedTypeVariables  #-}
 module Blog.Common
   ( AppSettings, newAppSettings
   , module Web.Simple.PostgreSQL
