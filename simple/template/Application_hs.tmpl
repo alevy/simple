@@ -1,0 +1,14 @@
+{-# LANGUAGE OverloadedStrings #-}
+module Application where
+
+import {{module}}.Common
+import Web.Simple
+
+app :: (Application -> IO ()) -> IO ()
+app runner = do
+  settings <- newAppSettings
+
+  runner $ controllerApp settings $ do
+    -- TODO: routes go here
+    respond $ okHtml "Hello World"
+

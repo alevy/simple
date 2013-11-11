@@ -1,17 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
-import Web.Simple
-import Network.Wai.Handler.Warp
-import System.Posix.Env
 
-app runner = do
-  -- TODO: App initialization code goes here
-  runner $ controllerApp () $ do
-    -- TODO: routes go here
-    respond $ okHtml "Hello World"
+import Application
+import Network.Wai.Handler.Warp
+import Network.Wai.Middleware.RequestLogger
+import System.Environment
 
 main :: IO ()
 main = do
-  port <- read `fmap` getEnvDefault "PORT" "3000"
-  app (run port)
+  env <- getEnvironment
+  let port = maybe 3000 read $ lookup "PORT" env
+  app (run port . logStdout)
 

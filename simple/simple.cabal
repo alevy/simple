@@ -84,5 +84,5 @@ library
 
 source-repository head
   type: git
-  location: anonymous@gitstar.com:alevy/wai-lite.git
+  location: anonymous@gitstar.com:alevy/simple.git
 
