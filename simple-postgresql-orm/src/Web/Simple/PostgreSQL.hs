@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Web.Simple.PostgreSQL where
 
 import Control.Concurrent.MVar
@@ -17,6 +18,9 @@ type PostgreSQLConn = MVar Connection
 
 class HasPostgreSQL hs where
   postgreSQLConn :: hs -> MVar Connection
+
+instance HasPostgreSQL (MVar Connection) where
+  postgreSQLConn = id
 
 createPostgreSQLConn :: IO (MVar Connection)
 createPostgreSQLConn = do
