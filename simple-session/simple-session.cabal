@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simple-session
-version:             0.1.0.0
+version:             0.6.0
 -- synopsis:            
 -- description:         
 homepage:            http://simple.cx
