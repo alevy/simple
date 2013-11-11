@@ -1,5 +1,24 @@
-{-# LANGUAGE OverloadedStrings #-}
-module Web.Simple.Templates.Language where
+{-# LANGUAGE OverloadedStrings, Trustworthy #-}
+{-|
+A simple templating system with variable substitution, function invokation, for
+loops and conditionals. Most callers should use 'compileTemplate' and invoke
+the template with 'renderTemplate'. E.g.:
+
+> let myTemplate = compileTemplate "Hello, $@$!"
+> print $ renderTemplate myTemplate mempty "World"
+
+-}
+module Web.Simple.Templates.Language
+  ( -- * Language Description
+  -- ** Variable substitution
+  -- ** Function Invokation
+  -- ** Conditionals
+  -- ** For Loops
+  -- * Compilation
+  compileTemplate, evaluate, evaluateAST
+  -- * Helpers
+  , valueToText, replaceVar
+  ) where
 
 import Control.Applicative
 import qualified Data.HashMap.Strict as H
@@ -13,7 +32,9 @@ import qualified Data.Attoparsec.Text as A
 import Web.Simple.Templates.Parser
 import Web.Simple.Templates.Types
 
-evaluateAST :: FunctionMap -> Value -> AST -> Value
+evaluateAST :: FunctionMap -- ^ Mapping of functions accessible to the template
+            -> Value -- ^ The global 'Object' or 'Value'
+            -> AST -> Value
 evaluateAST fm global ast =
   case ast of
     ASTRoot asts -> foldl (\v iast ->

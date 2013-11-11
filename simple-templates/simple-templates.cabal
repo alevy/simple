@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simple-templates
-version:             0.1.0.0
+version:             0.6.0
 -- synopsis:            
 -- description:         
 homepage:            http://simple.cx
@@ -50,4 +50,5 @@ test-suite test-simple-templates
     , hspec
     , simple-templates
     , vector
+  default-language: Haskell2010
 

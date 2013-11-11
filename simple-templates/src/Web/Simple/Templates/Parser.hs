@@ -1,5 +1,16 @@
-{-# LANGUAGE OverloadedStrings #-}
-module Web.Simple.Templates.Parser where
+{-# LANGUAGE OverloadedStrings, Trustworthy #-}
+
+{-| Language parser -}
+module Web.Simple.Templates.Parser
+  ( reservedWords
+  , pAST
+  , pRaw
+  , pEscapedDollar
+  , pEscapedExpr, pExpr
+  , pIf, pFor
+  , pFunc, pValue, pVar
+  , pIndex, pIdentifier, pLiteral, pNull, pBoolean, pString, pNumber, pArray
+  ) where
 
 import Control.Applicative
 import Control.Monad
@@ -8,16 +19,17 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Aeson
-import qualified Data.Vector as V
 import qualified Data.Attoparsec.Text as A
 import Web.Simple.Templates.Types
 
+-- | Reserved words: for, endfor, sep, if, else, endif, true, false
 reservedWords :: [Text]
 reservedWords =
   [ "for", "endfor", "sep"
   , "if", "else", "endif"
   , "true", "false"]
 
+-- | Parse an AST
 pAST :: A.Parser AST
 pAST = ASTRoot <$> many (pRaw <|> pEscapedExpr)
 
@@ -130,5 +142,5 @@ pArray = do
   vals <- pValue `A.sepBy` (A.skipSpace *> A.char ',' *> A.skipSpace)
   A.skipSpace
   A.char ']'
-  return $ ASTArray $ V.fromList vals
+  return $ astListToArray vals
 

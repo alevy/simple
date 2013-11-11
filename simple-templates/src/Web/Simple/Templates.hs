@@ -1,5 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances, CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Web.Simple.Templates
   ( HasTemplates(..)
   , H.fromList
@@ -24,12 +23,16 @@ class HasTemplates hs where
   defaultLayout :: Controller hs (Maybe Template)
   defaultLayout = return Nothing
 
+  viewDirectory :: Controller hs FilePath
+  viewDirectory = return "views"
+
   functionMap :: Controller hs FunctionMap
   functionMap = return H.empty
 
   getTemplate :: FilePath -> Controller hs Template
   getTemplate fp = do
-    eres <- compileTemplate . decodeUtf8 <$> liftIO (S.readFile fp)
+    eres <- compileTemplate . decodeUtf8 <$>
+      liftIO (S.readFile fp)
     case eres of
       Left str -> fail str
       Right tmpl -> return tmpl
@@ -44,10 +47,11 @@ class HasTemplates hs where
   renderPlain :: ToJSON a => FilePath -> a -> Controller hs ()
   renderPlain fp val = do
     fm <- functionMap
-    tmpl <- getTemplate fp
+    dir <- viewDirectory
+    tmpl <- getTemplate (dir </> fp)
     let pageContent =
           L.fromChunks . (:[]) . encodeUtf8 $
-            unTemplate tmpl fm $ toJSON val
+            renderTemplate tmpl fm $ toJSON val
     let mime = defaultMimeLookup $ T.pack $ takeFileName fp
     respond $ ok mime pageContent
 
@@ -59,11 +63,12 @@ class HasTemplates hs where
   renderLayout' :: ToJSON a => Template -> FilePath -> a -> Controller hs ()
   renderLayout' layout fp val = do
     fm <- functionMap
-    tmpl <- getTemplate fp
+    dir <- viewDirectory
+    tmpl <- getTemplate (dir </> fp)
     let pageContent =
           L.fromChunks . (:[]) . encodeUtf8 $
-            unTemplate tmpl fm $ toJSON val
+            renderTemplate tmpl fm $ toJSON val
     let mime = defaultMimeLookup $ T.pack $ takeFileName fp
     respond $ ok mime $ L.fromChunks . (:[]) . encodeUtf8 $
-      unTemplate layout fm $ object ["yield" .= pageContent, "page" .= val]
+      renderTemplate layout fm $ object ["yield" .= pageContent, "page" .= val]
 

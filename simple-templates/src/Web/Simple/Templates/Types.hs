@@ -1,4 +1,5 @@
-{-# LANGUAGE FlexibleInstances, CPP #-}
+{-# LANGUAGE FlexibleInstances, CPP, Trustworthy #-}
+{- | Types and helpers to encode the language AST -}
 module Web.Simple.Templates.Types where
 
 import qualified Data.HashMap.Strict as H
@@ -7,6 +8,7 @@ import Data.Text (Text)
 import Data.Aeson
 import qualified Data.Vector as V
 
+-- | A funcation that's callable from inside a template
 newtype Function = Function { call :: [Value] -> Value }
 
 #define TypesConds(macro) \
@@ -28,6 +30,7 @@ newtype Function = Function { call :: [Value] -> Value }
 class ToFunction a where
   toFunction :: a -> Function
 
+-- | Like 'fromJSON' but throws an error if there is a parse failure.
 fromJSONStrict :: FromJSON a => Value -> a
 fromJSONStrict val = case fromJSON val of
                   Error err -> error err
@@ -52,28 +55,37 @@ TypesConds(TOFUNCTION)
 
 type FunctionMap = H.HashMap Identifier Function
 
+-- | A compiled template is a function that takes a 'FunctionMap' and a global
+-- aeson 'Value' and renders the template.
 newtype Template = Template
-  { unTemplate :: FunctionMap -> Value -> Text }
+  { renderTemplate :: FunctionMap -> Value -> Text }
 
 instance Monoid Template where
   mempty = Template $ const $ const mempty
   tm1 `mappend` tm2 = Template $ \fm global ->
-    unTemplate tm1 fm global <> unTemplate tm2 fm global
+    renderTemplate tm1 fm global <> renderTemplate tm2 fm global
 
 -- | A symbol identifier following the format [a-z][a-zA-Z0-9_-]*
 type Identifier = Text
 
 -- | 'AST's encode the various types of expressions in the language.
-data AST = ASTRoot [AST]
-         | ASTLiteral Value
-         | ASTFunc Identifier [AST]
-         | ASTVar Identifier
-         | ASTIndex AST [Identifier]
+data AST = ASTRoot [AST] -- ^ A series of sub-ASTs
+         | ASTLiteral Value -- ^ A literal that does not require evaluation
+         | ASTFunc Identifier [AST] -- ^ A function call and list of arguments
+         | ASTVar Identifier -- ^ Variable dereference
+         | ASTIndex AST [Identifier] -- ^ Nested index into an object
          | ASTArray (V.Vector AST)
+         -- ^ A literal array (may contain non-literals)
          | ASTIf AST AST (Maybe AST)
+         -- ^ If - condition, true branch and optional false branch
          | ASTFor Identifier AST AST (Maybe AST)
+         -- ^ for(i in expr) body separator
   deriving (Show, Eq)
 
+-- | Lift a 'ToJSON' to an 'ASTLiteral'
 fromLiteral :: ToJSON a => a -> AST
 fromLiteral = ASTLiteral . toJSON
+
+astListToArray :: [AST] -> AST
+astListToArray = ASTArray . V.fromList
 
