@@ -17,12 +17,12 @@ import Web.Simple
 type PostgreSQLConn = MVar Connection
 
 class HasPostgreSQL hs where
-  postgreSQLConn :: hs -> MVar Connection
+  postgreSQLConn :: hs -> PostgreSQLConn
 
-instance HasPostgreSQL (MVar Connection) where
+instance HasPostgreSQL PostgreSQLConn where
   postgreSQLConn = id
 
-createPostgreSQLConn :: IO (MVar Connection)
+createPostgreSQLConn :: IO PostgreSQLConn
 createPostgreSQLConn = do
   env <- getEnvironment
   let dev = maybe False (== "development") $ lookup "ENV" env
