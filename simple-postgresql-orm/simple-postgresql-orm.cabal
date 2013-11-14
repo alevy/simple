@@ -3,8 +3,8 @@
 
 name:                simple-postgresql-orm
 version:             0.6.0
--- synopsis:            
--- description:         
+synopsis:            Connector package for integrating postgresql-orm with the Simple web framework
+description:            Connector package for integrating postgresql-orm with the Simple web framework
 homepage:            http://simple.cx
 license:             LGPL-3
 license-file:        LICENSE
