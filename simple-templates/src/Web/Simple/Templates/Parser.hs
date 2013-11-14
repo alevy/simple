@@ -34,13 +34,11 @@ pAST :: A.Parser AST
 pAST = ASTRoot <$> many (pRaw <|> pEscapedExpr)
 
 pRaw :: A.Parser AST
-pRaw = ASTLiteral . String . mconcat <$> (A.many1 $ do
-  dollar <- A.option mempty pEscapedDollar
-  txt <- A.takeWhile1 (/= '$')
-  return $ dollar <> txt)
+pRaw = ASTLiteral . String . mconcat <$> (A.many1 $
+  A.takeWhile1 (/= '$') <|> pEscapedDollar)
 
 pEscapedDollar :: A.Parser Text
-pEscapedDollar = A.char '$' *> A.string "$"
+pEscapedDollar = A.string "$$" >> return "$"
 
 pEscapedExpr :: A.Parser AST
 pEscapedExpr = do
