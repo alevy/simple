@@ -4,7 +4,13 @@
 name:                simple-templates
 version:             0.6.0
 synopsis:            A basic template language for the Simple web framework
--- description:         
+description:
+  A basic template language for the Simple web framework. The language supports
+  variable substitution, function invokation, loops and conditionals.
+  .
+  "Web.Simple.Templates" documents how to integrate into an app, while
+  "Web.Simple.Templates.Language" documents the templating language syntax
+  and semantics.
 homepage:            http://simple.cx
 license:             LGPL-3
 license-file:        LICENSE
