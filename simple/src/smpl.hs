@@ -41,7 +41,11 @@ main = do
     case smpl of
       Server p m -> do
         exitCode <- rawSystem "wai-handler-devel" [show p, m, "app"]
-        exitWith exitCode
+        case exitCode of
+          ExitFailure 127 -> do
+            putStrLn "You must install wai-handler devel first"
+            exitWith $ ExitFailure 1
+          _ -> exitWith exitCode
       Create dir -> createApplication dir
 
 humanize :: String -> String
