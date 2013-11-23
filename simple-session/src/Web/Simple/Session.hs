@@ -129,7 +129,7 @@ session = do
     Just sess -> return sess
     Nothing -> do
       sess <- sessionFromCookie
-      setSession =<< sessionFromCookie
+      setSession sess
       return sess
 
 -- | Get and parse a 'Session' from the current 'Request'.
