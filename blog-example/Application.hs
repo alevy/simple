@@ -6,7 +6,6 @@ import Blog.Common
 import Blog.Controllers.CommentsController
 import Blog.Controllers.PostsController
 import Network.Wai.Middleware.MethodOverridePost
-import Network.Wai.Middleware.Static
 import Web.Simple
 import Web.Simple.Session
 import Web.REST (restIndex, routeREST)
@@ -17,7 +16,7 @@ app runner = do
 
   runner $ methodOverridePost $
     controllerApp settings $ withSession $ do
-      openIdController handleLogin      
+      openIdController handleLogin
       routeName "login" loginPage
       routePattern "logout" logout
 
@@ -30,5 +29,5 @@ app runner = do
         routePattern ":post_id/comments" $ commentsController
         routeREST $ postsController
       routeTop $ restIndex $ postsController
-      fromApp $ staticPolicy (addBase "static") $ const $ return notFound
+      serveStatic "static"
 
