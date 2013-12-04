@@ -35,6 +35,7 @@ import Data.Map (Map)
 import qualified Data.Map as M
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.URI
+import Network.Wai.Internal
 import Web.Cookie
 import Web.Simple
 import System.Environment
@@ -113,7 +114,7 @@ withSession (Controller act) = do
 -- domain, and no expiration is set.
 addCookie :: (S.ByteString, S.ByteString) -> Response -> Response
 addCookie (key, value) resp =
-  let (stat, hdrs, src) = responseSource resp
+  let ResponseSource stat hdrs src = resp
   in ResponseSource stat (("Set-Cookie", cookie):hdrs) src
   where cookie = toByteString . renderSetCookie $
                   def { setCookieName = key

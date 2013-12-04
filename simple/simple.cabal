@@ -61,7 +61,7 @@ library
     , conduit
     , directory
     , filepath
-    , wai
+    , wai >= 2.0
     , wai-extra
     , http-types
     , text

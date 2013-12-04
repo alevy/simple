@@ -24,7 +24,7 @@ module Web.Simple.Controller
   -- * Example
   -- $Example
   -- * Controller Monad
-    Controller(..), runController, runControllerIO
+    Controller(..), runController
   , controllerApp, controllerState, putState
   , request, localRequest, respond
   , requestHeader
@@ -79,7 +79,7 @@ type ControllerState r = (r, Request)
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
 newtype Controller r a =
   Controller (ControllerState r ->
-              ResourceT IO (Either Response a, ControllerState r))
+              IO (Either Response a, ControllerState r))
 
 instance Functor (Controller r) where
   fmap f (Controller act) = Controller $ \st0 -> do
@@ -105,11 +105,6 @@ instance Monad (Controller r) where
 instance MonadIO (Controller r) where
   liftIO act = Controller $ \st -> liftIO act >>= \r -> return (Right r, st)
 
-liftResourceT :: ResourceT IO a -> Controller r a
-liftResourceT act = Controller $ \st -> do
-  a <- act
-  return (Right a, st)
-
 hoistEither :: Either Response a -> Controller r a
 hoistEither eith = Controller $ \st -> return (eith, st)
 
@@ -118,7 +113,7 @@ instance MonadPeelIO (Controller r) where
     r <- controllerState
     req <- request
     return $ \ctrl -> do
-      res <- runControllerIO ctrl r req
+      res <- runController ctrl r req
       return $ hoistEither res
 
 ask :: Controller r (r, Request)
@@ -150,12 +145,8 @@ controllerApp r ctrl req =
   runController ctrl r req >>=
     either return (const $ return notFound) 
 
-runController :: Controller r a -> r -> Request -> ResourceT IO (Either Response a)
+runController :: Controller r a -> r -> Request -> IO (Either Response a)
 runController (Controller fun) r req = fst `fmap` fun (r,req)
-
--- | Run a 'Controller' in the @IO@ monad
-runControllerIO :: Controller r a -> r -> Request -> IO (Either Response a)
-runControllerIO ctrl r = runResourceT . runController ctrl r
 
 -- | Decline to handle the request
 --
@@ -175,13 +166,13 @@ respond resp = Controller $ \st -> return (Left resp, st)
 fromApp :: ToApplication a => a -> Controller r ()
 fromApp app = do
   req <- request
-  resp <- liftResourceT $ (toApp app) req
+  resp <- liftIO $ (toApp app) req
   respond resp
 
 -- | Matches on the hostname from the 'Request'. The route only succeeds on
 -- exact matches.
 routeHost :: S.ByteString -> Controller r a -> Controller r ()
-routeHost host = guardReq $ (host ==) . serverName
+routeHost host = guardReq $ \req -> host == (fromMaybe "" $ requestHeaderHost req)
 
 -- | Matches if the path is empty.
 --
@@ -338,13 +329,13 @@ readParamValue varName =
 parseForm :: Controller r ([Param], [(S.ByteString, FileInfo FilePath)])
 parseForm = do
   req <- request
-  liftResourceT $ parseRequestBody tempFileBackEnd req
+  liftIO $ parseRequestBody tempFileBackEnd req
 
 -- | Reads and returns the body of the HTTP request.
 body :: Controller r L8.ByteString
 body = do
   req <- request
-  liftResourceT $ L8.fromChunks `fmap` (requestBody req $$ CL.consume)
+  liftIO $ L8.fromChunks `fmap` (requestBody req $$ CL.consume)
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
