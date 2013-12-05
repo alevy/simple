@@ -3,11 +3,15 @@
 -- | The `smpl` utility for helping a user setup a Simple web project.
 module Main (main) where
 
-import Prelude hiding (writeFile, FilePath)
+import Prelude hiding (writeFile, FilePath, all)
+import Control.Applicative
+import Control.Monad (when)
+import Data.Aeson
 import Data.Char
 import qualified Data.ByteString.Char8 as S8
-import qualified Data.ByteString.Lazy.Char8 as L8
-import qualified Data.ByteString.Lazy.Search as L8
+import qualified Data.Text.Encoding as T
+import Data.Monoid (mempty)
+import Data.Version
 import System.Console.CmdArgs
 import System.Directory
 import System.FilePath
@@ -15,6 +19,8 @@ import System.Environment
 import System.Exit
 import System.SetEnv
 import System.Process
+import Web.Simple.Templates.Language
+import Web.Simple.Templates.Types
 
 import Paths_simple
 
@@ -23,7 +29,11 @@ data Smpl =
       { port :: Int
       , moduleName :: String
       } |
-    Create { appDir :: FilePath }
+    Create { appDir :: FilePath
+           , includeTemplates :: Bool
+           , includePostgresql :: Bool
+           , includeSessions :: Bool
+           , includeAll :: Bool }
     deriving (Show, Data, Typeable)
 
 main :: IO ()
@@ -31,13 +41,34 @@ main = do
     setEnv "ENV" "development"
     myenv <- getEnvironment
     let myport = maybe 3000 read $ lookup "PORT" myenv
-    let develMode = cmdArgsMode $ modes
+    let develModes = modes
                   [ Server { port = myport &= typ "PORT"
                            , moduleName = "Application" &= typ "MODULE"
                                         &= explicit &= name "module"
-                           } &= auto
-                  , Create { appDir = "" &= argPos 0 &= typ "app_dir" } ]
-    smpl <- cmdArgsRun develMode
+                           } &= auto &= help "Run a development server"
+                           &= details [
+                            "You must have wai-handler-devel installed " ++
+                            "to run this command"]
+                  , Create { appDir = "" &= argPos 0 &= typ "app_dir"
+                           , includeTemplates = False
+                                     &= help "include templates"
+                                     &= explicit &= name "templates"
+                                     &= groupname "Plugins"
+                           , includePostgresql = False
+                                     &= help "include postgresql-orm"
+                                     &= explicit &= name "postgresql"
+                           , includeSessions = False
+                                     &= help "include cookie-based sessions"
+                                     &= explicit &= name "sessions"
+                           , includeAll = False
+                                     &= help
+                                          ("include templates, cookie-based " ++
+                                           "sessions and postgresql")
+                                     &= explicit &= name "all"}
+                          &= help "Create a new application in app_dir"]
+    smpl <- cmdArgsRun $ cmdArgsMode $
+      develModes &= (summary $
+        "Simple web framework " ++ (showVersion version))
     case smpl of
       Server p m -> do
         exitCode <- rawSystem "wai-handler-devel" [show p, m, "app"]
@@ -46,7 +77,8 @@ main = do
             putStrLn "You must install wai-handler devel first"
             exitWith $ ExitFailure 1
           _ -> exitWith exitCode
-      Create dir -> createApplication dir
+      Create dir tmpls pg sess all ->
+        createApplication dir (all || tmpls) (all || sess) (all || pg)
 
 humanize :: String -> String
 humanize = capitalize
@@ -66,38 +98,47 @@ moduleCase = capitalize
         capitalize ('_':xs) = go xs
         capitalize (x:xs) = (toUpper x):(go xs)
 
-createApplication :: FilePath -> IO ()
-createApplication dir = do
+createApplication :: FilePath -> Bool -> Bool -> Bool -> IO ()
+createApplication dir tmpls sessions postgresql = do
   let myAppName = takeBaseName $ dropTrailingPathSeparator dir
       modName = moduleCase myAppName
-      mappings = [ ("appname", myAppName)
-                 , ("name", humanize myAppName)
-                 , ("module", modName)]
+      mappings = object
+                  [ "appname" .= myAppName
+                  , "name" .= humanize myAppName
+                  , "module" .= modName
+                  , "include_templates" .= tmpls
+                  , "include_sessions" .= sessions
+                  , "include_postgresql" .= postgresql]
 
   createDirectory dir
-  createDirectory $ dir </> "db"
-  createDirectory $ dir </> "db" </> "migrations"
-  createDirectory $ dir </> "views"
-  createDirectory $ dir </> "templates"
   createDirectory $ dir </> modName
-
   copyTemplate ("template" </> "Main_hs.tmpl")
                (dir </> "Main.hs") mappings
   copyTemplate ("template" </> "Application_hs.tmpl")
                (dir </> "Application.hs") mappings
   copyTemplate ("template" </> "package_cabal.tmpl")
                (dir </> myAppName ++ ".cabal") mappings
-  copyTemplate ("template" </> "main_html.tmpl")
-               (dir </> "templates" </> "main.html") mappings
-  copyTemplate ("template" </> "index_html.tmpl")
-               (dir </> "views" </> "index.html") mappings
   copyTemplate ("template" </> "Common_hs.tmpl")
                (dir </> modName </> "Common.hs") mappings
 
-copyTemplate :: FilePath -> FilePath -> [(String, String)] -> IO ()
+  when postgresql $ do
+    createDirectory $ dir </> "db"
+    createDirectory $ dir </> "db" </> "migrations"
+
+  when tmpls $ do
+    createDirectory $ dir </> "views"
+    createDirectory $ dir </> "templates"
+    copyTemplate ("template" </> "main_html.tmpl")
+                 (dir </> "templates" </> "main.html") mappings
+    copyTemplate ("template" </> "index_html.tmpl")
+                 (dir </> "views" </> "index.html") mappings
+
+copyTemplate :: FilePath -> FilePath -> Value -> IO ()
 copyTemplate orig target mappings = do
-  tmpl <- getDataFileName orig >>= L8.readFile
-  L8.writeFile target $
-    (flip . flip foldl) tmpl mappings $ \accm (key, val) ->
-      L8.replace (S8.pack $ "{{" ++ key ++ "}}") (L8.pack val) accm
+  etmpl <- compileTemplate <$> T.decodeUtf8 <$>
+    (S8.readFile =<< getDataFileName orig)
+  case etmpl of
+    Left err -> fail err
+    Right tmpl -> S8.writeFile target $ T.encodeUtf8 $
+      renderTemplate tmpl mempty mappings
 

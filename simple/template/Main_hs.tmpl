@@ -9,6 +9,6 @@ import System.Environment
 main :: IO ()
 main = do
   env <- getEnvironment
-  let port = maybe 3000 read $ lookup "PORT" env
+  let port = maybe 3000 read $$ lookup "PORT" env
   app (run port . logStdout)
 

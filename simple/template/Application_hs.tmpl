@@ -1,14 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Application where
 
-import {{module}}.Common
+import $module$.Common
 import Web.Simple
+$if(include_templates)$import Web.Simple.Templates$endif$
 
 app :: (Application -> IO ()) -> IO ()
 app runner = do
   settings <- newAppSettings
 
-  runner $ controllerApp settings $ do
+  runner $$ controllerApp settings $$ do
     -- TODO: routes go here
-    respond $ okHtml "Hello World"
+    $if(include_templates)$render "index.html" ()$else$respond $$ okHtml "Hello World"$endif$
 

@@ -1,5 +1,5 @@
 name:                simple-session
-version:             0.6.0
+version:             0.6.1
 synopsis:            Cookie-based session management for the Simple web framework
 description:
 

@@ -1,41 +1,28 @@
-module {{module}}.Common where
+module $module$.Common where
 
 import Control.Applicative
 import Web.Simple
+$if(include_templates)$import Web.Simple.Templates$endif$
+$if(include_sessions)$import Web.Simple.Session$endif$
+$if(include_postgresql)$import Web.Simple.PostgreSQL$endif$
 
--- Uncomment the following lines for database, templates, and session support
---import Web.Simple.PostgreSQL
---import Web.Simple.Templates
---import Web.Simple.Session
-
-type AppSettings = ()
-
-newAppSettings :: IO AppSettings
-newAppSettings = return ()
-
-{- Replace the above code with this comment block for database, templates and
- - session support. Don't forget to uncomment the relevant packages in the
- - cabal file and the import statements at the top of this file.
-
-data AppSettings = AppSettings { appDB :: PostgreSQLConn
-                               , appSession :: Maybe Session }
+data AppSettings = AppSettings { $if(include_postgresql)$appDB :: PostgreSQLConn$if(include_postgresql)$
+                               , appSession :: Maybe Session$endif$$else$$if(include_sessions)$appSession :: Maybe Session$endif$$endif$ }
 
 newAppSettings :: IO AppSettings
 newAppSettings = do
-  db <- createPostgreSQLConn
-  return $ AppSettings { appDB = db , appSession = Nothing }
-
+  $if(include_postgresql)$db <- createPostgreSQLConn$endif$
+  return $$ AppSettings$if(include_postgresql)$ db$endif$$if(include_sessions)$ Nothing$endif$
+$if(include_postgresql)$
 instance HasPostgreSQL AppSettings where
   postgreSQLConn = appDB
-
+$endif$$if(include_sessions)$
 instance HasSession AppSettings where
   getSession = appSession
   setSession sess = do
     cs <- controllerState
-    putState $ cs { appSession = Just sess }
-
+    putState $$ cs { appSession = Just sess }
+$endif$$if(include_templates)$
 instance HasTemplates AppSettings where
-  defaultLayout = Just <$> getTemplate "templates/main.html"
-
--}
-
+  defaultLayout = Just <$$> getTemplate "templates/main.html"
+$endif$

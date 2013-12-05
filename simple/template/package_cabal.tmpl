@@ -1,4 +1,4 @@
-name:                {{module}}
+name:                $module$
 version:             0.0.0.0
 --author:              YOUR NAME
 --maintainer:          your@email.com
@@ -6,7 +6,7 @@ category:            Web
 build-type:          Simple
 cabal-version:       >=1.8
 
-executable {{appname}}
+executable $appname$
   main-is: Main.hs
   ghc-options: -threaded -O2
   build-depends:
@@ -14,9 +14,8 @@ executable {{appname}}
     , simple >= 0.6.0
     , wai
     , wai-extra
-    , warp
-    -- uncomment for database, session and template support
-    -- , simple-postgresql-orm
-    -- , simple-session
-    -- , simple-templates
+    , warp$if(include_templates)$
+    , simple-templates$endif$$if(include_sessions)$
+    , simple-session$endif$$if(include_postgresql)$
+    , simple-postgresql-orm$endif$
 

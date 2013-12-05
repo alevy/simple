@@ -1,10 +1,14 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Web.Simple.PostgreSQL where
+module Web.Simple.PostgreSQL
+  ( module Web.Simple.PostgreSQL
+  , module Database.PostgreSQL.ORM
+  ) where
 
 import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
+import Database.PostgreSQL.ORM
 import Database.PostgreSQL.Devel
 import Database.PostgreSQL.Migrate
 import Database.PostgreSQL.Simple
@@ -35,6 +39,7 @@ createPostgreSQLConn = do
     setLocalDB dbdir
     initializeDb
     runMigrationsForDir stdout defaultMigrationsDir
+    putStrLn "Dev database started..."
   let envConnect = maybe S8.empty S8.pack $ lookup "DATABASE_URL" env
   connectPostgreSQL envConnect >>= newMVar
 
