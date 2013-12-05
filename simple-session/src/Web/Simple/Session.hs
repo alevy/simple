@@ -114,7 +114,7 @@ withSession (Controller act) = do
 -- domain, and no expiration is set.
 addCookie :: (S.ByteString, S.ByteString) -> Response -> Response
 addCookie (key, value) resp =
-  let ResponseSource stat hdrs src = resp
+  let (stat, hdrs, src) = responseToSource resp
   in ResponseSource stat (("Set-Cookie", cookie):hdrs) src
   where cookie = toByteString . renderSetCookie $
                   def { setCookieName = key
