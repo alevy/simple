@@ -10,6 +10,6 @@ app runner = do
   settings <- newAppSettings
 
   runner $$ controllerApp settings $$ do
+    routeTop $$ $if(include_templates)$render "index.html" ()$else$respond $$ okHtml "Hello World"$endif$
     -- TODO: routes go here
-    $if(include_templates)$render "index.html" ()$else$respond $$ okHtml "Hello World"$endif$
 

@@ -24,5 +24,5 @@ instance HasSession AppSettings where
     putState $$ cs { appSession = Just sess }
 $endif$$if(include_templates)$
 instance HasTemplates AppSettings where
-  defaultLayout = Just <$$> getTemplate "templates/main.html"
+  defaultLayout = Just <$$> getTemplate "layouts/main.html"
 $endif$

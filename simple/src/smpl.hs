@@ -127,9 +127,9 @@ createApplication dir tmpls sessions postgresql = do
 
   when tmpls $ do
     createDirectory $ dir </> "views"
-    createDirectory $ dir </> "templates"
+    createDirectory $ dir </> "layouts"
     copyTemplate ("template" </> "main_html.tmpl")
-                 (dir </> "templates" </> "main.html") mappings
+                 (dir </> "layouts" </> "main.html") mappings
     copyTemplate ("template" </> "index_html.tmpl")
                  (dir </> "views" </> "index.html") mappings
 
