@@ -5,10 +5,10 @@
   <li>
     <div class="comment">
       <div class="comment-author vcard">
-        <img src="$gravatar(comment.email, 48)$" name="$comment.name$"/>
-        <cite class="fn">$comment.name$</cite>
+        <img src="$gravatar(comment.commentEmail, 48)$" name="$comment.commentName$"/>
+        <cite class="fn">$comment.commentName$</cite>
       </div>
-      <p>$comment.comment$</p>
+      <p>$comment.commentComment$</p>
     </div>
     <form action="/admin/posts/$post.postId$/comments/$commend.commentId$"
       method="POST">

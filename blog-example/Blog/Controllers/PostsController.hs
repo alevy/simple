@@ -18,7 +18,7 @@ import Web.REST
 import Blog.Auth
 import Blog.Common
 import Blog.Models
-import qualified Blog.Models.Post as P
+import Blog.Models.Post
 
 postsController :: REST AppSettings
 postsController = rest $ do
@@ -29,7 +29,7 @@ postsController = rest $ do
     posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
                                     $ modelDBSelect
-    render "posts/index.html" (posts :: [P.Post])
+    render "posts/index.html" (posts :: [Post])
 
   show $ do
     withConnection $ \conn -> do
@@ -42,14 +42,14 @@ postsController = rest $ do
 postsAdminController :: Controller AppSettings ()
 postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
   index $ withConnection $ \conn -> do
-    posts <- liftIO $ findAll conn :: Controller AppSettings [P.Post]
+    posts <- liftIO $ findAll conn :: Controller AppSettings [Post]
     renderLayout "templates/admin.html"
       "admin/posts/index.html" posts
 
   edit $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $
-      findRow conn pid :: Controller AppSettings (Maybe P.Post)
+      findRow conn pid :: Controller AppSettings (Maybe Post)
     renderLayout "templates/admin.html"
       "admin/posts/edit.html" $
         object ["post" .= post]
@@ -61,8 +61,8 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
     let mpost = do
           pTitle <- lookup "title" params
           pBody <- lookup "body" params
-          return $ post { P.title = decodeUtf8 pTitle
-                        , P.body = decodeUtf8 pBody }
+          return $ post { postTitle = decodeUtf8 pTitle
+                        , postBody = decodeUtf8 pBody }
     case mpost of
       Just p -> do
         errs <- liftIO $
@@ -72,7 +72,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
           renderLayout "templates/admin.html"
             "admin/posts/edit.html" $
               object ["post" .= post, "errors" .= errs]
-        respond $ redirectTo $ S8.pack $ P.postUrl (P.postId p)
+        respond $ redirectTo $ S8.pack $ postUrl (postId p)
       Nothing -> redirectBack
 
   new $ renderLayout "templates/admin.html"
@@ -84,7 +84,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
     let mpost = do
           pTitle <- lookup "title" params
           pBody <- lookup "body" params
-          return $ P.Post NullKey (decodeUtf8 pTitle)
+          return $ Post NullKey (decodeUtf8 pTitle)
                                   (decodeUtf8 pBody)
                                   curTime
     case mpost of
@@ -99,7 +99,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
 
   delete $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
-    (Just post) <- liftIO $ findRow conn pid :: Controller AppSettings (Maybe P.Post)
-    liftIO $ destroy conn post
+    (Just post) <- liftIO $ findRow conn pid
+    liftIO $ destroy conn (post :: Post)
     respond $ redirectTo "/posts"
 

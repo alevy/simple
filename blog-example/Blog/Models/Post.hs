@@ -13,26 +13,25 @@ import System.Locale
 import GHC.Generics
 
 data Post = Post { postId :: DBKey
-                 , title :: Text
-                 , body :: Text
-                 , postedAt :: ZonedTime} deriving (Show, Generic)
+                 , postTitle :: Text
+                 , postBody :: Text
+                 , postPostedAt :: ZonedTime} deriving (Show, Generic)
 
 instance ToJSON Post
 
 postedAtStr :: Post -> String
 postedAtStr post = formatTime defaultTimeLocale "%B %e, %C%y %R" $
-                    postedAt post
+                    postPostedAt post
 
 postUrl :: DBKey -> String
 postUrl pid = "/posts/" ++ (show pid)
 
 instance Model Post where
-  modelInfo = defaultModelInfo { modelTable = "posts"
-                               , modelColumns = ["id", "title", "body", "posted_at"]}
+  modelInfo = underscoreModelInfo "post"
 
   modelValid =
-    validateNotEmpty title
+    validateNotEmpty postTitle
       "title" "Title cannot be empty"
-    <> validateNotEmpty body
+    <> validateNotEmpty postBody
       "body"  "Body cannot be empty"
 

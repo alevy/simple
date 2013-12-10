@@ -8,8 +8,8 @@
     </tr>
     $for(post in @)$
     <tr>
-      <td class="title">$post.title$</td>
-      <td class="date"><time>$formatTime(post.postedAt)$</time></td>
+      <td class="title">$post.postTitle$</td>
+      <td class="date"><time>$formatTime(post.postPostedAt)$</time></td>
       <td class="action">
         <a href="/admin/posts/$post.postId$/edit">edit</a>
       </td>
@@ -17,7 +17,7 @@
         <a href="/admin/posts/$post.postId$/comments">comments</a>
       </td>
       <td class="action">
-        <form actions="/admin/posts/$post.postedId$" method="POST">
+        <form actions="/admin/posts/$post.postPostedId$" method="POST">
           <input type="hidden" name="_method" value="DELETE"/>
           <input type="submit" value="Delete"/>
         </form>

@@ -22,7 +22,7 @@ executable blog
     bytestring,
     gravatar,
     http-conduit,
-    simple >= 0.4.1,
+    simple >= 0.6.1,
     simple-session,
     simple-templates,
     simple-postgresql-orm,

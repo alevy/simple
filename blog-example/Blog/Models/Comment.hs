@@ -11,21 +11,15 @@ import GHC.Generics
 import Blog.Models.Post
 
 data Comment = Comment { commentId :: DBKey
-                       , name :: Text
-                       , email :: Text
-                       , comment :: Text
-                       , postId :: DBRef Post
-                       , commentedAt :: ZonedTime }
+                       , commentName :: Text
+                       , commentEmail :: Text
+                       , commentComment :: Text
+                       , commentPostId :: DBRef Post
+                       , commentCommentedAt :: ZonedTime }
                   deriving (Show, Generic)
 
 instance ToJSON Comment
 
 instance Model Comment where
-  modelInfo = defaultModelInfo { modelTable = "comments"
-                               , modelColumns = [ "id"
-                                                , "name"
-                                                , "email"
-                                                , "comment"
-                                                , "post_id"
-                                                , "commented_at"]}
+  modelInfo = underscoreModelInfo "comment"
 

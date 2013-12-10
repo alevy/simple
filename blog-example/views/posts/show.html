@@ -1,10 +1,10 @@
 <article>
   <header>
-    <h2><a href="/posts/$post.postId$">$post.title$</a></h2>
-    <time>$formatTime(post.postedAt)$</time>
+    <h2><a href="/posts/$post.postId$">$post.postTitle$</a></h2>
+    <time>$formatTime(post.postPostedAt)$</time>
   </header>
   <div class="content">
-    $markdown(post.body)$
+    $markdown(post.postBody)$
   </div>
 </article>
 <div class="comments content">
@@ -12,17 +12,17 @@
   <ol id="comments">
     $for(comment in comments)$
     <li>
-      <div class="comment">
+      <div class="comment" id="comment-$comment.commentId$">
         <div class="comment-author vcard">
-          <img src="$gravatar(comment.email, 48)$"/>
+          <img src="$gravatar(comment.commentEmail, 48)$"/>
           at
-          <time>$formatTime(comment.commentedAt, "%l:%M%P")$</time>
+          <time>$formatTime(comment.commentCommentedAt, "%l:%M%P")$</time>
           on
-          <time>$formatTime(comment.commentedAt, "%m/%d/%y")$</time>
-          <cite class="fn">$comment.name$</cite>
+          <time>$formatTime(comment.commentCommentedAt, "%m/%d/%y")$</time>
+          <cite class="fn">$comment.commentName$</cite>
           <span class="says">said:</span>
         </div>
-        <p>$comment.comment$</p>
+        <p>$comment.commentComment$</p>
       </div>
     </li>
     $sep$

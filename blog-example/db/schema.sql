@@ -31,7 +31,7 @@ CREATE TABLE admins (
 
 
 
-CREATE TABLE comments (
+CREATE TABLE comment (
     id integer NOT NULL,
     name character varying(255) NOT NULL,
     email character varying(255) NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE comments (
 
 
 
-CREATE SEQUENCE comments_id_seq
+CREATE SEQUENCE comment_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -51,11 +51,11 @@ CREATE SEQUENCE comments_id_seq
 
 
 
-ALTER SEQUENCE comments_id_seq OWNED BY comments.id;
+ALTER SEQUENCE comment_id_seq OWNED BY comment.id;
 
 
 
-CREATE TABLE posts (
+CREATE TABLE post (
     id integer NOT NULL,
     title character varying(255),
     body text,
@@ -64,7 +64,7 @@ CREATE TABLE posts (
 
 
 
-CREATE SEQUENCE posts_id_seq
+CREATE SEQUENCE post_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
@@ -73,7 +73,7 @@ CREATE SEQUENCE posts_id_seq
 
 
 
-ALTER SEQUENCE posts_id_seq OWNED BY posts.id;
+ALTER SEQUENCE post_id_seq OWNED BY post.id;
 
 
 
@@ -83,11 +83,11 @@ CREATE TABLE schema_migrations (
 
 
 
-ALTER TABLE ONLY comments ALTER COLUMN id SET DEFAULT nextval('comments_id_seq'::regclass);
+ALTER TABLE ONLY comment ALTER COLUMN id SET DEFAULT nextval('comment_id_seq'::regclass);
 
 
 
-ALTER TABLE ONLY posts ALTER COLUMN id SET DEFAULT nextval('posts_id_seq'::regclass);
+ALTER TABLE ONLY post ALTER COLUMN id SET DEFAULT nextval('post_id_seq'::regclass);
 
 
 
@@ -96,17 +96,17 @@ ALTER TABLE ONLY admins
 
 
 
-ALTER TABLE ONLY comments
-    ADD CONSTRAINT comments_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY comment
+    ADD CONSTRAINT comment_pkey PRIMARY KEY (id);
 
 
 
-ALTER TABLE ONLY posts
-    ADD CONSTRAINT posts_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY post
+    ADD CONSTRAINT post_pkey PRIMARY KEY (id);
 
 
 
-ALTER TABLE ONLY comments
-    ADD CONSTRAINT comments_post_id_fkey FOREIGN KEY (post_id) REFERENCES posts(id);
+ALTER TABLE ONLY comment
+    ADD CONSTRAINT comment_post_id_fkey FOREIGN KEY (post_id) REFERENCES post(id);
 
 
