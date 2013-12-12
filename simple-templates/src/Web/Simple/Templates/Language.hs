@@ -127,7 +127,7 @@ valueToText val =
     Bool b -> T.pack $ show b
     Array _ -> "[array]"
     Object _ -> "[object]"
-    Null -> "null"
+    Null -> ""
 
 compileTemplate :: Text -> Either String Template
 compileTemplate tmpl = evaluate <$>
