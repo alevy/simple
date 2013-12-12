@@ -22,7 +22,7 @@ import Blog.Models.Post
 
 postsController :: REST AppSettings
 postsController = rest $ do
-  
+
   index $ withConnection $ \conn -> do
     mpage <- readQueryParam "offset"
     let page = maybe 0 id mpage
@@ -64,15 +64,15 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
           return $ post { postTitle = decodeUtf8 pTitle
                         , postBody = decodeUtf8 pBody }
     case mpost of
-      Just p -> do
-        errs <- liftIO $
-                  catch (trySave conn p >> return [])
-                        (\(ValidationError errs) -> return errs)
-        when (not . null $ errs) $
-          renderLayout "templates/admin.html"
-            "admin/posts/edit.html" $
-              object ["post" .= post, "errors" .= errs]
-        respond $ redirectTo $ S8.pack $ postUrl (postId p)
+      Just post0 -> do
+        epost <- liftIO $ trySave conn post0
+        case epost of
+          Left errs -> do
+            liftIO $ print epost
+            renderLayout "templates/admin.html"
+                                    "admin/posts/edit.html" $
+                                    object [ "errors" .= errs, "post" .= post0 ]
+          Right p -> respond $ redirectTo $ S8.pack $ postUrl $ postId p
       Nothing -> redirectBack
 
   new $ renderLayout "templates/admin.html"
@@ -88,18 +88,18 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
                                   (decodeUtf8 pBody)
                                   curTime
     case mpost of
-      Just post -> do
-        errs <- liftIO $
-                  either id (const []) `fmap` (trySave conn post)
-        when (not . null $ errs) $
-          renderLayout "templates/admin.html"
-            "admin/posts/new.html" errs
-        respond $ redirectTo "/posts/"
+      Just post0 -> do
+        epost <- liftIO $ trySave conn post0
+        case epost of
+          Left errs -> renderLayout "templates/admin.html"
+                                    "admin/posts/new.html" errs
+          Right post -> respond $ redirectTo $
+            "/posts/" `S8.append` (S8.pack $ Prelude.show $ postId post)
       Nothing -> redirectBack
 
   delete $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $ findRow conn pid
     liftIO $ destroy conn (post :: Post)
-    respond $ redirectTo "/posts"
+    respond $ redirectTo "/admin/posts"
 

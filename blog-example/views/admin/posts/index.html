@@ -17,7 +17,8 @@
         <a href="/admin/posts/$post.postId$/comments">comments</a>
       </td>
       <td class="action">
-        <form actions="/admin/posts/$post.postPostedId$" method="POST">
+        <form class="content" action="/admin/posts/$post.postId$"
+          method="post" acceptCharset="UTF-8">
           <input type="hidden" name="_method" value="DELETE"/>
           <input type="submit" value="Delete"/>
         </form>

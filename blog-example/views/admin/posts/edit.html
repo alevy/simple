@@ -1,5 +1,5 @@
 <header><h2>Edit Post</h2></header>
-$if(@)$
+$if(errors)$
 <ul class="errors">
 $for(err in errors)$
   <li>$err.error$</li>
@@ -14,8 +14,14 @@ $endif$
   <input type="submit" value="Update"/>
 </form>
 <br/>
-<form class="content" action="/admin/posts/$post.postPostedId$" method="POST">
+<form class="content" action="/admin/posts/$post.postId$" method="POST">
   <input type="hidden" name="_method" value="DELETE"/>
   <input type="submit" class="destroy" value="Delete Post"/>
 </form>
 
+<hr/>
+<p>Preview...</p>
+<div class="post">
+<h2>$post.postTitle$</h2>
+$markdown(post.postBody)$
+</div>
