@@ -44,7 +44,7 @@ commentsAdminController = requiresAdmin "/login" $ do
     pid <- readQueryParam' "post_id"
     (Just p) <- liftIO $ findRow conn pid
     comments <- liftIO $ allComments conn p
-    renderLayout "templates/admin.html"
+    renderLayout "layouts/admin.html"
       "admin/comments/index.html" $
         object ["post" .= p, "comments" .= comments]
     

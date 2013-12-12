@@ -41,15 +41,16 @@ postsController = rest $ do
 postsAdminController :: Controller AppSettings ()
 postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
   index $ withConnection $ \conn -> do
-    posts <- liftIO $ findAll conn :: Controller AppSettings [Post]
-    renderLayout "templates/admin.html"
-      "admin/posts/index.html" posts
+    posts <- liftIO $ dbSelect conn $
+      setOrderBy "posted_at desc" $ modelDBSelect
+    renderLayout "layouts/admin.html"
+      "admin/posts/index.html" (posts :: [Post])
 
   edit $ withConnection $ \conn -> do
     pid <- readQueryParam' "id"
     (Just post) <- liftIO $
       findRow conn pid :: Controller AppSettings (Maybe Post)
-    renderLayout "templates/admin.html"
+    renderLayout "layouts/admin.html"
       "admin/posts/edit.html" $
         object ["post" .= post]
 
@@ -68,13 +69,13 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
         case epost of
           Left errs -> do
             liftIO $ print epost
-            renderLayout "templates/admin.html"
+            renderLayout "layouts/admin.html"
                                     "admin/posts/edit.html" $
                                     object [ "errors" .= errs, "post" .= post0 ]
           Right p -> respond $ redirectTo $ S8.pack $ postUrl $ postId p
       Nothing -> redirectBack
 
-  new $ renderLayout "templates/admin.html"
+  new $ renderLayout "layouts/admin.html"
     "admin/posts/new.html" $ Null
 
   create $ withConnection $ \conn -> do
@@ -90,7 +91,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
       Just post0 -> do
         epost <- liftIO $ trySave conn post0
         case epost of
-          Left errs -> renderLayout "templates/admin.html"
+          Left errs -> renderLayout "layouts/admin.html"
                                     "admin/posts/new.html" errs
           Right post -> respond $ redirectTo $
             "/posts/" `S8.append` (S8.pack $ Prelude.show $ postId post)
