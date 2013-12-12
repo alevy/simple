@@ -4,7 +4,6 @@ module Blog.Controllers.PostsController where
 import Prelude hiding (show)
 import qualified Prelude
 
-import Control.Monad
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import qualified Data.ByteString.Char8 as S8
