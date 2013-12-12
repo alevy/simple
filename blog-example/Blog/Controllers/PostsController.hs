@@ -4,9 +4,13 @@ module Blog.Controllers.PostsController where
 import Prelude hiding (show)
 import qualified Prelude
 
+import Control.Applicative
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson
 import qualified Data.ByteString.Char8 as S8
+import Data.Maybe
+import Data.Monoid
+import qualified Data.Text as T
 import Data.Text.Encoding
 import Data.Time.LocalTime (getZonedTime)
 import Database.PostgreSQL.ORM
@@ -32,11 +36,17 @@ postsController = rest $ do
 
   show $ do
     withConnection $ \conn -> do
-      pid <- readQueryParam' "id"
-      (Just post) <- liftIO $ findRow conn pid
-      comments <- liftIO $ allComments conn post
-      render "posts/show.html" $
-        object ["post" .= post, "comments" .= comments]
+      stub <- queryParam' "id"
+      mpost <- liftIO $ listToMaybe <$>
+        (dbSelect conn $
+          addWhere "stub = ?" [stub :: S8.ByteString] $
+          modelDBSelect)
+      case mpost of
+        Just post -> do
+          comments <- liftIO $ allComments conn post
+          render "posts/show.html" $
+            object ["post" .= post, "comments" .= comments]
+        Nothing -> respond notFound
 
 postsAdminController :: Controller AppSettings ()
 postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
@@ -72,29 +82,38 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
             renderLayout "layouts/admin.html"
                                     "admin/posts/edit.html" $
                                     object [ "errors" .= errs, "post" .= post0 ]
-          Right p -> respond $ redirectTo $ S8.pack $ postUrl $ postId p
+          Right p -> respond $ redirectTo $
+            encodeUtf8 $ "/posts/" <> (postStub p)
       Nothing -> redirectBack
 
   new $ renderLayout "layouts/admin.html"
-    "admin/posts/new.html" $ Null
+    "admin/posts/new.html" $
+    object ["post" .= Post NullKey "" "" "" undefined]
 
   create $ withConnection $ \conn -> do
     (params, _) <- parseForm
     curTime <- liftIO $ getZonedTime
     let mpost = do
-          pTitle <- lookup "title" params
-          pBody <- lookup "body" params
-          return $ Post NullKey (decodeUtf8 pTitle)
-                                  (decodeUtf8 pBody)
-                                  curTime
+          pTitle <- decodeUtf8 <$> lookup "title" params
+          pBody <- decodeUtf8 <$> lookup "body" params
+          let stub0 = fromMaybe (stubFromTitle pTitle) $
+                      decodeUtf8 <$> lookup "stub" params
+          let stub = if T.null stub0 then
+                      stubFromTitle pTitle
+                      else stub0
+          return $ Post NullKey pTitle
+                                stub
+                                pBody
+                                curTime
     case mpost of
       Just post0 -> do
         epost <- liftIO $ trySave conn post0
         case epost of
           Left errs -> renderLayout "layouts/admin.html"
-                                    "admin/posts/new.html" errs
-          Right post -> respond $ redirectTo $
-            "/posts/" `S8.append` (S8.pack $ Prelude.show $ postId post)
+                                    "admin/posts/new.html" $ object
+                                    [ "errors" .= errs, "post" .= post0 ]
+          Right p -> respond $ redirectTo $
+            encodeUtf8 $ "/posts/" <> (postStub p)
       Nothing -> redirectBack
 
   delete $ withConnection $ \conn -> do
