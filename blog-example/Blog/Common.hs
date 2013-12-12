@@ -28,6 +28,6 @@ instance HasSession AppSettings where
     putState $ cs { appSession = Just sess }
 
 instance HasTemplates AppSettings where
-  defaultLayout = Just <$> getTemplate "templates/main.html"
+  defaultLayout = Just <$> getTemplate "layouts/main.html"
   functionMap = return helperFunctions
 
