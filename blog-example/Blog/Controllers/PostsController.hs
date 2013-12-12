@@ -87,8 +87,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
       Nothing -> redirectBack
 
   new $ renderLayout "layouts/admin.html"
-    "admin/posts/new.html" $
-    object ["post" .= Post NullKey "" "" "" undefined]
+    "admin/posts/new.html" $ Null
 
   create $ withConnection $ \conn -> do
     (params, _) <- parseForm
