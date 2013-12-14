@@ -112,6 +112,6 @@ CREATE UNIQUE INDEX post_stub_idx ON post USING btree (slug);
 
 
 ALTER TABLE ONLY comment
-    ADD CONSTRAINT comment_post_id_fkey FOREIGN KEY (post_id) REFERENCES post(id);
+    ADD CONSTRAINT comment_post_id_fkey FOREIGN KEY (post_id) REFERENCES post(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
