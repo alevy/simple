@@ -13,14 +13,14 @@ h1, h2, h3 h4 {
   position: fixed;
   top: 0;
   left: 0;
-  width: 20%;
-  height: 100%;
   padding-top: 30px;
   padding-left: 3%;
+  width: 22%;
+  height: 100%;
 }
 
 #sidebar h2 {
-  font-size: 20px;
+  font-size: 18px;
 }
 
 #sidebar h3 {
@@ -31,6 +31,9 @@ h1, h2, h3 h4 {
 #sidebar .logo {
   display: block;
   width: 75%;
+  max-width: 240px;
+  border-radius: 300px;
+  margin-bottom: 35px;
 }
 
 ul.nav {
@@ -72,6 +75,7 @@ footer {
   width: 20%;
   padding: 0 0 5px 40px;
   font-size: 11px;
+  text-align: center;
 }
 
 #river {
@@ -129,6 +133,10 @@ input, textarea {
   font-family: Ubuntu, sans-serif;
   font-size: 16px;
   line-height: 1.5em;
+}
+
+textarea#body {
+  height: 350px;
 }
 
 input#title, textarea {
@@ -210,3 +218,8 @@ ol#comments li {
   text-align: center;
 }
 
+.login_form input[name="openid_identifier"] {
+  width: 85%;
+  background: url(/images/openid-16x16.gif) no-repeat scroll left center;
+  padding-left: 20px;
+}
