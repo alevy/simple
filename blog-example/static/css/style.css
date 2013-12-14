@@ -124,8 +124,14 @@ h1 a, h2 a, h3 a {
   margin-top: 1em;
 }
 
-.post p {
+.post .content {
   max-width: 40em;
+}
+
+.post blockquote {
+  margin-right: 0;
+  padding: 5px;
+  border-left: 3px solid #ccc;
 }
 
 form {
