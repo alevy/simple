@@ -1,4 +1,3 @@
-<a href="/admin/posts">&larr; back</a>
 <header><h2>Edit Post</h2></header>
 $if(errors)$
 <ul class="errors">
@@ -9,6 +8,7 @@ $endfor$
 $endif$
 <form class="content" action="/admin/posts/$post.postId$"
   method="post" acceptCharset="UTF-8">
+  <a href="/admin/posts">&larr; back</a>
   <input type="hidden" name="_method" value="PUT"/>
   <p><input type="text" name="title" id="title" value="$post.postTitle$"/></p>
   <p>Slug: <strong>$post.postSlug$</strong></p>
