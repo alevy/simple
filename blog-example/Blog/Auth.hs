@@ -71,5 +71,5 @@ requiresAdmin loginUrl cnt = do
       respond $ redirectTo loginUrl
 
 loginPage :: Controller AppSettings ()
-loginPage = render "login.html" Null
+loginPage = renderLayout "layouts/login.html" "login.html" Null
 
