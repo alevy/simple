@@ -1,19 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Web.Simple.Templates
   ( HasTemplates(..)
-  , defaultGetTemplate, defaultRender
+  , defaultGetTemplate, defaultRender, defaultFunctionMap
   , H.fromList
   , Function(..), ToFunction(..), FunctionMap
   ) where
 
 import Control.Applicative
 import Control.Monad.IO.Class
+import Data.Aeson
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
 import qualified Data.Text as T
 import Data.Text.Encoding
-import Data.Aeson
+import qualified Data.Vector as V
 import Network.Mime
 import System.FilePath
 import Web.Simple (Controller, ok, respond)
@@ -42,7 +43,7 @@ class HasTemplates hs where
   -- | A map of pure functions that can be called from within a template. See
   -- 'FunctionMap' and 'Function' for details.
   functionMap :: Controller hs FunctionMap
-  functionMap = return H.empty
+  functionMap = return defaultFunctionMap
 
   -- | Function to use to get a template. By default, it looks in the
   -- 'viewDirectory' for the given file name and compiles the file into a
@@ -102,4 +103,23 @@ defaultRender fp val = do
   case mlayout of
     Nothing -> renderPlain fp val
     Just layout -> renderLayout' layout fp val
+
+defaultFunctionMap :: FunctionMap
+defaultFunctionMap = H.fromList
+  [ ("length", toFunction valueLength)
+  , ("null", toFunction valueNull)]
+
+valueLength :: Value -> Value
+valueLength (Array arr) = toJSON $ V.length arr
+valueLength (Object obj) = toJSON $ H.size obj
+valueLength (String str) = toJSON $ T.length str
+valueLength Null = toJSON (0 :: Int)
+valueLength _ = error "length only valid for arrays, objects and strings"
+
+valueNull :: Value -> Value
+valueNull (Array arr) = toJSON $ V.null arr
+valueNull (Object obj) = toJSON $ H.null obj
+valueNull (String str) = toJSON $ T.null str
+valueNull Null = toJSON True
+valueNull _ = error "null only valid for arrays, objects and strings"
 
