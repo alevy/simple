@@ -4,7 +4,10 @@ module Blog.Models.Comment where
 import Data.Aeson
 import Data.Text (Text)
 import Data.Time.LocalTime
-import Database.PostgreSQL.ORM.Model
+import Data.Monoid
+import Database.PostgreSQL.ORM
+import Text.Regex.TDFA
+import Text.Regex.TDFA.Text ()
 
 import GHC.Generics
 
@@ -20,6 +23,22 @@ data Comment = Comment { commentId :: DBKey
 
 instance ToJSON Comment
 
+validateEmail :: Comment -> [InvalidError]
+validateEmail comment =
+  if commentEmail comment =~ pattern then
+    []
+    else [InvalidError "email"
+            "You must enter a valid e-mail address"]
+  where pattern :: Text
+        pattern = "^[^@]+[@][^@]+$"
+
 instance Model Comment where
   modelInfo = underscoreModelInfo "comment"
+
+  modelValid =
+    validateNotEmpty commentName
+      "name" "Name cannot be empty"
+    <> validateEmail
+    <> validateNotEmpty commentComment
+      "comment" "Comment cannot be empty"
 

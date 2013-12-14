@@ -30,18 +30,26 @@
     $endfor$
   </ol>
   <h4>Leave a comment...</h4>
+  $if(errors)$
+  <ul class="errors">
+    $for(col,err in errors)$
+    <li>$err.error$</li>
+    $endfor$
+  </ul>
+  $endif$
   <form action="/posts/$post.postId$/comments" method="POST">
-    <p>
+    <p$if(errors.name)$ class="error"$endif$>
       <label for="name">Name<sup>*</sup></label>
-      <input type="text" name="name" placeholder="Jane Smith"/>
+      <input type="text" name="name"
+        placeholder="Jane Smith" value="$comment.commentName$"/>
     </p>
-    <p>
+    <p$if(errors.email)$ class="error"$endif$>
       <label for="email">Email<sup>*</sup></label>
-      <input type="email" name="email" placeholder="jane@thesmiths.net"/>
+      <input type="email" name="email"
+        placeholder="jane@thesmiths.net" value="$comment.commentEmail$"/>
     </p>
-    <p>
-      <textarea name="comment">
-      </textarea>
+    <p$if(errors.comment)$ class="error"$endif$>
+      <textarea name="comment">$comment.commentComment$</textarea>
     </p>
     <p><input type="submit" value="Post comment"/></p>
   </form>
