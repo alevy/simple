@@ -31,15 +31,16 @@ postsController = rest $ do
     let page = maybe 0 id mpage
     posts <- liftIO $ dbSelect conn $ setLimit 10
                                     $ setOffset (page * 10)
+                                    $ setOrderBy "posted_at desc"
                                     $ modelDBSelect
     render "posts/index.html" (posts :: [Post])
 
   show $ do
     withConnection $ \conn -> do
-      stub <- queryParam' "id"
+      slug <- queryParam' "id"
       mpost <- liftIO $ listToMaybe <$>
         (dbSelect conn $
-          addWhere "stub = ?" [stub :: S8.ByteString] $
+          addWhere "slug = ?" [slug :: S8.ByteString] $
           modelDBSelect)
       case mpost of
         Just post -> do
@@ -83,7 +84,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
                                     "admin/posts/edit.html" $
                                     object [ "errors" .= errs, "post" .= post0 ]
           Right p -> respond $ redirectTo $
-            encodeUtf8 $ "/posts/" <> (postStub p)
+            encodeUtf8 $ "/posts/" <> (postSlug p)
       Nothing -> redirectBack
 
   new $ renderLayout "layouts/admin.html"
@@ -95,13 +96,13 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
     let mpost = do
           pTitle <- decodeUtf8 <$> lookup "title" params
           pBody <- decodeUtf8 <$> lookup "body" params
-          let stub0 = fromMaybe (stubFromTitle pTitle) $
-                      decodeUtf8 <$> lookup "stub" params
-          let stub = if T.null stub0 then
-                      stubFromTitle pTitle
-                      else stub0
+          let slug0 = fromMaybe (slugFromTitle pTitle) $
+                      decodeUtf8 <$> lookup "slug" params
+          let slug = if T.null slug0 then
+                      slugFromTitle pTitle
+                      else slug0
           return $ Post NullKey pTitle
-                                stub
+                                slug
                                 pBody
                                 curTime
     case mpost of
@@ -112,7 +113,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
                                     "admin/posts/new.html" $ object
                                     [ "errors" .= errs, "post" .= post0 ]
           Right p -> respond $ redirectTo $
-            encodeUtf8 $ "/posts/" <> (postStub p)
+            encodeUtf8 $ "/posts/" <> (postSlug p)
       Nothing -> redirectBack
 
   delete $ withConnection $ \conn -> do

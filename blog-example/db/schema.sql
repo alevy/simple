@@ -60,7 +60,7 @@ CREATE TABLE post (
     title character varying(255),
     body text,
     posted_at timestamp with time zone DEFAULT now() NOT NULL,
-    stub character varying(32) NOT NULL
+    slug character varying(32) NOT NULL
 );
 
 
@@ -107,7 +107,7 @@ ALTER TABLE ONLY post
 
 
 
-CREATE UNIQUE INDEX post_stub_idx ON post USING btree (stub);
+CREATE UNIQUE INDEX post_stub_idx ON post USING btree (slug);
 
 
 

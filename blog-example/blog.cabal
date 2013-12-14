@@ -30,9 +30,11 @@ executable blog
     wai-extra >= 2.0,
     text,
     time,
-    postgresql-simple,
-    postgresql-orm,
     old-locale,
     pandoc,
+    postgresql-simple,
+    postgresql-orm,
+    regex-tdfa,
+    regex-tdfa-text,
     transformers
 
