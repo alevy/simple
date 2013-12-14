@@ -113,7 +113,7 @@ h1 a, h2 a, h3 a {
 
 .content {
   padding-left: 40px;
-  width: 60%;
+  padding-right: 40px;
 }
 
 .post {
@@ -122,6 +122,10 @@ h1 a, h2 a, h3 a {
 
 .post h1, .post h2, .post h3 {
   margin-top: 1em;
+}
+
+.post p {
+  max-width: 40em;
 }
 
 form {
