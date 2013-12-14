@@ -113,7 +113,7 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
         pBody = decodeUtf8 <$> lookup "body" params
         pSlug = ((T.null `mfilter` (decodeUtf8 <$> lookup "slug" params))
                   <|> fmap slugFromTitle pTitle)
-        mpost = Post NullKey <$> pTitle <*> pBody <*> pSlug
+        mpost = Post NullKey <$> pTitle <*> pSlug <*> pBody
                 <*> pure False <*> pure curTime
     case mpost of
       Just post0 -> do
