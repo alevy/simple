@@ -66,7 +66,8 @@ pFor :: A.Parser AST
 pFor = do
   A.string "for"
   brace <- A.satisfy (\c -> c == ' ' || c == '(')
-  varName <- pIdentifier
+  mkeyName <- optional $ pIdentifier <* A.char ','
+  valName <- pIdentifier
   A.string " in "
   lst <- pValue
   when (brace == '(') $ A.char ')' >> return ()
@@ -76,7 +77,7 @@ pFor = do
     A.string "$sep$"
     Just <$> pAST
   A.string "$endfor"
-  return $ ASTFor varName lst loop sep
+  return $ ASTFor mkeyName valName lst loop sep
 
 -- | A variable, function call, literal, etc
 pValue :: A.Parser AST

@@ -78,8 +78,8 @@ data AST = ASTRoot [AST] -- ^ A series of sub-ASTs
          -- ^ A literal array (may contain non-literals)
          | ASTIf AST AST (Maybe AST)
          -- ^ If - condition, true branch and optional false branch
-         | ASTFor Identifier AST AST (Maybe AST)
-         -- ^ for(i in expr) body separator
+         | ASTFor (Maybe Identifier) Identifier AST AST (Maybe AST)
+         -- ^ for([k,]v in expr) body separator
   deriving (Show, Eq)
 
 -- | Lift a 'ToJSON' to an 'ASTLiteral'

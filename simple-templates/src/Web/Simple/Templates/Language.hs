@@ -86,30 +86,36 @@ evaluateAST fm global ast =
            evaluateAST fm global falseBranch
            else evaluateAST fm global trueBranch
 
-    ASTFor varName lst body msep -> astForLoop fm global varName lst body msep
+    ASTFor mkeyName valName lst body msep ->
+      astForLoop fm global mkeyName valName lst body msep
 
 astForLoop :: FunctionMap -> Value
-           -> Identifier -> AST -> AST -> Maybe AST -> Value
-astForLoop fm global varName lst body msep =
+           -> Maybe Identifier -> Identifier
+           -> AST -> AST -> Maybe AST -> Value
+astForLoop fm global mkeyName valName lst body msep =
   case val of
     Null -> String ""
     Bool False -> String ""
     Array vec ->
-      String $ go (V.toList vec) mempty
-    v -> evaluateAST fm (replaceVar global varName v) body
+      String $ go (zip [0..(V.length vec)] $ V.toList vec) mempty
+    Object obj -> String $ go (H.toList obj) mempty
+    v -> evaluateAST fm (replaceVar global valName v) body
   where sep = maybe (String "") (evaluateAST fm global) msep
         val = evaluateAST fm global lst
         go [] accm = accm
-        go (v:[]) accm =
-          let scope = replaceVar global varName v
+        go ((k,v):[]) accm =
+          let scope = replaceVar (mreplaceKey k) valName v
               nv = evaluateAST fm scope body
           in accm <> valueToText nv
-        go (v:x1:xs) accm =
-          let scope = replaceVar global varName v
+        go ((k,v):x1:xs) accm =
+          let scope = replaceVar (mreplaceKey k) valName v
               nv = evaluateAST fm scope body
               accmN =
                 accm <> valueToText nv <> valueToText sep
           in go (x1:xs) accmN
+        mreplaceKey :: ToJSON a => a -> Value
+        mreplaceKey v =
+          maybe global (\k -> replaceVar global k $ toJSON v) mkeyName
 
 replaceVar :: Value -> Identifier -> Value -> Value
 replaceVar (Object orig) varName newVal = Object $ H.insert varName newVal orig
