@@ -20,6 +20,7 @@ data Post = Post { postId :: DBKey
                  , postTitle :: Text
                  , postSlug :: Text
                  , postBody :: Text
+                 , postPublished :: Bool
                  , postPostedAt :: ZonedTime} deriving (Show, Generic)
 
 instance ToJSON Post
