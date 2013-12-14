@@ -68,7 +68,7 @@ ul.nav a:hover {
   border: 1px solid #666;
 }
 
-footer {
+body > footer {
   position: fixed;
   bottom: 0;
   left: 0;
@@ -104,6 +104,11 @@ footer {
   width: 100%;
   font-weight: 700;
   text-transform: uppercase;
+}
+
+#river footer {
+  text-align: center;
+  font-size: small;
 }
 
 h1 a, h2 a, h3 a {
