@@ -15,11 +15,7 @@ helperFunctions :: FunctionMap
 helperFunctions = fromList
   [ ("formatTime", toFunction timeFormatter)
   , ("gravatar", toFunction gravatarUrl)
-  , ("length", toFunction valueArrayLength)
   , ("markdown", toFunction markdown)]
-
-valueArrayLength :: [Value] -> Value
-valueArrayLength = toJSON . length
 
 gravatarUrl :: Text -> Maybe Int -> Value
 gravatarUrl email size = toJSON $

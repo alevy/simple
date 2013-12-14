@@ -4,6 +4,7 @@ module Blog.Common
   ) where
 
 import Control.Applicative
+import Data.Monoid
 import Web.Simple
 import Web.Simple.PostgreSQL
 import Web.Simple.Templates
@@ -29,5 +30,5 @@ instance HasSession AppSettings where
 
 instance HasTemplates AppSettings where
   defaultLayout = Just <$> getTemplate "layouts/main.html"
-  functionMap = return helperFunctions
+  functionMap = return $ defaultFunctionMap <> helperFunctions
 
