@@ -50,9 +50,8 @@ commentsController = do
             encodeUtf8 $ "/posts/" <> (postSlug myPost)
           Left errs -> do
             comments <- liftIO $ allComments conn myPost
-            let errmap = object $ map (\e -> invalidColumn e .= e) errs
             render "posts/show.html" $
-              object ["comment" .= comment, "errors" .= errmap
+              object ["comment" .= comment, "errors" .= errs
                      , "post" .= myPost, "comments" .= comments]
       Nothing -> respond $ badRequest
     redirectBack

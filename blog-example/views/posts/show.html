@@ -32,9 +32,9 @@
   <h4>Leave a comment...</h4>
   $if(errors)$
   <ul class="errors" id="errors">
-    $for(col,err in errors)$
-    <li>$err.error$</li>
-    $endfor$
+    $for(errs in errors)$$for(err in errs)$
+    <li>$err$</li>
+    $endfor$$endfor$
   </ul>
   $endif$
   <form action="/posts/$post.postId$/comments" method="POST">

@@ -29,12 +29,10 @@ postedAtStr :: Post -> String
 postedAtStr post = formatTime defaultTimeLocale "%B %e, %C%y %R" $
                     postPostedAt post
 
-validateSlug :: Post -> [InvalidError]
-validateSlug post =
-  if postSlug post =~ pattern then
-    []
-    else [InvalidError "slug"
-            "Slug must contain only letters, numbers and dashes"]
+validateSlug :: Post -> ValidationError
+validateSlug = validate (\post -> postSlug post =~ pattern)
+    "slug"
+    "Slug must contain only letters, numbers and dashes"
   where pattern :: Text
         pattern = "^[a-z1-9-]{0,32}$"
 

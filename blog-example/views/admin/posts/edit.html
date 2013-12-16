@@ -1,9 +1,9 @@
 <header><h2>Edit Post</h2></header>
 $if(errors)$
 <ul class="errors">
-$for(err in errors)$
-  <li>$err.error$</li>
-$endfor$
+$for(errs in errors)$$for(err in errs)$
+  <li>$err$</li>
+$endfor$$endfor$
 </ul>
 $endif$
 <form class="content" action="/admin/posts/$post.postId$"

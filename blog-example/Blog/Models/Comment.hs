@@ -23,12 +23,9 @@ data Comment = Comment { commentId :: DBKey
 
 instance ToJSON Comment
 
-validateEmail :: Comment -> [InvalidError]
-validateEmail comment =
-  if commentEmail comment =~ pattern then
-    []
-    else [InvalidError "email"
-            "You must enter a valid e-mail address"]
+validateEmail :: Comment -> ValidationError
+validateEmail = validate (\comment -> commentEmail comment =~ pattern)
+    "email" "You must enter a valid e-mail address"
   where pattern :: Text
         pattern = "^[^@]+[@][^@]+$"
 
