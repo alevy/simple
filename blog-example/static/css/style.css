@@ -1,146 +1,101 @@
 body {
-  background-color: white;
-  font-family: Ubuntu, Helvetica, Arial;
-  font-size: 16px;
-  overflow-x: hidden;
+  max-width: 30em;
+  font-size: 13pt;
+  margin: 0 auto;
+  font-family: sans-serif;
 }
 
-h1, h2, h3 h4 {
-  margin-top: 0px;
+h1 {
+  text-align: center;
 }
 
-#sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  padding-top: 30px;
-  padding-left: 3%;
-  width: 22%;
-  height: 100%;
-}
-
-#sidebar h2 {
-  font-size: 18px;
-}
-
-#sidebar h3 {
-  font-size: 14px;
-  font-weight: normal;
-}
-
-#sidebar .logo {
-  display: block;
-  width: 75%;
-  max-width: 240px;
-  border-radius: 300px;
-  margin-bottom: 35px;
-}
-
-ul.nav {
-  list-style-type: none;
-  padding: 0px;
-  text-transform: lowercase;
-}
-
-#sidebar ul.nav {
-  margin-top: 40px;
-}
-
-ul.nav li {
-  margin-top: 10px;
-  color: #666;
-  font-weight: 700;
-}
-
-ul.nav a {
-  text-decoration: none;
+h1 a {
   color: inherit;
-  padding: 5px;
+  text-decoration: none;
 }
 
-#sidebar ul.nav a {
-  display: block;
-}
-
-ul.nav a:hover {
+h2 a {
+  text-decoration: none;
   color: #333;
-  border-radius: 5px;
-  border: 1px solid #666;
+}
+
+article {
+  padding-top: 15px;
+}
+
+article .content {
+  font-family: "Libre Baskerville", serif;
+}
+
+article .content p {
+  text-align: justify;
 }
 
 body > footer {
+  display: inline-block;
+  font-size: 9px;
   position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 20%;
-  padding: 0 0 5px 40px;
-  font-size: 11px;
+  bottom: 0px;
+  right: 0px;
+  padding: 2px;
+}
+
+body > footer a {
+  display: inline-block;
+  height: 20px;
+  width: 60px;
+  line-height: 20px;
   text-align: center;
+  background-color: #770;
+  border-radius: 3px 3px 0 0;
+  text-decoration: none;
+  color: #fff;
+  opacity: 0.8;
 }
 
-#river {
-  position: absolute;
-  top: 0;
-  margin-left: 25%;
-  border-left: 1px solid #ccc;
-  min-height: 100%;
-  width: 75%;
-}
-
-#river header > * {
-  color: black;
-  padding-left: 40px;
-}
-
-#river header > h2 {
-  padding-top: 40px;
-}
-
-#river header > time {
-  display: block;
-  border-bottom: 1px solid #ccc;
-  padding-top: 40px;
-  padding-bottom: 40px;
-  width: 100%;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-#river footer {
-  text-align: center;
+section footer {
   font-size: small;
+  text-align: center;
+  border-top: 1px solid #ccc;
 }
 
-h1 a, h2 a, h3 a {
-  color: inherit;
-  text-decoration: inherit;
+.comments {
+  border-top: 1px solid #ccc;
 }
 
-.content {
-  padding-left: 40px;
-  padding-right: 40px;
+ol#comments {
+  padding: 0;
 }
 
-.post {
-  border-bottom: 1px solid #ccc;
+ol#comments > li {
+  list-style: none;
+
 }
 
-.post h1, .post h2, .post h3 {
-  margin-top: 1em;
+.comment-author img {
+  display: block;
 }
 
-.post .content {
-  max-width: 40em;
+.login_form input {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.login_form input[name="openid_identifier"] {
+  width: 85%;
+  background: url(http://wiki.openid.net/f/openid-16x16.gif) no-repeat scroll left center;
+  padding-left: 16px;
+}
+
+p.error {
+  border: 2px solid red;
+  padding: 3px;
 }
 
 .post blockquote {
   margin-right: 0;
   padding: 5px;
   border-left: 3px solid #ccc;
-}
-
-form {
-  width: 60%;
 }
 
 input[type="text"], textarea {
@@ -187,52 +142,6 @@ ol#comments li {
   list-style-type: none;
 }
 
-.comment {
-  padding-left: 60px;
-}
-
-.comment .vcard {
-  padding-top: 1em;
-}
-
-.comment .vcard img {
-  position: absolute;
-  left: 40px;
-  padding-top: 0.3em;
-}
-
-.comment p {
-  clear: both;
-}
-
-#admin ul.nav li {
-  display: inline;
-}
-
-#admin header {
-  clear: both;
-}
-
-#admin .banner {
-  border-bottom: 1px solid #ccc;
-}
-
-.admin-posts-list {
-  width: 100%;
-}
-
-.admin-posts-list .action {
-  width: 30px;
-}
-
-.admin-posts-list .title {
-  font-weight: 500;
-}
-
-.admin-posts-list .date {
-  text-align: center;
-}
-
 #login {
   position: absolute;
   top: 0;
@@ -261,3 +170,4 @@ ol#comments li {
   line-height: 1.5em;
   font-size: 16pt;
 }
+
