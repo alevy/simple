@@ -14,7 +14,7 @@ cabal-version:       >=1.8
 
 executable blog
   main-is: Main.hs
-  ghc-options: -threaded -O2 -Wall -fno-warn-unused-do-bind
+  ghc-options: -O2 -Wall -fno-warn-unused-do-bind
   build-depends:
     base,
     aeson,
