@@ -111,7 +111,8 @@ postsAdminController = requiresAdmin "/login" $ routeREST $ rest $ do
     curTime <- liftIO $ getZonedTime
     let pTitle = decodeUtf8 <$> lookup "title" params
         pBody = decodeUtf8 <$> lookup "body" params
-        pSlug = ((T.null `mfilter` (decodeUtf8 <$> lookup "slug" params))
+        pSlug = (((not . T.null) `mfilter`
+                    (decodeUtf8 <$> lookup "slug" params))
                   <|> fmap slugFromTitle pTitle)
         mpost = Post NullKey <$> pTitle <*> pSlug <*> pBody
                 <*> pure False <*> pure curTime

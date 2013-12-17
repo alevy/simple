@@ -109,7 +109,7 @@ textarea#body {
   height: 350px;
 }
 
-input#title, textarea {
+#admin input, textarea {
   width: 100%;
 }
 
