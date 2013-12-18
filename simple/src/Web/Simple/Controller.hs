@@ -57,6 +57,7 @@ import           Control.Monad.IO.Class
 import           Control.Monad.IO.Peel
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
+import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Conduit
 import qualified Data.Conduit.List as CL
@@ -326,10 +327,10 @@ readParamValue varName =
 --         respond $ redirectTo \"/\"
 --       Nothing -> redirectBack
 -- @
-parseForm :: Controller r ([Param], [(S.ByteString, FileInfo FilePath)])
+parseForm :: Controller r ([Param], [(S.ByteString, FileInfo L.ByteString)])
 parseForm = do
   req <- request
-  liftIO $ parseRequestBody tempFileBackEnd req
+  liftIO $ parseRequestBody lbsBackEnd req
 
 -- | Reads and returns the body of the HTTP request.
 body :: Controller r L8.ByteString
