@@ -1,0 +1,37 @@
+PATH=$HOME/.cabal/bin:$PATH
+#cabal update
+
+if [[ ! -e $BASE_DIR/simple || ! -e $BASE_DIR/postgresql-orm ]]
+then
+
+  if [[ ! -e $BASE_DIR/simple ]]
+  then
+    git clone anonymous@gitstar.com:alevy/simple.git $BASE_DIR/simple
+  fi
+
+  if [[ ! -e $BASE_DIR/postgresql-orm ]]
+  then
+    git clone anonymous@gitstar.com:dm/postgresql-orm.git $BASE_DIR/postgresql-orm
+  fi
+
+  cabal sandbox init --sandbox=$BASE_DIR/.cabal-sandbox/packages.conf.d/
+  cabal sandbox add-source $BASE_DIR/simple/simple
+  cabal sandbox add-source $BASE_DIR/simple/simple-templates
+  cabal sandbox add-source $BASE_DIR/simple/simple-session
+  cabal sandbox add-source $BASE_DIR/simple/simple-postgresql-orm
+  cabal sandbox add-source $BASE_DIR/postgresql-orm
+else
+  pushd $BASE_DIR/simple
+  git pull
+  popd
+  pushd $BASE_DIR/postgresql-orm
+  git pull
+  popd
+  cabal sandbox init --sandbox=$BASE_DIR/.cabal-sandbox/packages.conf.d/
+fi
+
+cabal install --disable-library-profiling --disable-executable-profiling \
+  --only-dependencies -j3
+cabal configure
+cabal build
+
