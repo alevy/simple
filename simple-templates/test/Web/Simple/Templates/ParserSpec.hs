@@ -156,18 +156,23 @@ spec = describe "Web.Simple.Templates.Parser" $ do
     it "matches basic for loop" $ do
       let parsedStr = A.parseOnly pFor "for(i in [])$$i$$endfor"
       assertEqual "" (Right $
-                        ASTFor "i" (ASTArray (V.fromList []))
+                        ASTFor Nothing "i" (ASTArray (V.fromList []))
                           (ASTRoot [ASTVar "i"]) Nothing) parsedStr
     it "matches with space after for" $ do
       let parsedStr = A.parseOnly pFor "for i in []$$i$$endfor"
       assertEqual "" (Right $
-                        ASTFor "i" (ASTArray (V.fromList []))
+                        ASTFor Nothing "i" (ASTArray (V.fromList []))
                           (ASTRoot [ASTVar "i"]) Nothing) parsedStr
     it "matches with separator" $ do
       let parsedStr = A.parseOnly pFor "for(i in [])$$i$$sep$hello$endfor"
       assertEqual "" (Right $
-                        ASTFor "i" (ASTArray (V.fromList []))
+                        ASTFor Nothing "i" (ASTArray (V.fromList []))
                           (ASTRoot [ASTVar "i"])
                           (Just $ ASTRoot [ASTLiteral $ String "hello"]))
                      parsedStr
+    it "matches for loop with index" $ do
+      let parsedStr = A.parseOnly pFor "for(i,v in [])$$i$$endfor"
+      assertEqual "" (Right $
+                        ASTFor (Just "i") "v" (ASTArray (V.fromList []))
+                          (ASTRoot [ASTVar "i"]) Nothing) parsedStr
 
