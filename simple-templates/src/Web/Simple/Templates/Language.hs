@@ -32,6 +32,7 @@ module Web.Simple.Templates.Language
   compileTemplate, evaluate, evaluateAST
   -- * Helpers
   , valueToText, replaceVar
+  , module Web.Simple.Templates.Types
   ) where
 
 import Control.Applicative

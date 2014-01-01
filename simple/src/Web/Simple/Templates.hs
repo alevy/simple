@@ -17,9 +17,9 @@ import Data.Text.Encoding
 import qualified Data.Vector as V
 import Network.Mime
 import System.FilePath
-import Web.Simple (Controller, ok, respond)
+import Web.Simple.Controller (Controller, respond)
+import Web.Simple.Responses (ok)
 import Web.Simple.Templates.Language
-import Web.Simple.Templates.Types
 
 class HasTemplates hs where
   -- | The layout to use by default. Layouts are just templates that embed

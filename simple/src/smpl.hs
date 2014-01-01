@@ -20,7 +20,6 @@ import System.Exit
 import System.SetEnv
 import System.Process
 import Web.Simple.Templates.Language
-import Web.Simple.Templates.Types
 
 import Paths_simple
 

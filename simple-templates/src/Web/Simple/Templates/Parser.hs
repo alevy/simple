@@ -10,6 +10,7 @@ module Web.Simple.Templates.Parser
   , pIf, pFor
   , pFunc, pValue, pVar
   , pIndex, pIdentifier, pLiteral, pNull, pBoolean, pString, pNumber, pArray
+  , module Web.Simple.Templates.Types
   ) where
 
 import Control.Applicative
