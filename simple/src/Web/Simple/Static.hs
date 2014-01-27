@@ -15,7 +15,10 @@ serveStatic baseDir = do
   req <- request
   let fp = foldl (</>) baseDir (map T.unpack $ pathInfo req)
   exists <- liftIO $ doesFileExist fp
-  when exists $
+  when exists $ do
+    liftIO $ do
+      modTime <- getModificationTime fp
+      print modTime
     respond $ responseFile status200
       [(hContentType, defaultMimeLookup $ T.pack $ takeFileName fp)]
       fp Nothing

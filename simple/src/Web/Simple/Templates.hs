@@ -81,9 +81,7 @@ class HasTemplates hs where
     fm <- functionMap
     dir <- viewDirectory
     tmpl <- getTemplate (dir </> fp)
-    let pageContent =
-          L.fromChunks . (:[]) . encodeUtf8 $
-            renderTemplate tmpl fm $ toJSON val
+    let pageContent = renderTemplate tmpl fm $ toJSON val
     let mime = defaultMimeLookup $ T.pack $ takeFileName fp
     respond $ ok mime $ L.fromChunks . (:[]) . encodeUtf8 $
       renderTemplate layout fm $ object ["yield" .= pageContent, "page" .= val]

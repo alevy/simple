@@ -107,7 +107,7 @@ pIdentifier = A.string "@" <|> do
   rst <- A.takeWhile (\c -> isAlphaNum c || c == '_' || c == '-')
   let ident = a <> rst
   guard $ ident `notElem` reservedWords
-  return ident 
+  return ident
 
 -- Literals --
 
@@ -132,7 +132,7 @@ pString = ASTLiteral . String <$>
                       A.satisfy (/= '"')
 
 pNumber :: A.Parser AST
-pNumber = ASTLiteral . Number <$>
+pNumber = ASTLiteral . Number . fromRational . toRational <$>
   A.number
 
 pArray :: A.Parser AST
