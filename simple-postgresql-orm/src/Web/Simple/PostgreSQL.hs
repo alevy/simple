@@ -4,21 +4,22 @@ module Web.Simple.PostgreSQL
   , module Database.PostgreSQL.ORM
   ) where
 
-import Control.Concurrent.MVar
 import Control.Monad
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
+import Data.Pool
 import Database.PostgreSQL.ORM
 import Database.PostgreSQL.Devel
 import Database.PostgreSQL.Migrate
 import Database.PostgreSQL.Simple
+import GHC.Conc (numCapabilities)
 import System.Directory
 import System.Environment
 import System.FilePath
 import System.IO
 import Web.Simple
 
-type PostgreSQLConn = MVar Connection
+type PostgreSQLConn = Pool Connection
 
 class HasPostgreSQL hs where
   postgreSQLConn :: hs -> PostgreSQLConn
@@ -41,13 +42,18 @@ createPostgreSQLConn = do
     runMigrationsForDir stdout defaultMigrationsDir
     putStrLn "Dev database started..."
   let envConnect = maybe S8.empty S8.pack $ lookup "DATABASE_URL" env
-  connectPostgreSQL envConnect >>= newMVar
+  createPool (connectPostgreSQL envConnect) close numCapabilities 2 10
 
 withConnection :: HasPostgreSQL hs
                => (Connection -> Controller hs b) -> Controller hs b
 withConnection func = do
-  dbvar <- postgreSQLConn `fmap` controllerState
-  bracket (liftIO $ takeMVar dbvar) (liftIO . (putMVar dbvar)) $ \conn -> do
-    res <- func conn
-    return res
+  pool <- postgreSQLConn `fmap` controllerState
+  -- Stick the dbvar in an IORef so we can replace it if there is an
+  -- exception. Always fill dbvar at the end, exception or otherwise.
+  bracket (liftIO $ takeResource pool)
+          (\(conn, lp) -> liftIO $ putResource lp conn) $
+          funcE pool
+        -- run the function, but on exceptions treat the connection as dead
+  where funcE pool (conn, lp) = do
+          (func conn) `onException` (liftIO $ destroyResource pool lp conn)
 
