@@ -24,7 +24,7 @@ module Web.Simple.Controller
   -- * Example
   -- $Example
   -- * Controller Monad
-    Controller(..), runController
+    Controller(..)
   , controllerApp, controllerState, putState
   , request, localRequest, respond
   , requestHeader
@@ -78,9 +78,9 @@ type ControllerState r = (r, Request)
 -- | The Controller Monad is both a State-like monad which, when run, computes
 -- either a 'Response' or a result. Within the Controller Monad, the remainder
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
-newtype Controller r a =
-  Controller (ControllerState r ->
-              IO (Either Response a, ControllerState r))
+newtype Controller r a = Controller
+  { runController :: ControllerState r ->
+                      IO (Either Response a, ControllerState r) }
 
 instance Functor (Controller r) where
   fmap f (Controller act) = Controller $ \st0 -> do
@@ -114,7 +114,7 @@ instance MonadPeelIO (Controller r) where
     r <- controllerState
     req <- request
     return $ \ctrl -> do
-      res <- runController ctrl r req
+      res <- fst `fmap` runController ctrl (r, req)
       return $ hoistEither res
 
 ask :: Controller r (r, Request)
@@ -134,7 +134,7 @@ localRequest :: (Request -> Request) -> Controller r a -> Controller r a
 localRequest f = local (\(r,req) -> (r, f req))
 
 -- | Extract the application-specific state
-controllerState :: Controller r r 
+controllerState :: Controller r r
 controllerState = liftM fst ask
 
 putState :: r -> Controller r ()
@@ -143,11 +143,8 @@ putState r = Controller $ \(_, req) -> return (Right (), (r, req))
 -- | Convert the controller into an 'Application'
 controllerApp :: r -> Controller r a -> Application
 controllerApp r ctrl req =
-  runController ctrl r req >>=
-    either return (const $ return notFound) 
-
-runController :: Controller r a -> r -> Request -> IO (Either Response a)
-runController (Controller fun) r req = fst `fmap` fun (r,req)
+  runController ctrl (r, req) >>=
+    either return (const $ return notFound) . fst
 
 -- | Decline to handle the request
 --
