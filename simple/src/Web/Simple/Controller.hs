@@ -23,7 +23,7 @@ module Web.Simple.Controller
   -- * Example
   -- $Example
   -- * Controller Monad
-    Controller, runController
+    Controller, T.ControllerT(..), ControllerState
   , controllerApp, controllerState, putState
   , request, localRequest, respond
   , requestHeader
@@ -69,9 +69,6 @@ import           Web.Simple.Responses
 -- either a 'Response' or a result. Within the Controller Monad, the remainder
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
 type Controller = ControllerT IO
-
-runController :: Controller r a -> (ControllerState r -> IO (Either Response a, ControllerState r))
-runController = T.runController
 
 hoistEither :: Either Response a -> Controller r a
 hoistEither = T.hoistEither
