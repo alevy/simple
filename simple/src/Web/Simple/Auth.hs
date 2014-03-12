@@ -17,15 +17,15 @@ import Web.Simple.Controller
 
 -- | An 'AuthRouter' authenticates a 'Request' and, if successful, forwards the
 -- 'Request' to the 'Routeable'.
-type AuthRouter m r a = (Request -> S8.ByteString
-                                 -> S8.ByteString
-                                 -> Controller m r (Maybe Request))
-                    -> Controller m r a
-                    -> Controller m r a
+type AuthRouter r a = (Request -> S8.ByteString
+                               -> S8.ByteString
+                               -> Controller r (Maybe Request))
+                  -> Controller r a
+                  -> Controller r a
 
 -- | An 'AuthRouter' that uses HTTP basic authentication to authenticate a request
 -- in a particular realm.
-basicAuthRoute :: Monad m => String -> AuthRouter m r a
+basicAuthRoute :: String -> AuthRouter r a
 basicAuthRoute realm testAuth next = do
   req <- request
   let authStr = fromMaybe "" $ lookup hAuthorization (requestHeaders req)
@@ -42,11 +42,10 @@ basicAuthRoute realm testAuth next = do
 -- just takes a username and password, and returns 'True' or 'False'). It also
 -- adds an \"X-User\" header to the 'Request' with the authenticated user\'s
 -- name (the first argument to the authentication function).
-authRewriteReq :: Monad m
-               => AuthRouter m r a
-               -> (S8.ByteString -> S8.ByteString -> Controller m r Bool)
-               -> Controller m r a
-               -> Controller m r a
+authRewriteReq :: AuthRouter r a
+                    -> (S8.ByteString -> S8.ByteString -> Controller r Bool)
+                    -> Controller r a
+                    -> Controller r a
 authRewriteReq authRouter testAuth rt =
   authRouter (\req user pwd -> do
     success <- testAuth user pwd
@@ -59,14 +58,13 @@ authRewriteReq authRouter testAuth rt =
 -- | A 'Route' that uses HTTP basic authentication to authenticate a request for a realm
 -- with the given username ans password. The request is rewritten with an 'X-User' header
 -- containing the authenticated username before being passed to the next 'Route'.
-basicAuth :: Monad m
-          => String
+basicAuth :: String
           -- ^ Realm
           -> S8.ByteString
           -- ^ Username
           -> S8.ByteString
           -- ^ Password
-          -> Controller m r a -> Controller m r a
+          -> Controller r a -> Controller r a
 basicAuth realm user pwd = authRewriteReq (basicAuthRoute realm)
   (\u p -> return $ u == user && p == pwd)
 

@@ -82,6 +82,7 @@ library
     Web.Simple,
     Web.Simple.Auth,
     Web.Simple.Controller,
+    Web.Simple.Controller.Trans,
     Web.Simple.Responses,
     Web.Simple.Static,
     Web.Simple.Templates,

@@ -10,7 +10,7 @@ import Web.Simple.Controller
 import System.Directory
 import System.FilePath
 
-serveStatic :: FilePath -> Controller IO a ()
+serveStatic :: FilePath -> Controller a ()
 serveStatic baseDir = do
   req <- request
   let fp = foldl (</>) baseDir (map T.unpack $ pathInfo req)
