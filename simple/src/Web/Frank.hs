@@ -34,25 +34,27 @@ import Web.Simple.Controller
 import qualified Data.ByteString as S
 
 -- | Helper method
-frankMethod :: StdMethod -> S.ByteString -> Controller r a -> Controller r ()
+frankMethod :: Monad m
+            => StdMethod -> S.ByteString -> Controller m r a
+            -> Controller m r ()
 frankMethod method pattern = routeMethod method . routePattern pattern . routeTop
 
 -- | Matches the GET method on the given URL pattern
-get :: S.ByteString -> Controller r a -> Controller r ()
+get :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
 get = frankMethod GET
 
 -- | Matches the POST method on the given URL pattern
-post :: S.ByteString -> Controller r a -> Controller r ()
+post :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
 post = frankMethod POST
 
 -- | Matches the PUT method on the given URL pattern
-put :: S.ByteString -> Controller r a -> Controller r ()
+put :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
 put = frankMethod PUT
 
 -- | Matches the DELETE method on the given URL pattern
-delete :: S.ByteString -> Controller r a -> Controller r ()
+delete :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
 delete = frankMethod DELETE
 
 -- | Matches the OPTIONS method on the given URL pattern
-options :: S.ByteString -> Controller r a -> Controller r ()
+options :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
 options = frankMethod OPTIONS

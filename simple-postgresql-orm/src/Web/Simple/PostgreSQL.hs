@@ -45,7 +45,7 @@ createPostgreSQLConn = do
   createPool (connectPostgreSQL envConnect) close numCapabilities 2 10
 
 withConnection :: HasPostgreSQL hs
-               => (Connection -> Controller hs b) -> Controller hs b
+               => (Connection -> Controller IO hs b) -> Controller IO hs b
 withConnection func = do
   pool <- postgreSQLConn `fmap` controllerState
   -- Stick the dbvar in an IORef so we can replace it if there is an

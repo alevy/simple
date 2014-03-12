@@ -1,4 +1,5 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, MultiParamTypeClasses #-}
+{-# LANGUAGE DefaultSignatures #-}
 module Web.Simple.Templates
   ( HasTemplates(..)
   , defaultGetTemplate, defaultRender, defaultFunctionMap
@@ -6,7 +7,6 @@ module Web.Simple.Templates
   , Function(..), ToFunction(..), FunctionMap
   ) where
 
-import Control.Applicative
 import Control.Monad.IO.Class
 import Data.Aeson
 import qualified Data.ByteString as S
@@ -21,12 +21,12 @@ import Web.Simple.Controller (Controller, respond)
 import Web.Simple.Responses (ok)
 import Web.Simple.Templates.Language
 
-class HasTemplates hs where
+class Monad m => HasTemplates m hs where
   -- | The layout to use by default. Layouts are just templates that embed
   -- views. They are rendered with the a global object containing the rendered
   -- view in the \"yield\" field, and the object the view was rendered with in
   -- the \"page\" field. By default, no template is used.
-  defaultLayout :: Controller hs (Maybe Template)
+  defaultLayout :: Controller m hs (Maybe Template)
   defaultLayout = return Nothing
 
   -- | The directory to look for views passed to 'render'. This defaults to
@@ -37,28 +37,29 @@ class HasTemplates hs where
   -- @
   --
   -- will look for a view template in \"views/index.html.tmpl\".
-  viewDirectory :: Controller hs FilePath
+  viewDirectory :: Controller m hs FilePath
   viewDirectory = return "views"
 
   -- | A map of pure functions that can be called from within a template. See
   -- 'FunctionMap' and 'Function' for details.
-  functionMap :: Controller hs FunctionMap
+  functionMap :: Controller m hs FunctionMap
   functionMap = return defaultFunctionMap
 
   -- | Function to use to get a template. By default, it looks in the
   -- 'viewDirectory' for the given file name and compiles the file into a
   -- template. This can be overriden to, for example, cache compiled templates
   -- in memory.
-  getTemplate :: FilePath -> Controller hs Template
+  getTemplate :: FilePath -> Controller m hs Template
+  default getTemplate :: MonadIO m => FilePath -> Controller m hs Template
   getTemplate = defaultGetTemplate
 
   -- | Renders a view template with the default layout and a global used to
   -- evaluate variables in the template.
-  render :: ToJSON a => FilePath -> a -> Controller hs ()
+  render :: ToJSON a => FilePath -> a -> Controller m hs ()
   render = defaultRender
 
   -- | Same as 'render' but without a template.
-  renderPlain :: ToJSON a => FilePath -> a -> Controller hs ()
+  renderPlain :: ToJSON a => FilePath -> a -> Controller m hs ()
   renderPlain fp val = do
     fm <- functionMap
     dir <- viewDirectory
@@ -70,13 +71,13 @@ class HasTemplates hs where
     respond $ ok mime pageContent
 
   -- | Render a view using the layout named by the first argument.
-  renderLayout :: ToJSON a => FilePath -> FilePath -> a -> Controller hs ()
+  renderLayout :: ToJSON a => FilePath -> FilePath -> a -> Controller m hs ()
   renderLayout lfp fp val = do
     layout <- getTemplate lfp
     renderLayout' layout fp val
 
   -- | Same as 'renderLayout' but uses an already compiled layout.
-  renderLayout' :: ToJSON a => Template -> FilePath -> a -> Controller hs ()
+  renderLayout' :: ToJSON a => Template -> FilePath -> a -> Controller m hs ()
   renderLayout' layout fp val = do
     fm <- functionMap
     dir <- viewDirectory
@@ -86,16 +87,16 @@ class HasTemplates hs where
     respond $ ok mime $ L.fromChunks . (:[]) . encodeUtf8 $
       renderTemplate layout fm $ object ["yield" .= pageContent, "page" .= val]
 
-defaultGetTemplate :: HasTemplates hs => FilePath -> Controller hs Template
+defaultGetTemplate :: (HasTemplates m hs, MonadIO m)
+                   => FilePath -> Controller m hs Template
 defaultGetTemplate fp = do
-  eres <- compileTemplate . decodeUtf8 <$>
-    liftIO (S.readFile fp)
-  case eres of
+  contents <- liftIO $ S.readFile fp
+  case compileTemplate . decodeUtf8 $ contents of
     Left str -> fail str
     Right tmpl -> return tmpl
 
-defaultRender :: (HasTemplates hs , ToJSON a)
-              => FilePath -> a -> Controller hs ()
+defaultRender :: (HasTemplates m hs , Monad m, ToJSON a)
+              => FilePath -> a -> Controller m hs ()
 defaultRender fp val = do
   mlayout <- defaultLayout
   case mlayout of

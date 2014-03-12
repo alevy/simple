@@ -7,24 +7,23 @@ module Web.REST
 
 import Prelude hiding (show)
 
-import Control.Monad
 import Control.Monad.Trans.State
 import Data.Functor.Identity
 import Web.Simple.Responses
 import Web.Simple.Controller
 import Network.HTTP.Types
 
-data REST r = REST
-  { restIndex   :: Controller r ()
-  , restShow    :: Controller r ()
-  , restCreate  :: Controller r ()
-  , restUpdate  :: Controller r ()
-  , restDelete  :: Controller r ()
-  , restEdit    :: Controller r ()
-  , restNew     :: Controller r ()
+data REST m r = REST
+  { restIndex   :: Controller m r ()
+  , restShow    :: Controller m r ()
+  , restCreate  :: Controller m r ()
+  , restUpdate  :: Controller m r ()
+  , restDelete  :: Controller m r ()
+  , restEdit    :: Controller m r ()
+  , restNew     :: Controller m r ()
   }
 
-defaultREST :: REST r
+defaultREST :: Monad m => REST m r
 defaultREST = REST
   { restIndex   = respond $ notFound
   , restShow    = respond $ notFound
@@ -35,12 +34,12 @@ defaultREST = REST
   , restNew     = respond $ notFound
   }
 
-type RESTControllerM r a = StateT (REST r) Identity a
+type RESTControllerM m r a = StateT (REST m r) Identity a
 
-rest :: RESTControllerM r a -> REST r
+rest :: Monad m => RESTControllerM m r a -> REST m r
 rest rcontroller = snd . runIdentity $ runStateT rcontroller defaultREST
 
-routeREST :: REST r -> Controller r ()
+routeREST :: Monad m => REST m r -> Controller m r ()
 routeREST rst = do
   routeMethod GET $ do
     routeTop $ restIndex rst
@@ -55,33 +54,33 @@ routeREST rst = do
 
   routeMethod PUT $ routeVar "id" $ restUpdate rst
 
-type RESTController r = RESTControllerM r ()
+type RESTController m r = RESTControllerM m r ()
 
-index :: Controller r a -> RESTController r
+index :: Controller m r () -> RESTController m r
 index route = modify $ \controller ->
-  controller { restIndex = void route }
+  controller { restIndex = route }
 
-create :: Controller r a -> RESTController r
+create :: Controller m r () -> RESTController m r
 create route = modify $ \controller ->
-  controller { restCreate = void route }
+  controller { restCreate = route }
 
-edit :: Controller r a -> RESTController r
+edit :: Controller m r () -> RESTController m r
 edit route = modify $ \controller ->
-  controller { restEdit = void route }
+  controller { restEdit = route }
 
-new :: Controller r a -> RESTController r
+new :: Controller m r () -> RESTController m r
 new route = modify $ \controller ->
-  controller { restNew = void route }
+  controller { restNew = route }
 
-show :: Controller r a -> RESTController r
+show :: Controller m r () -> RESTController m r
 show route = modify $ \controller ->
-  controller { restShow = void route }
+  controller { restShow = route }
 
-update :: Controller r a -> RESTController r
+update :: Controller m r () -> RESTController m r
 update route = modify $ \controller ->
-  controller { restUpdate = void route }
+  controller { restUpdate = route }
 
-delete :: Controller r a -> RESTController r
+delete :: Controller m r () -> RESTController m r
 delete route = modify $ \controller ->
-  controller { restDelete = void route }
+  controller { restDelete = route }
 

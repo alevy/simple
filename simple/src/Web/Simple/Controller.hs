@@ -43,7 +43,6 @@ module Web.Simple.Controller
   , ControllerException
   , module Control.Exception.Peel
   -- * Integrating other WAI components
-  , ToApplication(..)
   , fromApp
   -- * Low-level utilities
   , body
@@ -78,23 +77,23 @@ type ControllerState r = (r, Request)
 -- | The Controller Monad is both a State-like monad which, when run, computes
 -- either a 'Response' or a result. Within the Controller Monad, the remainder
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
-newtype Controller r a = Controller
+newtype Controller m r a = Controller
   { runController :: ControllerState r ->
-                      IO (Either Response a, ControllerState r) }
+                      m (Either Response a, ControllerState r) }
 
-instance Functor (Controller r) where
+instance (Monad m, Functor m) => Functor (Controller m r) where
   fmap f (Controller act) = Controller $ \st0 -> do
     (eaf, st) <- act st0
     case eaf of
       Left resp -> return (Left resp, st)
       Right result -> return (Right $ f result, st)
 
-instance Applicative (Controller r) where
-  pure a = Controller $ \st -> return $ (Right a, st)
+instance (Monad m, Applicative m) => Applicative (Controller m r) where
+  pure = return
   (<*>) = ap
 
-instance Monad (Controller r) where
-  return = pure
+instance Monad m => Monad (Controller m r) where
+  return a = Controller $ \st -> return $ (Right a, st)
   (Controller act) >>= fn = Controller $ \st0 -> do
     (eres, st) <- act st0
     case eres of
@@ -103,13 +102,20 @@ instance Monad (Controller r) where
         let (Controller fres) = fn result
         fres st
 
-instance MonadIO (Controller r) where
+instance MonadIO m => MonadIO (Controller m r) where
   liftIO act = Controller $ \st -> liftIO act >>= \r -> return (Right r, st)
 
-hoistEither :: Either Response a -> Controller r a
+
+class Monad m => MonadController m where
+  liftController :: m a -> Controller m r a
+
+instance MonadController IO where
+  liftController = liftIO
+
+hoistEither :: Monad m => Either Response a -> Controller m r a
 hoistEither eith = Controller $ \st -> return (eith, st)
 
-instance MonadPeelIO (Controller r) where
+instance MonadPeelIO (Controller IO r) where
   peelIO = do
     r <- controllerState
     req <- request
@@ -117,31 +123,33 @@ instance MonadPeelIO (Controller r) where
       res <- fst `fmap` runController ctrl (r, req)
       return $ hoistEither res
 
-ask :: Controller r (r, Request)
+ask :: Monad m => Controller m r (r, Request)
 ask = Controller $ \rd -> return (Right rd, rd)
 
 -- | Extract the request
-request :: Controller r Request
+request :: Monad m => Controller m r Request
 request = liftM snd ask
 
-local :: ((r, Request) -> (r, Request)) -> Controller r a -> Controller r a
+local :: Monad m
+      => ((r, Request) -> (r, Request)) -> Controller m r a -> Controller m r a
 local f (Controller act) = Controller $ \st@(_, r) -> do
   (eres, (req, _)) <- act (f st)
   return (eres, (req, r))
 
 -- | Modify the request for the given computation
-localRequest :: (Request -> Request) -> Controller r a -> Controller r a
+localRequest :: Monad m
+             => (Request -> Request) -> Controller m r a -> Controller m r a
 localRequest f = local (\(r,req) -> (r, f req))
 
 -- | Extract the application-specific state
-controllerState :: Controller r r
+controllerState :: Monad m => Controller m r r
 controllerState = liftM fst ask
 
-putState :: r -> Controller r ()
+putState :: Monad m => r -> Controller m r ()
 putState r = Controller $ \(_, req) -> return (Right (), (r, req))
 
 -- | Convert the controller into an 'Application'
-controllerApp :: r -> Controller r a -> Application
+controllerApp :: Monad m => r -> Controller m r a -> (Request -> m Response)
 controllerApp r ctrl req =
   runController ctrl (r, req) >>=
     either return (const $ return notFound) . fst
@@ -150,43 +158,44 @@ controllerApp r ctrl req =
 --
 -- @pass >> c === c@
 -- @c >> pass === c@
-pass :: Controller r ()
+pass :: Monad m => Controller m r ()
 pass = Controller $ \st -> return (Right (), st)
 
 -- | Provide a response
 --
 -- @respond r >>= f === respond r@
-respond :: Response -> Controller r a
-respond resp = Controller $ \st -> return (Left resp, st)
+respond :: Monad m => Response -> Controller m r a
+respond resp = hoistEither $ Left resp
 
 
 -- | Lift an application to a controller
-fromApp :: ToApplication a => a -> Controller r ()
+fromApp :: MonadController m => (Request -> m Response) -> Controller m r ()
 fromApp app = do
   req <- request
-  resp <- liftIO $ (toApp app) req
+  resp <- liftController $ app req
   respond resp
 
 -- | Matches on the hostname from the 'Request'. The route only succeeds on
 -- exact matches.
-routeHost :: S.ByteString -> Controller r a -> Controller r ()
-routeHost host = guardReq $ \req -> host == (fromMaybe "" $ requestHeaderHost req)
+routeHost :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
+routeHost host = guardReq $ \req ->
+  host == (fromMaybe "" $ requestHeaderHost req)
 
 -- | Matches if the path is empty.
 --
 -- Note that this route checks that 'pathInfo'
 -- is empty, so it works as expected in nested contexts that have
 -- popped components from the 'pathInfo' list.
-routeTop :: Controller r a -> Controller r ()
+routeTop :: Monad m => Controller m r a -> Controller m r ()
 routeTop = guardReq $ \req -> null (pathInfo req) ||
                               (T.length . head $ pathInfo req) == 0
 
 -- | Matches on the HTTP request method (e.g. 'GET', 'POST', 'PUT')
-routeMethod :: StdMethod -> Controller r a -> Controller r ()
+routeMethod :: Monad m => StdMethod -> Controller m r a -> Controller m r ()
 routeMethod method = guardReq $ (renderStdMethod method ==) . requestMethod
 
 -- | Matches if the request's Content-Type exactly matches the given string
-routeAccept :: S8.ByteString -> Controller r a -> Controller r ()
+routeAccept :: Monad m => S8.ByteString -> Controller m r a -> Controller m r ()
 routeAccept contentType = guardReq (isJust . find matching . requestHeaders)
  where matching hdr = fst hdr == hAccept && snd hdr == contentType
 
@@ -200,7 +209,8 @@ routeAccept contentType = guardReq (isJust . find matching . requestHeaders)
 --
 --  * \/:date\/posts\/:category\/new
 --
-routePattern :: S.ByteString -> Controller r a -> Controller r ()
+routePattern :: Monad m
+             => S.ByteString -> Controller m r a -> Controller m r ()
 routePattern pattern route =
   let patternParts = map T.unpack $ decodePathSegments pattern
   in foldr mkRoute (route >> return ()) patternParts
@@ -208,7 +218,7 @@ routePattern pattern route =
         mkRoute name = routeName (S8.pack name)
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: S.ByteString -> Controller r a -> Controller r ()
+routeName :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
 routeName name next = do
   req <- request
   if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
@@ -219,7 +229,7 @@ routeName name next = do
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: S.ByteString -> Controller r a -> Controller r ()
+routeVar :: Monad m => S.ByteString -> Controller m r a -> Controller m r ()
 routeVar varName next = do
   req <- request
   case pathInfo req of
@@ -243,9 +253,9 @@ routeVar varName next = do
 -- would return @Just "bar"@, but
 -- @queryParam \"zap\"@
 -- would return @Nothing@.
-queryParam :: Parseable a
+queryParam :: (Monad m, Parseable a)
            => S8.ByteString -- ^ Parameter name
-           -> Controller r (Maybe a)
+           -> Controller m r (Maybe a)
 queryParam varName = do
   qr <- liftM queryString request
   return $ case lookup varName qr of
@@ -253,14 +263,14 @@ queryParam varName = do
     _ -> Nothing
 
 -- | Like 'queryParam', but throws an exception if the parameter is not present.
-queryParam' :: Parseable a
-            => S.ByteString -> Controller r a
+queryParam' :: (Monad m, Parseable a)
+            => S.ByteString -> Controller m r a
 queryParam' varName =
   queryParam varName >>= maybe (err $ "no parameter " ++ show varName) return
 
 -- | Selects all values with the given parameter name
-queryParams :: Parseable a
-            => S.ByteString -> Controller r [a]
+queryParams :: (Monad m, Parseable a)
+            => S.ByteString -> Controller m r [a]
 queryParams varName = request >>= return .
                                   map (parse . fromMaybe S.empty . snd) .
                                   filter ((== varName) . fst) .
@@ -279,28 +289,29 @@ instance Parseable Text where
 
 -- | Like 'queryParam', but further processes the parameter value with @read@.
 -- If that conversion fails, an exception is thrown.
-readQueryParam :: Read a
+readQueryParam :: (Monad m, Read a)
                => S8.ByteString -- ^ Parameter name
-               -> Controller r (Maybe a)
+               -> Controller m r (Maybe a)
 readQueryParam varName =
   queryParam varName >>= maybe (return Nothing) (liftM Just . readParamValue varName)
 
 -- | Like 'readQueryParam', but throws an exception if the parameter is not present.
-readQueryParam' :: Read a
+readQueryParam' :: (Monad m, Read a)
                 => S8.ByteString -- ^ Parameter name
-                -> Controller r a
+                -> Controller m r a
 readQueryParam' varName =
   queryParam' varName >>= readParamValue varName
 
 -- | Like 'queryParams', but further processes the parameter values with @read@.
 -- If any read-conversion fails, an exception is thrown.
-readQueryParams ::  Read a
+readQueryParams :: (Monad m, Read a)
                 => S8.ByteString -- ^ Parameter name
-                -> Controller r [a]
+                -> Controller m r [a]
 readQueryParams varName =
   queryParams varName >>= mapM (readParamValue varName)
 
-readParamValue :: Read a => S8.ByteString -> Text -> Controller r a
+readParamValue :: (Monad m, Read a)
+               => S8.ByteString -> Text -> Controller m r a
 readParamValue varName =
   maybe (err $ "cannot read parameter: " ++ show varName) return .
     readMay . T.unpack
@@ -324,31 +335,32 @@ readParamValue varName =
 --         respond $ redirectTo \"/\"
 --       Nothing -> redirectBack
 -- @
-parseForm :: Controller r ([Param], [(S.ByteString, FileInfo L.ByteString)])
+parseForm :: MonadIO m => Controller m r ([Param], [(S.ByteString, FileInfo L.ByteString)])
 parseForm = do
   req <- request
   liftIO $ parseRequestBody lbsBackEnd req
 
 -- | Reads and returns the body of the HTTP request.
-body :: Controller r L8.ByteString
+body :: MonadIO m => Controller m r L8.ByteString
 body = do
   req <- request
   liftIO $ L8.fromChunks `fmap` (requestBody req $$ CL.consume)
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
-requestHeader :: HeaderName -> Controller r (Maybe S8.ByteString)
+requestHeader :: Monad m => HeaderName -> Controller m r (Maybe S8.ByteString)
 requestHeader name = request >>= return . lookup name . requestHeaders
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
-redirectBack :: Controller r ()
+redirectBack :: Monad m => Controller m r ()
 redirectBack = redirectBackOr (redirectTo "/")
 
 -- | Redirect back to the referer. If the referer header is not present
 -- fallback on the given 'Response'.
-redirectBackOr :: Response -- ^ Fallback response
-               -> Controller r ()
+redirectBackOr :: Monad m
+               => Response -- ^ Fallback response
+               -> Controller m r ()
 redirectBackOr def = do
   mrefr <- requestHeader "referer"
   case mrefr of
@@ -357,24 +369,16 @@ redirectBackOr def = do
 
 -- guard
 
-guard :: Bool -> Controller r a -> Controller r ()
+guard :: Monad m => Bool -> Controller m r a -> Controller m r ()
 guard b c = if b then c >> return () else pass
 
-guardM :: Controller r Bool -> Controller r a -> Controller r ()
+guardM :: Monad m
+       => Controller m r Bool -> Controller m r a -> Controller m r ()
 guardM b c = b >>= flip guard c
 
-guardReq :: (Request -> Bool) -> Controller r a -> Controller r ()
+guardReq :: Monad m
+         => (Request -> Bool) -> Controller m r a -> Controller m r ()
 guardReq f = guardM (liftM f request)
-
--- | The class of types that can be converted to an 'Application'
-class ToApplication r where
-  toApp :: r -> Application
-
-instance ToApplication Application where
-  toApp = id
-
-instance ToApplication Response where
-  toApp = const . return
 
 data ControllerException = ControllerException String
   deriving (Typeable)
@@ -384,8 +388,8 @@ instance Show ControllerException where
 
 instance Exception ControllerException
 
-err :: String -> Controller r a
-err = throwIO . ControllerException
+err :: String -> Controller m r a
+err = throw . ControllerException
 
 {- $Example
  #example#

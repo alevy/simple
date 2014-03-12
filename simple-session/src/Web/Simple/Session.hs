@@ -1,4 +1,8 @@
-{-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DefaultSignatures #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 {- | Adds cookie-based session management to simple 'Controller's. To add to an
   application, declare the Controller setting\'s type an instance of
@@ -24,6 +28,7 @@ module Web.Simple.Session
   , session, parseSession, dumpSession, addCookie
   ) where
 
+import Control.Monad
 import Control.Monad.IO.Class
 import Blaze.ByteString.Builder
 import Crypto.Hash
@@ -61,12 +66,13 @@ type Session = Map S.ByteString S.ByteString
 -- >      cs <- controllerState
 -- >      putState $ cs { myAppSess = sess }
 --
-class HasSession hs where
+class HasSession m hs | hs -> m where
   -- | Returns the secret session key. The default implementation uses the
   -- \"SESSION_KEY\" environment variable. If it is not present, and the
   -- \"ENV\" environment variable is set to \"development\", a dummy, hardcoded
   -- key is used.
-  sessionKey :: Controller hs S.ByteString
+  sessionKey :: Controller m hs S.ByteString
+  default sessionKey :: MonadIO m => Controller m hs S.ByteString
   sessionKey = liftIO $ do
     env <- getEnvironment
     case lookup "SESSION_KEY" env of
@@ -83,18 +89,19 @@ class HasSession hs where
   -- | Stores a parsed or changed session for the remainder of the request.This
   -- is used both for cached a parsed session cookie as well as for serializing
   -- to the \"Set-Cookie\" header when responding.
-  setSession :: Session -> Controller hs ()
+  setSession :: Session -> Controller m hs ()
 
 -- | A trivial implementation if the 'Controller' settings is just a Session
 -- store.
-instance HasSession (Maybe Session) where
+instance HasSession IO (Maybe Session) where
   getSession = id
   setSession = putState . Just
 
 -- | A middleware wrapper around a 'Controller' that sets the \"Set-Cookie\"
 -- header in the HTTP response if the Session is present, i.e. if it was
 -- accessed/modified by the 'Controller'.
-withSession :: HasSession hs => Controller hs a -> Controller hs a
+withSession :: (Monad m, HasSession m hs)
+            => Controller m hs a -> Controller m hs a
 withSession (Controller act) = do
   sk <- sessionKey
   Controller $ \st0 -> do
@@ -123,10 +130,10 @@ addCookie (key, value) resp =
 
 -- | Returns the current 'Session', either from the 'getSession' cache or by
 -- parsing the cookie from the 'Request' using 'sessionFromCookie'.
-session :: HasSession hs => Controller hs Session
+session :: (Monad m, HasSession m hs) => Controller m hs Session
 session = do
-  msession <- getSession `fmap` controllerState
-  case msession of
+  cs <- controllerState
+  case getSession cs of
     Just sess -> return sess
     Nothing -> do
       sess <- sessionFromCookie
@@ -134,9 +141,9 @@ session = do
       return sess
 
 -- | Get and parse a 'Session' from the current 'Request'.
-sessionFromCookie :: HasSession hs => Controller hs Session
+sessionFromCookie :: (Monad m, HasSession m hs) => Controller m hs Session
 sessionFromCookie = do
-  cookies <- (maybe [] parseCookies) `fmap` requestHeader hCookie
+  cookies <- (maybe [] parseCookies) `liftM` requestHeader hCookie
   sess <- case lookup "session" cookies of
             Just sessionCookie -> do
               sk <- sessionKey
@@ -169,24 +176,25 @@ dumpSession secret sess =
   in b64 `S.append` serial
 
 -- | Lookup a key from the current 'Request's session.
-sessionLookup :: HasSession hs
-              => S.ByteString -> Controller hs (Maybe S.ByteString)
-sessionLookup key = M.lookup key `fmap` session
+sessionLookup :: (Monad m, HasSession m hs)
+              => S.ByteString -> Controller m hs (Maybe S.ByteString)
+sessionLookup key = M.lookup key `liftM` session
 
 -- | Insert or replace a key in the current 'Request's session.
-sessionInsert :: HasSession hs
-              => S.ByteString -> S.ByteString -> Controller hs ()
+sessionInsert :: (Monad m, HasSession m hs)
+              => S.ByteString -> S.ByteString -> Controller m hs ()
 sessionInsert key value = do
   sess <- session
   setSession (M.insert key value sess)
 
 -- | Remove a key from the current 'Request's session.
-sessionDelete :: HasSession hs => S.ByteString -> Controller hs ()
+sessionDelete :: (Monad m, HasSession m hs)
+              => S.ByteString -> Controller m hs ()
 sessionDelete key = do
   sess <- session
   setSession $ M.delete key sess
 
 -- | Clear the entire 'Session'.
-sessionClear :: HasSession hs => Controller hs ()
+sessionClear :: HasSession m hs => Controller m hs ()
 sessionClear = setSession M.empty
 
