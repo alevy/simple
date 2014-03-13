@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE OverloadedStrings, MultiParamTypeClasses #-}
 {-# LANGUAGE DefaultSignatures #-}
 module Web.Simple.Templates

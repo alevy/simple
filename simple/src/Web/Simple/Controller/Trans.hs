@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -112,7 +113,7 @@ putState :: Monad m => r -> ControllerT m r ()
 putState r = ControllerT $ \(_, req) -> return (Right (), (r, req))
 
 -- | Convert the controller into an 'Application'
-controllerApp :: Monad m => r -> ControllerT m r a -> (Request -> m Response)
+controllerApp :: Monad m => r -> ControllerT m r a -> SimpleApplication m
 controllerApp r ctrl req =
   runController ctrl (r, req) >>=
     either return (const $ return notFound) . fst
@@ -302,6 +303,12 @@ redirectBackOr def = do
   case mrefr of
     Just refr -> respond $ redirectTo refr
     Nothing   -> respond def
+
+-- | Like 'Application', but with 'm' as the underlying monad
+type SimpleApplication m = Request -> m Response
+
+-- | Like 'Application', but with 'm' as the underlying monad
+type SimpleMiddleware m = SimpleApplication m -> SimpleApplication m
 
 -- guard
 
