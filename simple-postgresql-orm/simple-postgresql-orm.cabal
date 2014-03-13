@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simple-postgresql-orm
-version:             0.7.0
+version:             0.8.0
 synopsis:            Connector package for integrating postgresql-orm with the Simple web framework
 description:            Connector package for integrating postgresql-orm with the Simple web framework
 homepage:            http://simple.cx
@@ -27,7 +27,7 @@ library
     , postgresql-simple
     , postgresql-orm >= 0.2.2
     , resource-pool
-    , simple >= 0.7.0 && < 0.8
+    , simple >= 0.8.0 && < 0.9
     , transformers
   default-language:    Haskell2010
 

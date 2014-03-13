@@ -1,3 +1,4 @@
+$if(include_templates)${-# LANGUAGE MultiParamTypeClasses #-}$endif$
 module $module$.Common where
 
 import Control.Applicative
@@ -23,6 +24,6 @@ instance HasSession AppSettings where
     cs <- controllerState
     putState $$ cs { appSession = Just sess }
 $endif$$if(include_templates)$
-instance HasTemplates AppSettings where
+instance HasTemplates IO AppSettings where
   defaultLayout = Just <$$> getTemplate "layouts/main.html"
 $endif$
