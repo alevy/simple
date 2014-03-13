@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simple-templates
-version:             0.7.0.1
+version:             0.7.0.2
 synopsis:            A basic template language for the Simple web framework
 description:
   A basic template language for the Simple web framework. The language supports
@@ -12,6 +12,7 @@ description:
   "Web.Simple.Templates.Language" documents the templating language syntax
   and semantics.
 homepage:            http://simple.cx
+Bug-Reports:         http://github.com/alevy/simple/issues
 license:             LGPL-3
 license-file:        LICENSE
 author:              Amit Aryeh Levy
@@ -52,5 +53,5 @@ test-suite test-simple-templates
 
 source-repository head
   type: git
-  location: anonymous@gitstar.com:alevy/simple.git
+  location: http://github.com/alevy/simple.git
 

@@ -25,6 +25,7 @@ description:
   >     Just userId -> [handle request]
 
 homepage:            http://simple.cx
+Bug-Reports:         http://github.com/alevy/simple/issues
 license:             LGPL-3
 license-file:        LICENSE
 author:              Amit Aryeh Levy
@@ -55,5 +56,5 @@ library
 
 source-repository head
   type: git
-  location: anonymous@gitstar.com:alevy/simple.git
+  location: http://github.com/alevy/simple.git
 
