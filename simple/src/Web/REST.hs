@@ -1,4 +1,10 @@
-{-# LANGUAGE FlexibleInstances, OverloadedStrings #-}
+{-# LANGUAGE Trustworthy, FlexibleInstances, OverloadedStrings #-}
+{- |
+
+REST is a DSL for creating routes using RESTful HTTP verbs.
+See <http://en.wikipedia.org/wiki/Representational_state_transfer>
+
+-}
 module Web.REST
   ( REST(..), RESTController, rest, routeREST
   , index, show, create, update, delete
@@ -13,6 +19,7 @@ import Web.Simple.Responses
 import Web.Simple.Controller.Trans
 import Network.HTTP.Types
 
+-- | Type used to encode a REST controller.
 data REST m r = REST
   { restIndex   :: ControllerT m r ()
   , restShow    :: ControllerT m r ()
@@ -23,6 +30,7 @@ data REST m r = REST
   , restNew     :: ControllerT m r ()
   }
 
+-- | Default state, returns @404@ for all verbs.
 defaultREST :: Monad m => REST m r
 defaultREST = REST
   { restIndex   = respond $ notFound
@@ -34,6 +42,7 @@ defaultREST = REST
   , restNew     = respond $ notFound
   }
 
+-- | Monad used to encode a REST controller incrementally.
 type RESTControllerM m r a = StateT (REST m r) Identity a
 
 rest :: Monad m => RESTControllerM m r a -> REST m r
@@ -56,30 +65,37 @@ routeREST rst = do
 
 type RESTController m r = RESTControllerM m r ()
 
+-- | GET \/
 index :: ControllerT m r () -> RESTController m r
 index route = modify $ \controller ->
   controller { restIndex = route }
 
+-- | POST \/
 create :: ControllerT m r () -> RESTController m r
 create route = modify $ \controller ->
   controller { restCreate = route }
 
+-- | GET \/:id\/edit
 edit :: ControllerT m r () -> RESTController m r
 edit route = modify $ \controller ->
   controller { restEdit = route }
 
+-- | GET \/new
 new :: ControllerT m r () -> RESTController m r
 new route = modify $ \controller ->
   controller { restNew = route }
 
+-- | GET \/:id
 show :: ControllerT m r () -> RESTController m r
 show route = modify $ \controller ->
   controller { restShow = route }
 
+-- | PUT \/:id
 update :: ControllerT m r () -> RESTController m r
 update route = modify $ \controller ->
   controller { restUpdate = route }
 
+-- | DELETE \/:id
 delete :: ControllerT m r () -> RESTController m r
 delete route = modify $ \controller ->
   controller { restDelete = route }
