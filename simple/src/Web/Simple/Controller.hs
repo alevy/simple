@@ -69,7 +69,7 @@ import           Web.Simple.Responses
 -- | The Controller Monad is both a State-like monad which, when run, computes
 -- either a 'Response' or a result. Within the Controller Monad, the remainder
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
-type Controller = ControllerT IO
+type Controller s = ControllerT s IO
 
 hoistEither :: Either Response a -> Controller r a
 hoistEither = T.hoistEither

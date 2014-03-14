@@ -20,18 +20,18 @@ import Web.Simple.Controller.Trans
 import Network.HTTP.Types
 
 -- | Type used to encode a REST controller.
-data REST m r = REST
-  { restIndex   :: ControllerT m r ()
-  , restShow    :: ControllerT m r ()
-  , restCreate  :: ControllerT m r ()
-  , restUpdate  :: ControllerT m r ()
-  , restDelete  :: ControllerT m r ()
-  , restEdit    :: ControllerT m r ()
-  , restNew     :: ControllerT m r ()
+data REST m s = REST
+  { restIndex   :: ControllerT s m ()
+  , restShow    :: ControllerT s m ()
+  , restCreate  :: ControllerT s m ()
+  , restUpdate  :: ControllerT s m ()
+  , restDelete  :: ControllerT s m ()
+  , restEdit    :: ControllerT s m ()
+  , restNew     :: ControllerT s m ()
   }
 
 -- | Default state, returns @404@ for all verbs.
-defaultREST :: Monad m => REST m r
+defaultREST :: Monad m => REST m s
 defaultREST = REST
   { restIndex   = respond $ notFound
   , restShow    = respond $ notFound
@@ -48,7 +48,7 @@ type RESTControllerM m r a = StateT (REST m r) Identity a
 rest :: Monad m => RESTControllerM m r a -> REST m r
 rest rcontroller = snd . runIdentity $ runStateT rcontroller defaultREST
 
-routeREST :: Monad m => REST m r -> ControllerT m r ()
+routeREST :: Monad m => REST m s -> ControllerT s m ()
 routeREST rst = do
   routeMethod GET $ do
     routeTop $ restIndex rst
@@ -66,37 +66,37 @@ routeREST rst = do
 type RESTController m r = RESTControllerM m r ()
 
 -- | GET \/
-index :: ControllerT m r () -> RESTController m r
+index :: ControllerT s m () -> RESTController m s
 index route = modify $ \controller ->
   controller { restIndex = route }
 
 -- | POST \/
-create :: ControllerT m r () -> RESTController m r
+create :: ControllerT s m () -> RESTController m s
 create route = modify $ \controller ->
   controller { restCreate = route }
 
 -- | GET \/:id\/edit
-edit :: ControllerT m r () -> RESTController m r
+edit :: ControllerT s m () -> RESTController m s
 edit route = modify $ \controller ->
   controller { restEdit = route }
 
 -- | GET \/new
-new :: ControllerT m r () -> RESTController m r
+new :: ControllerT s m () -> RESTController m s
 new route = modify $ \controller ->
   controller { restNew = route }
 
 -- | GET \/:id
-show :: ControllerT m r () -> RESTController m r
+show :: ControllerT s m () -> RESTController m s
 show route = modify $ \controller ->
   controller { restShow = route }
 
 -- | PUT \/:id
-update :: ControllerT m r () -> RESTController m r
+update :: ControllerT s m () -> RESTController m s
 update route = modify $ \controller ->
   controller { restUpdate = route }
 
 -- | DELETE \/:id
-delete :: ControllerT m r () -> RESTController m r
+delete :: ControllerT s m () -> RESTController m s
 delete route = modify $ \controller ->
   controller { restDelete = route }
 

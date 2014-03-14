@@ -122,6 +122,7 @@ addCookie (key, value) (ResponseFile stat hdrs fl mfp) =
   ResponseFile stat (("Set-Cookie", cookie key value):hdrs) fl mfp
 addCookie (key, value) (ResponseBuilder stat hdrs bldr) =
   ResponseBuilder stat (("Set-Cookie", cookie key value):hdrs) bldr
+addCookie _ resp = resp -- Can't do anything for ResponseRaw
 
 cookie :: S.ByteString -> S.ByteString -> S.ByteString
 cookie key value = toByteString . renderSetCookie $
