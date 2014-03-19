@@ -242,13 +242,13 @@ requestHeader name = request >>= return . lookup name . requestHeaders
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
-redirectBack :: Controller r ()
+redirectBack :: Controller r a
 redirectBack = redirectBackOr (redirectTo "/")
 
 -- | Redirect back to the referer. If the referer header is not present
 -- fallback on the given 'Response'.
 redirectBackOr :: Response -- ^ Fallback response
-               -> Controller r ()
+               -> Controller r a
 redirectBackOr def = do
   mrefr <- requestHeader "referer"
   case mrefr of
