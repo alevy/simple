@@ -50,16 +50,11 @@ newtype ControllerT s m a = ControllerT
   { runController :: ControllerState s ->
                       m (Either Response a, ControllerState s) }
 
-instance (Monad m, Functor m) => Functor (ControllerT s m) where
-  fmap f (ControllerT act) = ControllerT $ \st0 -> do
-    (eaf, st) <- act st0
-    case eaf of
-      Left resp -> return (Left resp, st)
-      Right result -> return (Right $ f result, st)
-
-instance (Monad m, Applicative m) => Applicative (ControllerT s m) where
-  pure = return
-  (<*>) = ap
+instance Functor m => Functor (ControllerT s m) where
+  fmap f (ControllerT act) = ControllerT $ \st0 -> go `fmap` act st0
+    where go (eres, st) = case eres of
+                                Left resp -> (Left resp, st)
+                                Right result -> (Right (f result), st)
 
 instance Monad m => Monad (ControllerT s m) where
   return a = ControllerT $ \st -> return $ (Right a, st)
@@ -70,6 +65,18 @@ instance Monad m => Monad (ControllerT s m) where
       Right result -> do
         let (ControllerT fres) = fn result
         fres st
+
+instance (Functor m, Monad m) => Applicative (ControllerT s m) where
+  pure = return
+  (<*>) = ap
+
+instance (Functor m, Monad m) => Alternative (ControllerT s m) where
+  empty = respond notFound
+  (<|>) = (>>)
+
+instance Monad m => MonadPlus (ControllerT s m) where
+  mzero = respond notFound
+  mplus = flip (>>)
 
 instance MonadTrans (ControllerT s) where
   lift act = ControllerT $ \st -> act >>= \r -> return (Right r, st)
@@ -175,18 +182,19 @@ routeAccept contentType = guardReq (isJust . find matching . requestHeaders)
 --  * \/:date\/posts\/:category\/new
 --
 routePattern :: Monad m
-             => S.ByteString -> ControllerT s m a -> ControllerT s m ()
+             => Text -> ControllerT s m a -> ControllerT s m ()
 routePattern pattern route =
-  let patternParts = map T.unpack $ decodePathSegments pattern
+  let patternParts = decodePathSegments (T.encodeUtf8 pattern)
   in foldr mkRoute (route >> return ()) patternParts
-  where mkRoute (':':varName) = routeVar (S8.pack varName)
-        mkRoute name = routeName (S8.pack name)
+  where mkRoute name = case T.uncons name of
+                            Just (':', varName) -> routeVar varName
+                            _ -> routeName name
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: Monad m => S.ByteString -> ControllerT s m a -> ControllerT s m ()
+routeName :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
 routeName name next = do
   req <- request
-  if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
+  if (length $ pathInfo req) > 0 && name == (head . pathInfo) req
     then localRequest popHdr next >> return ()
     else pass
   where popHdr req = req { pathInfo = (tail . pathInfo $ req) }
@@ -194,7 +202,7 @@ routeName name next = do
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: Monad m => S.ByteString -> ControllerT s m a -> ControllerT s m ()
+routeVar :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
 routeVar varName next = do
   req <- request
   case pathInfo req of
@@ -203,8 +211,8 @@ routeVar varName next = do
         | otherwise -> localRequest popHdr next >> return ()
   where popHdr req = req {
               pathInfo = (tail . pathInfo $ req)
-            , queryString = (varName, Just (varVal req)):(queryString req)}
-        varVal req = S8.pack . T.unpack . head . pathInfo $ req
+            , queryString = (T.encodeUtf8 varName, Just (varVal req)):(queryString req)}
+        varVal req = T.encodeUtf8 . head . pathInfo $ req
 
 --
 -- query parameters
