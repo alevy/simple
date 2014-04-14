@@ -24,7 +24,7 @@ module Web.Simple.Controller
   -- * Example
   -- $Example
   -- * Controller Monad
-    Controller, T.ControllerT(..), ControllerState
+    Controller, T.ControllerT(..)
   , controllerApp, controllerState, putState
   , request, localRequest, respond
   , requestHeader
@@ -46,7 +46,7 @@ module Web.Simple.Controller
   , fromApp
   -- * Low-level utilities
   , body
-  , hoistEither, ask, local, pass
+  , hoistEither, pass
   ) where
 
 import           Control.Exception.Peel
@@ -61,7 +61,7 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Network.Wai.Parse
 import           Web.Simple.Controller.Trans
-                  (ControllerT, ControllerState)
+                  (ControllerT)
 import qualified Web.Simple.Controller.Trans as T
 import           Web.Simple.Responses
 
@@ -74,15 +74,9 @@ type Controller s = ControllerT s IO
 hoistEither :: Either Response a -> Controller r a
 hoistEither = T.hoistEither
 
-ask :: Controller r (r, Request)
-ask = T.ask
-
 -- | Extract the request
 request :: Controller r Request
 request = T.request
-
-local :: ((r, Request) -> (r, Request)) -> Controller r a -> Controller r a
-local = T.local
 
 -- | Modify the request for the given computation
 localRequest :: (Request -> Request) -> Controller r a -> Controller r a

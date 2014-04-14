@@ -68,6 +68,7 @@ library
     , filepath
     , mime-types
     , monad-peel
+    , mtl
     , simple-templates >= 0.7.0
     , wai >= 2.0
     , wai-extra
