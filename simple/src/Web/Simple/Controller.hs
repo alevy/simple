@@ -57,6 +57,7 @@ import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
 import           Data.Conduit
 import qualified Data.Conduit.List as CL
+import           Data.Text (Text)
 import           Network.HTTP.Types
 import           Network.Wai
 import           Network.Wai.Parse
@@ -142,17 +143,17 @@ routeAccept = T.routeAccept
 --
 --  * \/:date\/posts\/:category\/new
 --
-routePattern :: S.ByteString -> Controller r a -> Controller r ()
+routePattern :: Text -> Controller r a -> Controller r ()
 routePattern = T.routePattern
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: S.ByteString -> Controller r a -> Controller r ()
+routeName :: Text -> Controller r a -> Controller r ()
 routeName = T.routeName
 
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: S.ByteString -> Controller r a -> Controller r ()
+routeVar :: Text -> Controller r a -> Controller r ()
 routeVar = T.routeVar
 
 --

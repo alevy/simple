@@ -37,11 +37,12 @@ module Web.Simple.Templates.Language
 
 import Control.Applicative
 import qualified Data.HashMap.Strict as H
+import Data.Aeson
 import Data.Maybe
 import Data.Monoid
+import Data.Scientific
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Aeson
 import qualified Data.Vector as V
 import qualified Data.Attoparsec.Text as A
 import Web.Simple.Templates.Parser
@@ -130,11 +131,18 @@ valueToText :: Value -> Text
 valueToText val =
   case val of
     String str -> str
-    Number n -> T.pack $ show n
-    Bool b -> T.pack $ show b
+    Number n -> fromScientific n
+    Bool True -> "True"
+    Bool False -> "False"
     Array _ -> "[array]"
     Object _ -> "[object]"
     Null -> ""
+
+fromScientific :: Scientific -> Text
+fromScientific n
+  | e < 0 = T.pack $ show n
+  | otherwise = T.pack $ show $ coefficient n * 10 ^ e
+  where e = base10Exponent n
 
 compileTemplate :: Text -> Either String Template
 compileTemplate tmpl = evaluate <$>

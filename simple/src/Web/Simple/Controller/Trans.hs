@@ -72,6 +72,14 @@ instance Monad m => Monad (ControllerT s m) where
         let (ControllerT fres) = fn result
         fres st req
 
+instance (Functor m, Monad m) => Alternative (ControllerT s m) where
+  empty = respond notFound
+  (<|>) = (>>)
+
+instance Monad m => MonadPlus (ControllerT s m) where
+  mzero = respond notFound
+  mplus = flip (>>)
+
 instance MonadTrans (ControllerT s) where
   lift act = ControllerT $ \st _ -> act >>= \r -> return (Right r, st)
 
@@ -175,18 +183,19 @@ routeAccept contentType = guardReq (isJust . find matching . requestHeaders)
 --  * \/:date\/posts\/:category\/new
 --
 routePattern :: Monad m
-             => S.ByteString -> ControllerT s m a -> ControllerT s m ()
+             => Text -> ControllerT s m a -> ControllerT s m ()
 routePattern pattern route =
-  let patternParts = map T.unpack $ decodePathSegments pattern
+  let patternParts = decodePathSegments (T.encodeUtf8 pattern)
   in foldr mkRoute (route >> return ()) patternParts
-  where mkRoute (':':varName) = routeVar (S8.pack varName)
-        mkRoute name = routeName (S8.pack name)
+  where mkRoute name = case T.uncons name of
+                            Just (':', varName) -> routeVar varName
+                            _ -> routeName name
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: Monad m => S.ByteString -> ControllerT s m a -> ControllerT s m ()
+routeName :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
 routeName name next = do
   req <- request
-  if (length $ pathInfo req) > 0 && S8.unpack name == (T.unpack . head . pathInfo) req
+  if (length $ pathInfo req) > 0 && name == (head . pathInfo) req
     then localRequest popHdr next >> return ()
     else pass
   where popHdr req = req { pathInfo = (tail . pathInfo $ req) }
@@ -194,7 +203,7 @@ routeName name next = do
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: Monad m => S.ByteString -> ControllerT s m a -> ControllerT s m ()
+routeVar :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
 routeVar varName next = do
   req <- request
   case pathInfo req of
@@ -203,8 +212,8 @@ routeVar varName next = do
         | otherwise -> localRequest popHdr next >> return ()
   where popHdr req = req {
               pathInfo = (tail . pathInfo $ req)
-            , queryString = (varName, Just (varVal req)):(queryString req)}
-        varVal req = S8.pack . T.unpack . head . pathInfo $ req
+            , queryString = (T.encodeUtf8 varName, Just (varVal req)):(queryString req)}
+        varVal req = T.encodeUtf8 . head . pathInfo $ req
 
 --
 -- query parameters
