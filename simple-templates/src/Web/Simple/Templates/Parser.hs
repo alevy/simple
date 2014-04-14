@@ -132,8 +132,7 @@ pString = ASTLiteral . String <$>
                       A.satisfy (/= '"')
 
 pNumber :: A.Parser AST
-pNumber = ASTLiteral . Number . fromRational . toRational <$>
-  A.number
+pNumber = ASTLiteral . Number <$> A.rational
 
 pArray :: A.Parser AST
 pArray = do

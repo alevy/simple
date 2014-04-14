@@ -4,6 +4,7 @@ module Web.Simple.Templates.ParserSpec where
 import Data.Aeson
 import qualified Data.Attoparsec.Text as A
 import Data.Maybe
+import Data.Scientific
 import qualified Data.Vector as V
 import Test.HUnit
 import Test.Hspec
@@ -36,7 +37,7 @@ spec = describe "Web.Simple.Templates.Parser" $ do
   describe "pLiteral" $ do
     it "reads a number" $ do
       let parsedStr = A.parseOnly pLiteral "12345.66"
-      assertEqual "" (Right $ fromLiteral (12345.66 :: Rational)) parsedStr
+      assertEqual "" (Right $ fromLiteral (12345.66 :: Scientific)) parsedStr
     it "reads a string" $ do
       let parsedStr = A.parseOnly pLiteral "\"hello\""
       assertEqual "" (Right $ fromLiteral ("hello" :: String)) parsedStr
