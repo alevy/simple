@@ -100,11 +100,11 @@ withSession :: HasSession hs
             => Controller hs a -> Controller hs a
 withSession (ControllerT act) = do
   sk <- sessionKey
-  ControllerT $ \st0 -> do
-    (eres, st@(r, _)) <- act st0
+  ControllerT $ \st0 req -> do
+    (eres, st) <- act st0 req
     case eres of
       Left resp0 -> do
-        let resp = case getSession r of
+        let resp = case getSession st of
                      Just sess -> addCookie
                                    ("session", dumpSession sk sess)
                                    resp0
