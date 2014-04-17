@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 {- | 'ControllerT' provides a convenient syntax for writting 'Application'
   code as a Monadic action with access to an HTTP request as well as app
@@ -22,12 +23,14 @@
 -}
 module Web.Simple.Controller.Trans where
 
+import           Control.Monad hiding (guard)
 import           Control.Monad.IO.Class
 import           Control.Monad.IO.Peel
+import           Control.Monad.Reader.Class
+import           Control.Monad.State.Class
 import           Control.Monad.Trans.Class
 import           Control.Applicative
 import           Control.Exception.Peel
-import           Control.Monad hiding (guard)
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import           Data.List (find)
@@ -41,34 +44,33 @@ import           Network.Wai
 import           Web.Simple.Responses
 
 
-type ControllerState r = (r, Request)
-
 -- | The ControllerT Monad is both a State-like monad which, when run, computes
 -- either a 'Response' or a result. Within the ControllerT Monad, the remainder
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
 newtype ControllerT s m a = ControllerT
-  { runController :: ControllerState s ->
-                      m (Either Response a, ControllerState s) }
+  { runController :: s -> Request ->
+                      m (Either Response a, s) }
 
 instance Functor m => Functor (ControllerT s m) where
-  fmap f (ControllerT act) = ControllerT $ \st0 -> go `fmap` act st0
-    where go (eres, st) = case eres of
-                                Left resp -> (Left resp, st)
-                                Right result -> (Right (f result), st)
+  fmap f (ControllerT act) = ControllerT $ \st0 req ->
+    go `fmap` act st0 req
+    where go (eaf, st) = case eaf of
+                              Left resp -> (Left resp, st)
+                              Right result -> (Right $ f result, st)
+
+instance (Monad m, Functor m) => Applicative (ControllerT s m) where
+  pure = return
+  (<*>) = ap
 
 instance Monad m => Monad (ControllerT s m) where
-  return a = ControllerT $ \st -> return $ (Right a, st)
-  (ControllerT act) >>= fn = ControllerT $ \st0 -> do
-    (eres, st) <- act st0
+  return a = ControllerT $ \st _ -> return $ (Right a, st)
+  (ControllerT act) >>= fn = ControllerT $ \st0 req -> do
+    (eres, st) <- act st0 req
     case eres of
       Left resp -> return (Left resp, st)
       Right result -> do
         let (ControllerT fres) = fn result
-        fres st
-
-instance (Functor m, Monad m) => Applicative (ControllerT s m) where
-  pure = return
-  (<*>) = ap
+        fres st req
 
 instance (Functor m, Monad m) => Alternative (ControllerT s m) where
   empty = respond notFound
@@ -79,59 +81,51 @@ instance Monad m => MonadPlus (ControllerT s m) where
   mplus = flip (>>)
 
 instance MonadTrans (ControllerT s) where
-  lift act = ControllerT $ \st -> act >>= \r -> return (Right r, st)
+  lift act = ControllerT $ \st _ -> act >>= \r -> return (Right r, st)
+
+instance Monad m => MonadState s (ControllerT s m) where
+  get = ControllerT $ \s _ -> return (Right s, s)
+  put s = ControllerT $ \_ _ -> return (Right (), s)
+
+instance Monad m => MonadReader Request (ControllerT s m) where
+  ask = ControllerT $ \st req -> return (Right req, st)
+  local f (ControllerT act) = ControllerT $ \st req -> act st (f req)
 
 instance MonadIO m => MonadIO (ControllerT s m) where
   liftIO = lift . liftIO
 
 instance MonadPeelIO (ControllerT s IO) where
   peelIO = do
-    r <- controllerState
+    s <- controllerState
     req <- request
     return $ \ctrl -> do
-      res <- fst `fmap` runController ctrl (r, req)
+      res <- fst `fmap` runController ctrl s req
       return $ hoistEither res
 
 hoistEither :: Monad m => Either Response a -> ControllerT s m a
-hoistEither eith = ControllerT $ \st -> return (eith, st)
-
-ask :: Monad m => ControllerT s m (s, Request)
-ask = ControllerT $ \rd -> return (Right rd, rd)
+hoistEither eith = ControllerT $ \st _ -> return (eith, st)
 
 -- | Extract the request
 request :: Monad m => ControllerT s m Request
-request = liftM snd ask
-
-local :: Monad m
-      => ((s, Request) -> (s, Request)) -> ControllerT s m a -> ControllerT s m a
-local f (ControllerT act) = ControllerT $ \st@(_, r) -> do
-  (eres, (req, _)) <- act (f st)
-  return (eres, (req, r))
+request = ask
 
 -- | Modify the request for the given computation
 localRequest :: Monad m
              => (Request -> Request) -> ControllerT s m a -> ControllerT s m a
-localRequest f = local (\(r,req) -> (r, f req))
+localRequest = local
 
 -- | Extract the application-specific state
 controllerState :: Monad m => ControllerT s m s
-controllerState = liftM fst ask
+controllerState = get
 
 putState :: Monad m => s -> ControllerT s m ()
-putState r = ControllerT $ \(_, req) -> return (Right (), (r, req))
+putState = put
 
 -- | Convert the controller into an 'Application'
 controllerApp :: Monad m => s -> ControllerT s m a -> SimpleApplication m
-controllerApp r ctrl req =
-  runController ctrl (r, req) >>=
+controllerApp s ctrl req =
+  runController ctrl s req >>=
     either return (const $ return notFound) . fst
-
--- | Decline to handle the request
---
--- @pass >> c === c@
--- @c >> pass === c@
-pass :: Monad m => ControllerT s m ()
-pass = ControllerT $ \st -> return (Right (), st)
 
 -- | Provide a response
 --
@@ -196,7 +190,7 @@ routeName name next = do
   req <- request
   if (length $ pathInfo req) > 0 && name == (head . pathInfo) req
     then localRequest popHdr next >> return ()
-    else pass
+    else return ()
   where popHdr req = req { pathInfo = (tail . pathInfo $ req) }
 
 -- | Always matches if there is at least one directory in 'pathInfo' but and
@@ -206,8 +200,8 @@ routeVar :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
 routeVar varName next = do
   req <- request
   case pathInfo req of
-    [] -> pass
-    x:_ | T.null x -> pass
+    [] -> return ()
+    x:_ | T.null x -> return ()
         | otherwise -> localRequest popHdr next >> return ()
   where popHdr req = req {
               pathInfo = (tail . pathInfo $ req)
@@ -322,7 +316,7 @@ type SimpleMiddleware m = SimpleApplication m -> SimpleApplication m
 -- guard
 
 guard :: Monad m => Bool -> ControllerT s m a -> ControllerT s m ()
-guard b c = if b then c >> return () else pass
+guard b c = if b then c >> return () else return ()
 
 guardM :: Monad m
        => ControllerT s m Bool -> ControllerT s m a -> ControllerT s m ()

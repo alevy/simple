@@ -24,7 +24,7 @@ module Web.Simple.Controller
   -- * Example
   -- $Example
   -- * Controller Monad
-    Controller, T.ControllerT(..), ControllerState
+    Controller, T.ControllerT(..)
   , controllerApp, controllerState, putState
   , request, localRequest, respond
   , requestHeader
@@ -46,7 +46,7 @@ module Web.Simple.Controller
   , fromApp
   -- * Low-level utilities
   , body
-  , hoistEither, ask, local, pass
+  , hoistEither
   ) where
 
 import           Control.Exception.Peel
@@ -62,7 +62,7 @@ import           Network.HTTP.Types
 import           Network.Wai
 import           Network.Wai.Parse
 import           Web.Simple.Controller.Trans
-                  (ControllerT, ControllerState)
+                  (ControllerT)
 import qualified Web.Simple.Controller.Trans as T
 import           Web.Simple.Responses
 
@@ -72,55 +72,42 @@ import           Web.Simple.Responses
 -- of the computation can be short-circuited by 'respond'ing with a 'Response'.
 type Controller s = ControllerT s IO
 
-hoistEither :: Either Response a -> Controller r a
+hoistEither :: Either Response a -> Controller s a
 hoistEither = T.hoistEither
 
-ask :: Controller r (r, Request)
-ask = T.ask
-
 -- | Extract the request
-request :: Controller r Request
+request :: Controller s Request
 request = T.request
 
-local :: ((r, Request) -> (r, Request)) -> Controller r a -> Controller r a
-local = T.local
-
 -- | Modify the request for the given computation
-localRequest :: (Request -> Request) -> Controller r a -> Controller r a
+localRequest :: (Request -> Request) -> Controller s a -> Controller s a
 localRequest = T.localRequest
 
 -- | Extract the application-specific state
-controllerState :: Controller r r
+controllerState :: Controller s s
 controllerState = T.controllerState
 
-putState :: r -> Controller r ()
+putState :: s -> Controller s ()
 putState = T.putState
 
 -- | Convert the controller into an 'Application'
-controllerApp :: r -> Controller r a -> Application
+controllerApp :: s -> Controller s a -> Application
 controllerApp = T.controllerApp
-
--- | Decline to handle the request
---
--- @pass >> c === c@
--- @c >> pass === c@
-pass :: Controller r ()
-pass = T.pass
 
 -- | Provide a response
 --
 -- @respond r >>= f === respond r@
-respond :: Response -> Controller r a
+respond :: Response -> Controller s a
 respond = T.respond
 
 
 -- | Lift an application to a controller
-fromApp :: Application -> Controller r ()
+fromApp :: Application -> Controller s ()
 fromApp = T.fromApp
 
 -- | Matches on the hostname from the 'Request'. The route only succeeds on
 -- exact matches.
-routeHost :: S.ByteString -> Controller r a -> Controller r ()
+routeHost :: S.ByteString -> Controller s a -> Controller s ()
 routeHost = T.routeHost
 
 -- | Matches if the path is empty.
@@ -128,15 +115,15 @@ routeHost = T.routeHost
 -- Note that this route checks that 'pathInfo'
 -- is empty, so it works as expected in nested contexts that have
 -- popped components from the 'pathInfo' list.
-routeTop :: Controller r a -> Controller r ()
+routeTop :: Controller s a -> Controller s ()
 routeTop = T.routeTop
 
 -- | Matches on the HTTP request method (e.g. 'GET', 'POST', 'PUT')
-routeMethod :: StdMethod -> Controller r a -> Controller r ()
+routeMethod :: StdMethod -> Controller s a -> Controller s ()
 routeMethod = T.routeMethod
 
 -- | Matches if the request's Content-Type exactly matches the given string
-routeAccept :: S8.ByteString -> Controller r a -> Controller r ()
+routeAccept :: S8.ByteString -> Controller s a -> Controller s ()
 routeAccept = T.routeAccept
 
 -- | Routes the given URL pattern. Patterns can include
@@ -149,17 +136,17 @@ routeAccept = T.routeAccept
 --
 --  * \/:date\/posts\/:category\/new
 --
-routePattern :: Text -> Controller r a -> Controller r ()
+routePattern :: Text -> Controller s a -> Controller s ()
 routePattern = T.routePattern
 
 -- | Matches if the first directory in the path matches the given 'ByteString'
-routeName :: Text -> Controller r a -> Controller r ()
+routeName :: Text -> Controller s a -> Controller s ()
 routeName = T.routeName
 
 -- | Always matches if there is at least one directory in 'pathInfo' but and
 -- adds a parameter to 'queryString' where the key is the first parameter and
 -- the value is the directory consumed from the path.
-routeVar :: Text -> Controller r a -> Controller r ()
+routeVar :: Text -> Controller s a -> Controller s ()
 routeVar = T.routeVar
 
 --
@@ -176,37 +163,37 @@ routeVar = T.routeVar
 -- would return @Nothing@.
 queryParam :: T.Parseable a
            => S8.ByteString -- ^ Parameter name
-           -> Controller r (Maybe a)
+           -> Controller s (Maybe a)
 queryParam = T.queryParam
 
 -- | Like 'queryParam', but throws an exception if the parameter is not present.
 queryParam' :: T.Parseable a
-            => S.ByteString -> Controller r a
+            => S.ByteString -> Controller s a
 queryParam' = T.queryParam'
 
 -- | Selects all values with the given parameter name
 queryParams :: T.Parseable a
-            => S.ByteString -> Controller r [a]
+            => S.ByteString -> Controller s [a]
 queryParams = T.queryParams
 
 -- | Like 'queryParam', but further processes the parameter value with @read@.
 -- If that conversion fails, an exception is thrown.
 readQueryParam :: Read a
                => S8.ByteString -- ^ Parameter name
-               -> Controller r (Maybe a)
+               -> Controller s (Maybe a)
 readQueryParam = T.readQueryParam
 
 -- | Like 'readQueryParam', but throws an exception if the parameter is not present.
 readQueryParam' :: Read a
                 => S8.ByteString -- ^ Parameter name
-                -> Controller r a
+                -> Controller s a
 readQueryParam' = T.readQueryParam'
 
 -- | Like 'queryParams', but further processes the parameter values with @read@.
 -- If any read-conversion fails, an exception is thrown.
 readQueryParams :: Read a
                 => S8.ByteString -- ^ Parameter name
-                -> Controller r [a]
+                -> Controller s [a]
 readQueryParams = T.readQueryParams
 
 -- | Parses a HTML form from the request body. It returns a list of 'Param's as
@@ -225,31 +212,31 @@ readQueryParams = T.readQueryParams
 --         respond $ redirectTo \"/\"
 --       Nothing -> redirectBack
 -- @
-parseForm :: Controller r ([Param], [(S.ByteString, FileInfo L.ByteString)])
+parseForm :: Controller s ([Param], [(S.ByteString, FileInfo L.ByteString)])
 parseForm = do
   req <- request
   liftIO $ parseRequestBody lbsBackEnd req
 
 -- | Reads and returns the body of the HTTP request.
-body :: Controller r L8.ByteString
+body :: Controller s L8.ByteString
 body = do
   req <- request
   liftIO $ L8.fromChunks `fmap` (requestBody req $$ CL.consume)
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
-requestHeader :: HeaderName -> Controller r (Maybe S8.ByteString)
+requestHeader :: HeaderName -> Controller s (Maybe S8.ByteString)
 requestHeader name = request >>= return . lookup name . requestHeaders
 
 -- | Redirect back to the referer. If the referer header is not present
 -- redirect to root (i.e., @\/@).
-redirectBack :: Controller r a
+redirectBack :: Controller s a
 redirectBack = redirectBackOr (redirectTo "/")
 
 -- | Redirect back to the referer. If the referer header is not present
 -- fallback on the given 'Response'.
 redirectBackOr :: Response -- ^ Fallback response
-               -> Controller r a
+               -> Controller s a
 redirectBackOr def = do
   mrefr <- requestHeader "referer"
   case mrefr of
