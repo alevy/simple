@@ -46,7 +46,7 @@ module Web.Simple.Controller
   , fromApp
   -- * Low-level utilities
   , body
-  , hoistEither, pass
+  , hoistEither
   ) where
 
 import           Control.Exception.Peel
@@ -93,13 +93,6 @@ putState = T.putState
 -- | Convert the controller into an 'Application'
 controllerApp :: r -> Controller r a -> Application
 controllerApp = T.controllerApp
-
--- | Decline to handle the request
---
--- @pass >> c === c@
--- @c >> pass === c@
-pass :: Controller r ()
-pass = T.pass
 
 -- | Provide a response
 --

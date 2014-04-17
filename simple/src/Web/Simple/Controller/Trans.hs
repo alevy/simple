@@ -127,13 +127,6 @@ controllerApp s ctrl req =
   runController ctrl s req >>=
     either return (const $ return notFound) . fst
 
--- | Decline to handle the request
---
--- @pass >> c === c@
--- @c >> pass === c@
-pass :: Monad m => ControllerT s m ()
-pass = ControllerT $ \st _ -> return (Right (), st)
-
 -- | Provide a response
 --
 -- @respond r >>= f === respond r@
@@ -197,7 +190,7 @@ routeName name next = do
   req <- request
   if (length $ pathInfo req) > 0 && name == (head . pathInfo) req
     then localRequest popHdr next >> return ()
-    else pass
+    else return ()
   where popHdr req = req { pathInfo = (tail . pathInfo $ req) }
 
 -- | Always matches if there is at least one directory in 'pathInfo' but and
@@ -207,8 +200,8 @@ routeVar :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
 routeVar varName next = do
   req <- request
   case pathInfo req of
-    [] -> pass
-    x:_ | T.null x -> pass
+    [] -> return ()
+    x:_ | T.null x -> return ()
         | otherwise -> localRequest popHdr next >> return ()
   where popHdr req = req {
               pathInfo = (tail . pathInfo $ req)
@@ -323,7 +316,7 @@ type SimpleMiddleware m = SimpleApplication m -> SimpleApplication m
 -- guard
 
 guard :: Monad m => Bool -> ControllerT s m a -> ControllerT s m ()
-guard b c = if b then c >> return () else pass
+guard b c = if b then c >> return () else return ()
 
 guardM :: Monad m
        => ControllerT s m Bool -> ControllerT s m a -> ControllerT s m ()
