@@ -145,7 +145,7 @@ fromApp app = do
 -- exact matches.
 routeHost :: Monad m => S.ByteString -> ControllerT s m a -> ControllerT s m ()
 routeHost host = guardReq $ \req ->
-  host == (fromMaybe "" $ requestHeaderHost req)
+  Just host == requestHeaderHost req
 
 -- | Matches if the path is empty.
 --
