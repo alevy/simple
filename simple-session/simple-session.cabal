@@ -1,5 +1,5 @@
 name:                simple-session
-version:             0.8.0.1
+version:             0.8.1.1
 synopsis:            Cookie-based session management for the Simple web framework
 description:
 
@@ -49,7 +49,7 @@ library
     , bytestring
     , containers
     , http-types
-    , simple >= 0.8.0 && < 0.9
+    , simple >= 0.8.1 && < 0.9
     , transformers
     , wai >= 2.1
   default-language:    Haskell2010
