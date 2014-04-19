@@ -100,8 +100,10 @@ test-suite test-simple
       base < 6
     , hspec
     , HUnit
+    , monad-peel
     , mtl
     , simple
+    , transformers
     , wai
 
 source-repository head
