@@ -1,6 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import Control.Monad
+import Control.Monad.IO.Class
+import Control.Monad.IO.Peel
 import Control.Monad.Trans
 import Test.Hspec
 import Test.Hspec.HUnit
@@ -106,4 +109,14 @@ main = hspec $ do
       controllerApp () ctrl $
         defaultRequest { requestHeaderHost = Nothing }
       return ()
+
+  describe "MonadPeelIO instance" $ do
+    it "Preserves state changes in inner block" $ do
+      let expected = 1234
+          ctrl = do
+                  k <- peelIO
+                  join $ liftIO $ k $ do
+                    putState expected
+      s <- snd `fmap` runController ctrl 0 defaultRequest
+      s `shouldBe` expected
 

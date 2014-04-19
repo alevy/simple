@@ -99,8 +99,8 @@ instance MonadPeelIO (ControllerT s IO) where
     s <- controllerState
     req <- request
     return $ \ctrl -> do
-      res <- fst `fmap` runController ctrl s req
-      return $ hoistEither res
+      res <- runController ctrl s req
+      return $ ControllerT $ \_ _ -> return res
 
 hoistEither :: Monad m => Either Response a -> ControllerT s m a
 hoistEither eith = ControllerT $ \st _ -> return (eith, st)
