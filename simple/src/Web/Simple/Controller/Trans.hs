@@ -283,7 +283,7 @@ readQueryParams varName =
 readParamValue :: (Monad m, Read a)
                => S8.ByteString -> Text -> ControllerT s m a
 readParamValue varName =
-  maybe (err $ "cannot read parameter: " ++ show varName) return .
+  maybe (err $ "cannot parse parameter: " ++ show varName ++ " with value " ++ show) return .
     readMay . T.unpack
   where readMay s = case [x | (x,rst) <- reads s, ("", "") <- lex rst] of
                       [x] -> Just x
