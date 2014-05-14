@@ -3,7 +3,7 @@
 
 -- | This module defines some convenience functions for creating responses.
 module Web.Simple.Responses
-  ( ok, okHtml, okJson
+  ( ok, okHtml, okJson, okXml
   , movedTo, redirectTo
   , badRequest, requireBasicAuth, forbidden
   , notFound
@@ -39,6 +39,11 @@ okHtml body =
 -- given resposne body
 okJson :: L8.ByteString -> Response
 okJson = ok (S8.pack "application/json")
+
+-- | Creates a 200 (OK) 'Response' with content-type \"application/xml\" and the
+-- given resposne body
+okXml :: L8.ByteString -> Response
+okXml = ok (S8.pack "application/xml")
 
 -- | Given a URL returns a 301 (Moved Permanently) 'Response' redirecting to
 -- that URL.
