@@ -5,7 +5,6 @@ module Web.Simple.PostgreSQL
   ) where
 
 import Control.Monad
-import Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as S8
 import Data.Pool
 import Database.PostgreSQL.ORM
@@ -48,12 +47,5 @@ withConnection :: HasPostgreSQL hs
                => (Connection -> Controller hs b) -> Controller hs b
 withConnection func = do
   pool <- postgreSQLConn `fmap` controllerState
-  -- Stick the dbvar in an IORef so we can replace it if there is an
-  -- exception. Always fill dbvar at the end, exception or otherwise.
-  bracket (liftIO $ takeResource pool)
-          (\(conn, lp) -> liftIO $ putResource lp conn) $
-          funcE pool
-        -- run the function, but on exceptions treat the connection as dead
-  where funcE pool (conn, lp) = do
-          (func conn) `onException` (liftIO $ destroyResource pool lp conn)
+  withResource pool func
 
