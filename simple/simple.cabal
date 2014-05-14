@@ -67,7 +67,7 @@ library
     , directory
     , filepath
     , mime-types
-    , monad-peel
+    , monad-control
     , mtl
     , simple-templates >= 0.7.0
     , wai >= 2.0
@@ -75,6 +75,7 @@ library
     , http-types
     , text
     , transformers
+    , transformers-base
     , unordered-containers
     , vector
 
@@ -100,7 +101,7 @@ test-suite test-simple
       base < 6
     , hspec
     , HUnit
-    , monad-peel
+    , monad-control
     , mtl
     , simple
     , transformers

@@ -41,7 +41,6 @@ module Web.Simple.Controller
   , redirectBackOr
   -- * Exception handling
   , T.ControllerException
-  , module Control.Exception.Peel
   -- * Integrating other WAI components
   , fromApp
   -- * Low-level utilities
@@ -49,7 +48,6 @@ module Web.Simple.Controller
   , hoistEither
   ) where
 
-import           Control.Exception.Peel
 import           Control.Monad.IO.Class
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8

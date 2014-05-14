@@ -3,8 +3,8 @@ module Main where
 
 import Control.Monad
 import Control.Monad.IO.Class
-import Control.Monad.IO.Peel
 import Control.Monad.Trans
+import Control.Monad.Trans.Control
 import Test.Hspec
 import Test.Hspec.HUnit
 import Network.Wai
@@ -110,13 +110,14 @@ main = hspec $ do
         defaultRequest { requestHeaderHost = Nothing }
       return ()
 
-  describe "MonadPeelIO instance" $ do
+  describe "MonadBaseControl instance" $ do
     it "Preserves state changes in inner block" $ do
       let expected = 1234
           ctrl = do
-                  k <- peelIO
-                  join $ liftIO $ k $ do
-                    putState expected
+                  putState 555
+                  res <- liftBaseWith $ \f -> do
+                      f $ putState expected
+                  restoreM res
       s <- snd `fmap` runController ctrl 0 defaultRequest
       s `shouldBe` expected
 

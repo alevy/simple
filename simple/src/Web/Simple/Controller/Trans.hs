@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeFamilies #-}
 
 {- | 'ControllerT' provides a convenient syntax for writting 'Application'
   code as a Monadic action with access to an HTTP request as well as app
@@ -23,14 +24,15 @@
 -}
 module Web.Simple.Controller.Trans where
 
+import           Control.Exception
 import           Control.Monad hiding (guard)
+import           Control.Monad.Base
 import           Control.Monad.IO.Class
-import           Control.Monad.IO.Peel
 import           Control.Monad.Reader.Class
 import           Control.Monad.State.Class
 import           Control.Monad.Trans.Class
+import           Control.Monad.Trans.Control
 import           Control.Applicative
-import           Control.Exception.Peel
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import           Data.List (find)
@@ -42,7 +44,6 @@ import           Data.Typeable
 import           Network.HTTP.Types
 import           Network.Wai
 import           Web.Simple.Responses
-
 
 -- | The ControllerT Monad is both a State-like monad which, when run, computes
 -- either a 'Response' or a result. Within the ControllerT Monad, the remainder
@@ -94,13 +95,15 @@ instance Monad m => MonadReader Request (ControllerT s m) where
 instance MonadIO m => MonadIO (ControllerT s m) where
   liftIO = lift . liftIO
 
-instance MonadPeelIO (ControllerT s IO) where
-  peelIO = do
-    s <- controllerState
-    req <- request
-    return $ \ctrl -> do
-      res <- runController ctrl s req
-      return $ ControllerT $ \_ _ -> return res
+instance (Applicative m, Monad m, MonadBase m m) => MonadBase m (ControllerT s m) where
+  liftBase = liftBaseDefault
+
+instance MonadBaseControl m m => MonadBaseControl m (ControllerT s m) where
+  newtype StM (ControllerT s m) a = StCtrl (Either Response a, s)
+  liftBaseWith fn = ControllerT $ \st req -> do
+    res <- fn $ \act -> liftM StCtrl $ runController act st req
+    return (Right res, st)
+  restoreM (StCtrl (a, s)) = ControllerT $ \_ _ -> return (a, s)
 
 hoistEither :: Monad m => Either Response a -> ControllerT s m a
 hoistEither eith = ControllerT $ \st _ -> return (eith, st)
