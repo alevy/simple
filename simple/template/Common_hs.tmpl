@@ -7,7 +7,7 @@ $if(include_templates)$import Web.Simple.Templates$endif$
 $if(include_sessions)$import Web.Simple.Session$endif$
 $if(include_postgresql)$import Web.Simple.PostgreSQL$endif$
 
-data AppSettings = AppSettings { $if(include_postgresql)$appDB :: PostgreSQLConn$if(include_postgresql)$
+data AppSettings = AppSettings { $if(include_postgresql)$appDB :: PostgreSQLConn$if(include_sessions)$
                                , appSession :: Maybe Session$endif$$else$$if(include_sessions)$appSession :: Maybe Session$endif$$endif$ }
 
 newAppSettings :: IO AppSettings

@@ -16,5 +16,6 @@ executable $appname$
     , wai-extra
     , warp$if(include_sessions)$
     , simple-session >= 0.8.0$endif$$if(include_postgresql)$
-    , simple-postgresql-orm >= 0.8.0$endif$
+    , simple-postgresql-orm >= 0.8.0
+    , postgresql-orm$endif$
 
