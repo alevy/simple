@@ -41,8 +41,6 @@ module Web.Simple.Controller
   , redirectBackOr
   -- * Exception handling
   , T.ControllerException
-  -- * Integrating other WAI components
-  , fromApp
   -- * Low-level utilities
   , body
   , hoistEither
@@ -50,11 +48,11 @@ module Web.Simple.Controller
 
 import           Control.Monad.IO.Class
 import qualified Data.ByteString as S
+import           Data.ByteString.Builder
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
-import           Data.Conduit
-import qualified Data.Conduit.List as CL
+import           Data.Monoid
 import           Data.Text (Text)
 import           Network.HTTP.Types
 import           Network.Wai
@@ -90,18 +88,15 @@ putState = T.putState
 
 -- | Convert the controller into an 'Application'
 controllerApp :: s -> Controller s a -> Application
-controllerApp = T.controllerApp
+controllerApp s ctrl req responseFunc = do
+  resp <- T.controllerApp s ctrl req
+  responseFunc resp
 
 -- | Provide a response
 --
 -- @respond r >>= f === respond r@
 respond :: Response -> Controller s a
 respond = T.respond
-
-
--- | Lift an application to a controller
-fromApp :: Application -> Controller s ()
-fromApp = T.fromApp
 
 -- | Matches on the hostname from the 'Request'. The route only succeeds on
 -- exact matches.
@@ -218,8 +213,15 @@ parseForm = do
 -- | Reads and returns the body of the HTTP request.
 body :: Controller s L8.ByteString
 body = do
-  req <- request
-  liftIO $ L8.fromChunks `fmap` (requestBody req $$ CL.consume)
+  bodyProducer <- requestBody `fmap` request
+  liftIO $ do
+    result <- consume mempty bodyProducer
+    return $ toLazyByteString result
+  where consume bldr prod = do
+          next <- prod
+          if S.null next then
+            return bldr
+            else consume (mappend bldr (byteString next)) prod
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.

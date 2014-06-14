@@ -1,5 +1,5 @@
 name:                simple
-version:             0.9.0.0
+version:             0.10.0.0
 synopsis: A minimalist web framework for the WAI server interface
 description:
 
@@ -63,14 +63,13 @@ library
     , aeson
     , base64-bytestring
     , bytestring
-    , conduit
     , directory
     , filepath
     , mime-types
     , monad-control
     , mtl
     , simple-templates >= 0.7.0
-    , wai >= 2.0
+    , wai >= 3.0
     , wai-extra
     , http-types
     , text
