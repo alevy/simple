@@ -62,6 +62,7 @@ library
       base < 6
     , aeson
     , base64-bytestring
+    , blaze-builder
     , bytestring
     , directory
     , filepath

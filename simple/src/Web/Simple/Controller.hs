@@ -47,8 +47,8 @@ module Web.Simple.Controller
   ) where
 
 import           Control.Monad.IO.Class
+import           Blaze.ByteString.Builder
 import qualified Data.ByteString as S
-import           Data.ByteString.Builder
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -221,7 +221,7 @@ body = do
           next <- prod
           if S.null next then
             return bldr
-            else consume (mappend bldr (byteString next)) prod
+            else consume (mappend bldr (fromByteString next)) prod
 
 -- | Returns the value of the given request header or 'Nothing' if it is not
 -- present in the HTTP request.
