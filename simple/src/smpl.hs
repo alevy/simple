@@ -15,7 +15,8 @@ import Data.Version
 import System.Console.CmdArgs
 import System.Directory
 import System.FilePath
-import System.Environment
+import System.Environment (getEnvironment)
+import System.SetEnv (setEnv)
 import System.Exit
 import System.Process
 import Web.Simple.Templates.Language
