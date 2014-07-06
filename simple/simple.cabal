@@ -1,5 +1,5 @@
 name:                simple
-version:             0.10.0.1
+version:             0.10.0.2
 synopsis: A minimalist web framework for the WAI server interface
 description:
 
@@ -85,6 +85,7 @@ library
     Web.Simple,
     Web.Simple.Auth,
     Web.Simple.Controller,
+    Web.Simple.Controller.Exception,
     Web.Simple.Controller.Trans,
     Web.Simple.Responses,
     Web.Simple.Static,

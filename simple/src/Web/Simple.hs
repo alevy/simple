@@ -16,6 +16,7 @@ together.
 module Web.Simple (
     module Web.Simple.Responses
   , module Web.Simple.Controller
+  , module Web.Simple.Controller.Exception
   , module Web.Simple.Static
   , module Network.Wai
   -- * Overview
@@ -34,6 +35,7 @@ module Web.Simple (
 import Network.Wai
 import Web.Simple.Responses
 import Web.Simple.Controller
+import Web.Simple.Controller.Exception
 import Web.Simple.Static
 
 {- $Overview
