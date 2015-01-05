@@ -67,7 +67,7 @@ library
     , directory
     , filepath
     , mime-types
-    , monad-control
+    , monad-control < 0.4
     , mtl
     , simple-templates >= 0.7.0
     , wai >= 3.0
@@ -102,7 +102,7 @@ test-suite test-simple
       base < 6
     , hspec
     , HUnit
-    , monad-control
+    , monad-control < 0.4
     , mtl
     , simple
     , transformers
