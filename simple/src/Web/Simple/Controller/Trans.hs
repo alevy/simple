@@ -99,11 +99,11 @@ instance (Applicative m, Monad m, MonadBase m m) => MonadBase m (ControllerT s m
   liftBase = liftBaseDefault
 
 instance MonadBaseControl m m => MonadBaseControl m (ControllerT s m) where
-  newtype StM (ControllerT s m) a = StCtrl (Either Response a, s)
+  type StM (ControllerT s m) a = (Either Response a, s)
   liftBaseWith fn = ControllerT $ \st req -> do
-    res <- fn $ \act -> liftM StCtrl $ runController act st req
+    res <- fn $ \act -> runController act st req
     return (Right res, st)
-  restoreM (StCtrl (a, s)) = ControllerT $ \_ _ -> return (a, s)
+  restoreM (a, s) = ControllerT $ \_ _ -> return (a, s)
 
 hoistEither :: Monad m => Either Response a -> ControllerT s m a
 hoistEither eith = ControllerT $ \st _ -> return (eith, st)
