@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Web.Simple.Static where
 
 import Control.Monad
@@ -19,4 +20,11 @@ serveStatic baseDir = do
     respond $ responseFile status200
       [(hContentType, defaultMimeLookup $ T.pack $ takeFileName fp)]
       fp Nothing
+  when (null $ takeExtension fp) $ do
+    let fpIdx = fp </> "index.html"
+    existsIdx <- liftIO $ doesFileExist fpIdx
+    when existsIdx $ do
+      respond $ responseFile status200
+        [(hContentType, "text/html")]
+        fpIdx Nothing
 

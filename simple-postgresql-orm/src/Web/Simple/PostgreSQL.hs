@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE FlexibleInstances #-}
 module Web.Simple.PostgreSQL
   ( module Web.Simple.PostgreSQL
