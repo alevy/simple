@@ -1,6 +1,6 @@
 `Simple` is "framework-less" web framework for Haskell web applications
 using the WAI server interface (e.g. for use with the warp server). Unlike
-other frameoworks, `Simple` does not enforce a particular structure or
+other frameworks, `Simple` does not enforce a particular structure or
 paradigm for web applications. Rather, `Simple` makes it easier for you, the
 developer, to use whichever paradigm or structure you like. This package
 includes:
