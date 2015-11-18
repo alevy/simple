@@ -1,5 +1,5 @@
 name:                simple-session
-version:             0.10.1.0
+version:             0.10.1.1
 synopsis:            Cookie-based session management for the Simple web framework
 description:
 
@@ -33,6 +33,7 @@ maintainer:          amit@amitlevy.com
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
+extra-source-files:  LICENSE CHANGELOG.md
 
 library
   hs-source-dirs: src
