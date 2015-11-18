@@ -39,6 +39,7 @@ import qualified Data.Map as M
 import Network.HTTP.Types.Header
 import Network.HTTP.Types.URI
 import Network.Wai.Internal (Response(..))
+import Network.Wai.Request (appearsSecure)
 import Web.Cookie
 import Web.Simple.Controller
 import System.Environment
@@ -47,14 +48,23 @@ import System.Environment
 -- 'S.ByteString's.
 type Session = Map S.ByteString S.ByteString
 
--- | Instances of this class can be used as states by a 'Controller' states
--- to manage cookie-based user sessions. Instances must minimally implement
--- 'getSession' and 'setSession'. By default, the secret session key is taken
--- from the environment variable \"SESSION_KEY\", or a default dummy key is
--- used if the environment variable \"ENV\" is set to \"development\". You can
--- override this behaviour by implementing the 'sessionKey' method.
--- If the controller state contains a dedicated field of type 'Maybe Session',
--- a reasonable implementation would be:
+-- | Instances of this class can be used as states by a 'Controller' to manage
+-- cookie-based user sessions. Instances must minimally implement 'getSession'
+-- and 'setSession'.
+--
+-- By default, the secret session key is taken from the
+-- environment variable \"SESSION_KEY\", or a default dummy key is used if the
+-- environment variable \"ENV\" is set to \"development\". You can override
+-- this behaviour by implementing the 'sessionKey' method.
+--
+-- The default generated cookie always uses the `httponly` option, and the
+-- `secure` option if the request is over HTTPS. You can override this behavior,
+-- as well as other cookie options (e.g. the path, expiration and domain) by
+-- implementing the `sessionBaseCookie` method.
+--
+-- If the controller
+-- state contains a dedicated field of type 'Maybe Session', a reasonable
+-- implementation would be:
 --
 -- > data MyAppSettings = MyAppSettings { myAppSess :: Maybe Session, ...}
 -- >
@@ -80,13 +90,21 @@ class HasSession hs where
           _ -> (error "SESSION_KEY environment variable not set")
 
   -- | Returns the cached session for the current request, or nothing if the
-  -- session has not been set yet for this request. 
+  -- session has not been set yet for this request.
   getSession :: hs -> Maybe Session
 
   -- | Stores a parsed or changed session for the remainder of the request.This
   -- is used both for cached a parsed session cookie as well as for serializing
   -- to the \"Set-Cookie\" header when responding.
   setSession :: Session -> Controller hs ()
+
+  sessionBaseCookie :: Controller hs SetCookie
+  sessionBaseCookie = defaultSessionBaseCookie
+
+defaultSessionBaseCookie :: Controller hs SetCookie
+defaultSessionBaseCookie = do
+  req <- request
+  return $ def { setCookieSecure = appearsSecure req, setCookieHttpOnly = True }
 
 -- | A trivial implementation if the 'Controller' settings is just a Session
 -- store.
@@ -101,6 +119,7 @@ withSession :: HasSession hs
             => Controller hs a -> Controller hs a
 withSession (ControllerT act) = do
   sk <- sessionKey
+  baseCookie <- sessionBaseCookie
   ControllerT $ \st0 req -> do
     (eres, st) <- act st0 req
     case eres of
@@ -108,6 +127,7 @@ withSession (ControllerT act) = do
         let resp = case getSession st of
                      Just sess -> addCookie
                                    ("session", dumpSession sk sess)
+                                   baseCookie
                                    resp0
                      Nothing -> resp0
         return (Left resp, st)
@@ -116,18 +136,22 @@ withSession (ControllerT act) = do
 -- | Adds a \"Set-Cookie\" with the given key-value tuple to the 'Response'.
 -- The path set on the cookie is \"/\", meaning it applies to all routes on the
 -- domain, and no expiration is set.
-addCookie :: (S.ByteString, S.ByteString) -> Response -> Response
-addCookie (key, value) (ResponseFile stat hdrs fl mfp) =
-  ResponseFile stat (("Set-Cookie", cookie key value):hdrs) fl mfp
-addCookie (key, value) (ResponseBuilder stat hdrs bldr) =
-  ResponseBuilder stat (("Set-Cookie", cookie key value):hdrs) bldr
-addCookie (key, value) (ResponseStream stat hdrs src) =
-  ResponseStream stat (("Set-Cookie", cookie key value):hdrs) src
-addCookie _ resp = resp -- Can't do anything for ResponseRaw
+addCookie :: (S.ByteString, S.ByteString) -> SetCookie -> Response -> Response
 
-cookie :: S.ByteString -> S.ByteString -> S.ByteString
-cookie key value = toByteString . renderSetCookie $
-    def { setCookieName = key
+addCookie (key, value) baseCookie (ResponseFile stat hdrs fl mfp) =
+  ResponseFile stat (("Set-Cookie", cookie baseCookie key value):hdrs) fl mfp
+
+addCookie (key, value) baseCookie (ResponseBuilder stat hdrs bldr) =
+  ResponseBuilder stat (("Set-Cookie", cookie baseCookie key value):hdrs) bldr
+
+addCookie (key, value) baseCookie (ResponseStream stat hdrs src) =
+  ResponseStream stat (("Set-Cookie", cookie baseCookie key value):hdrs) src
+
+addCookie _ _ resp = resp -- Can't do anything for ResponseRaw
+
+cookie :: SetCookie -> S.ByteString -> S.ByteString -> S.ByteString
+cookie baseCookie key value = toByteString . renderSetCookie $
+    baseCookie { setCookieName = key
         , setCookieValue = value
         , setCookiePath = Just "/" }
 
