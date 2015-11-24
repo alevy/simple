@@ -1,5 +1,5 @@
 name:                simple
-version:             0.10.1
+version:             0.11.0
 synopsis: A minimalist web framework for the WAI server interface
 description:
 
@@ -33,6 +33,7 @@ maintainer:          amit@amitlevy.com
 category:            Web
 build-type:          Simple
 cabal-version:       >=1.10
+extra-source-files:  LICENSE CHANGELOG.md
 
 data-files: template/*.tmpl
 
@@ -104,7 +105,6 @@ test-suite test-simple
     , HUnit
     , monad-control < 0.4
     , mtl
-    , simple
     , transformers
     , wai
 

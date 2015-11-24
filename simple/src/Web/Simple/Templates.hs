@@ -2,8 +2,8 @@
 {-# LANGUAGE OverloadedStrings, MultiParamTypeClasses #-}
 {-# LANGUAGE DefaultSignatures #-}
 module Web.Simple.Templates
-  ( HasTemplates(..)
-  , defaultGetTemplate, defaultRender, defaultFunctionMap
+  ( HasTemplates(..), render, renderPlain, renderLayout, renderLayoutTmpl
+  , defaultGetTemplate, defaultFunctionMap, defaultLayoutObject
   , H.fromList
   , Function(..), ToFunction(..), FunctionMap
   ) where
@@ -54,39 +54,71 @@ class Monad m => HasTemplates m hs where
   default getTemplate :: MonadIO m => FilePath -> ControllerT hs m Template
   getTemplate = defaultGetTemplate
 
-  -- | Renders a view template with the default layout and a global used to
-  -- evaluate variables in the template.
-  render :: ToJSON a => FilePath -> a -> ControllerT hs m ()
-  render = defaultRender
+  -- | The `Value` passed to a layout given the rendered view template and the
+  -- value originally passed to the view template. By default, produces an
+  -- `Object` with "yield", containing the rendered view, and "page", containing
+  -- the value originally passed to the view.
+  layoutObject :: (ToJSON pageContent, ToJSON pageVal)
+               => pageContent -> pageVal -> ControllerT hs m Value
+  layoutObject = defaultLayoutObject
 
-  -- | Same as 'render' but without a template.
-  renderPlain :: ToJSON a => FilePath -> a -> ControllerT hs m ()
-  renderPlain fp val = do
-    fm <- functionMap
-    dir <- viewDirectory
-    tmpl <- getTemplate (dir </> fp)
-    let pageContent =
-          L.fromChunks . (:[]) . encodeUtf8 $
-            renderTemplate tmpl fm $ toJSON val
-    let mime = defaultMimeLookup $ T.pack $ takeFileName fp
-    respond $ ok mime pageContent
+defaultLayoutObject :: (HasTemplates m hs, ToJSON pageContent, ToJSON pageVal)
+                    => pageContent -> pageVal -> ControllerT hs m Value
+defaultLayoutObject pageContent pageVal = return $
+    object ["yield" .= pageContent, "page" .= pageVal]
 
-  -- | Render a view using the layout named by the first argument.
-  renderLayout :: ToJSON a => FilePath -> FilePath -> a -> ControllerT hs m ()
-  renderLayout lfp fp val = do
-    layout <- getTemplate lfp
-    renderLayout' layout fp val
+-- | Render a view using the layout named by the first argument.
+renderLayout :: (HasTemplates m hs, ToJSON a)
+             => FilePath -> FilePath -> a -> ControllerT hs m ()
+renderLayout lfp fp val  = do
+  layout <- getTemplate lfp
+  viewDir <- viewDirectory
+  view <- getTemplate (viewDir </> fp)
+  let mime = defaultMimeLookup $ T.pack $ takeFileName fp
+  renderLayoutTmpl layout view val mime
 
-  -- | Same as 'renderLayout' but uses an already compiled layout.
-  renderLayout' :: ToJSON a => Template -> FilePath -> a -> ControllerT hs m ()
-  renderLayout' layout fp val = do
-    fm <- functionMap
-    dir <- viewDirectory
-    tmpl <- getTemplate (dir </> fp)
-    let pageContent = renderTemplate tmpl fm $ toJSON val
-    let mime = defaultMimeLookup $ T.pack $ takeFileName fp
-    respond $ ok mime $ L.fromChunks . (:[]) . encodeUtf8 $
-      renderTemplate layout fm $ object ["yield" .= pageContent, "page" .= val]
+
+-- | Same as 'renderLayout' but uses already compiled layouts.
+renderLayoutTmpl :: (HasTemplates m hs, ToJSON a)
+                 => Template -> Template -> a
+                 -> S.ByteString -> ControllerT hs m ()
+renderLayoutTmpl layout view val mime = do
+  fm <- functionMap
+  let pageContent = renderTemplate view fm $ toJSON val
+  value <- layoutObject pageContent val
+  let result = renderTemplate layout fm value
+  respond $ ok mime $ L.fromChunks . (:[]) . encodeUtf8 $ result
+
+-- | Renders a view template with the default layout and a global used to
+-- evaluate variables in the template.
+render :: (HasTemplates m hs , Monad m, ToJSON a)
+       => FilePath -- ^ Template to render
+       -> a -- ^ Aeson `Value` to pass to the template
+       -> ControllerT hs m ()
+render fp val = do
+  mlayout <- defaultLayout
+  case mlayout of
+    Nothing -> renderPlain fp val
+    Just layout -> do
+      viewDir <- viewDirectory
+      view <- getTemplate (viewDir </> fp)
+      let mime = defaultMimeLookup $ T.pack $ takeFileName fp
+      renderLayoutTmpl layout view val mime
+
+-- | Same as 'render' but without a template.
+renderPlain :: (HasTemplates m hs, ToJSON a)
+            => FilePath -- ^ Template to render
+            -> a -- ^ Aeson `Value` to pass to the template
+            -> ControllerT hs m ()
+renderPlain fp val = do
+  fm <- functionMap
+  dir <- viewDirectory
+  tmpl <- getTemplate (dir </> fp)
+  let pageContent =
+        L.fromChunks . (:[]) . encodeUtf8 $
+          renderTemplate tmpl fm $ toJSON val
+  let mime = defaultMimeLookup $ T.pack $ takeFileName fp
+  respond $ ok mime pageContent
 
 defaultGetTemplate :: (HasTemplates m hs, MonadIO m)
                    => FilePath -> ControllerT hs m Template
@@ -95,14 +127,6 @@ defaultGetTemplate fp = do
   case compileTemplate . decodeUtf8 $ contents of
     Left str -> fail str
     Right tmpl -> return tmpl
-
-defaultRender :: (HasTemplates m hs , Monad m, ToJSON a)
-              => FilePath -> a -> ControllerT hs m ()
-defaultRender fp val = do
-  mlayout <- defaultLayout
-  case mlayout of
-    Nothing -> renderPlain fp val
-    Just layout -> renderLayout' layout fp val
 
 defaultFunctionMap :: FunctionMap
 defaultFunctionMap = H.fromList
