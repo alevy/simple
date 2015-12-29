@@ -30,3 +30,6 @@ Then:
     $ runghc -XOverloadedStrings helloworld.hs@
 
 See `Web.Simple` for a more detailed introduction.
+
+
+[![Join the chat at https://gitter.im/alevy/simple](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/alevy/simple?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
