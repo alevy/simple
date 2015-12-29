@@ -11,11 +11,11 @@ details) and a 'ToApplication':
   main = run 3000 $ controllerApp () $ do
     get \"\/\" $ do
       req <- request
-      return $ okHtml $ fromString $
+      respond $ okHtml $ fromString $
         \"Welcome Home \" ++ (show $ serverName req)
     get \"\/user\/:id\" $ do
       userId \<- queryParam \"id\" >>= fromMaybe \"\"
-      return $ ok \"text/json\" $ fromString $
+      respond $ ok \"text/json\" $ fromString $
         \"{\\\"myid\\\": \" ++ (show userId) ++ \"}\"
     put \"\/user\/:id\" $ do
       ...
