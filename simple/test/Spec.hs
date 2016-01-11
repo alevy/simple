@@ -6,7 +6,7 @@ import Control.Monad.IO.Class
 import Control.Monad.Trans
 import Control.Monad.Trans.Control
 import Test.Hspec
-import Test.Hspec.HUnit
+import Test.Hspec.Contrib.HUnit
 import Network.Wai
 import Web.Simple.Controller.Trans
 import Web.Simple.Responses
