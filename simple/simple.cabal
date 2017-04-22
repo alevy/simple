@@ -1,5 +1,5 @@
 name:                simple
-version:             0.11.1
+version:             0.11.2
 synopsis: A minimalist web framework for the WAI server interface
 description:
 
@@ -127,4 +127,3 @@ test-suite test-simple
 source-repository head
   type: git
   location: http://github.com/alevy/simple.git
-

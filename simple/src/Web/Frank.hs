@@ -26,6 +26,7 @@ module Web.Frank
   ( get
   , post
   , put
+  , patch
   , delete
   , options
   ) where
@@ -51,6 +52,10 @@ post = frankMethod POST
 -- | Matches the PUT method on the given URL pattern
 put :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
 put = frankMethod PUT
+
+-- | Matches the PATCH method on the given URL pattern
+patch :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
+patch = frankMethod PATCH
 
 -- | Matches the DELETE method on the given URL pattern
 delete :: Monad m => Text -> ControllerT s m a -> ControllerT s m ()
