@@ -1,0 +1,252 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="shortcut icon" href="favicon.ico" />
+    <title>Simple - Getting Started</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+</head>
+<body>
+  <div id="wrapper">
+    <div id="navbar">
+      <div class="content">
+        <header>
+          <h1><a href="/">Simple</a></h1>
+          <h2>a Haskell web framework</h2>
+        </header>
+        <ul class="nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="getting_started.html">Getting Started</a></li>
+          <li><a href="api.html">API</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="content">
+      <section id="toc">
+<ul>
+<li><a href="#guide-assumptions">Guide Assumptions</a></li>
+<li><a href="#creating-a-new-simple-app">Creating a new <em>Simple</em> app</a><ul>
+<li><a href="#installing-simple">Installing <em>Simple</em></a></li>
+<li><a href="#creating-the-blog-application">Creating the Blog application</a></li>
+</ul></li>
+<li><a href="#getting-up-and-running">Getting up and running</a><ul>
+<li><a href="#starting-the-server">Starting the server</a></li>
+<li><a href="#adding-a-controller">Adding a Controller</a></li>
+</ul></li>
+</ul>
+      </section>
+      <section id="river">
+      <h1>Getting Started</h1>
+<p>This getting started tutorial will get you up and running with a basic web application. At the end you will know</p>
+<ol style="list-style-type: decimal">
+<li><p>how install <em>Simple</em></p></li>
+<li><p>how to create a <em>Simple</em> application from scratch</p></li>
+<li><p>the structure of a <em>Simple</em> application</p></li>
+<li><p>how to add persistence with PostgreSQL.</p></li>
+</ol>
+<h2 id="guide-assumptions"><a href="#guide-assumptions">Guide Assumptions</a></h2>
+<p>This guide assumes you have a working version of the GHC Haskell compiler, the cabal package manager and an up-to-date version of the PostgreSQL database. The best way to get GHC and cabal setup is by installing the <a href="http://www.haskell.org/platform">Haskell platform</a>. Most linux distributions have PosgreSQL in their package repositories (e.g. <code>apt-get install postgresql</code>, <code>pacman -S postgresql</code>). Mac OS X comes with PostgreSQL, however, some of the utilities that this guide relies on (like <code>pg_ctl</code>) are not shipped by default. However, you installing from Homebrew will install the approriate utilities.</p>
+<p>The guide also assumes you have a basic understand of Haskell programming, web programming and preferably have built a few web applications in the past. For a good starting guide to Haskell see <a href="http://learnyouahaskell.org">Learn You a Haskell for Great Good!</a> and/or <a href="http://book.realworldhaskell.org/">Real World Haskell</a>.</p>
+<h2 id="creating-a-new-simple-app"><a href="#creating-a-new-simple-app">Creating a new <em>Simple</em> app</a></h2>
+<h3 id="installing-simple"><a href="#installing-simple">Installing <em>Simple</em></a></h3>
+<p>Open up a terminal. Commands prefaced with a dollar sign ($) should be run in terminal. Use cabal to instal <em>Simple</em>:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> install simple</code></pre>
+<p>To verify that <em>Simple</em> installed properly run the following command:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">smpl</span> --help</code></pre>
+<p>which should print out the subcommands and options available for the <code>smpl</code> utility that comes with <em>Simple</em>.</p>
+<h3 id="creating-the-blog-application"><a href="#creating-the-blog-application">Creating the Blog application</a></h3>
+<p>The <code>smpl</code> utility helps you create a new, blank <em>Simple</em> application from the command-line. To begin creating our application, open a terminal, navigate to a folder where you would like to create the project (for example <code>cd ~/hack</code>) and create a new <em>Simple</em> project called &quot;blog&quot;:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">smpl</span> create --templates blog</code></pre>
+<p>This will create a new subdirectory called &quot;blog&quot; containing our app. The &quot;--templates&quot; flag tells <code>smpl</code> to include boilerplate code for templates. We could specify &quot;--all&quot; to get PostgreSQL ORM and cookie-based session support, but we won't be using that for this tutorial. The directory contains a ready-to-run app with the following structure:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">File/Folder</th>
+<th align="left">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Blog/</td>
+<td align="left">Parent directory for app specific modules</td>
+</tr>
+<tr class="even">
+<td align="left">Blog/Common.hs</td>
+<td align="left">A base module that defines the application type</td>
+</tr>
+<tr class="odd">
+<td align="left">db/</td>
+<td align="left">An empty directory for defining the database schema</td>
+</tr>
+<tr class="even">
+<td align="left">templates/</td>
+<td align="left">The default folder for defining view templates</td>
+</tr>
+<tr class="odd">
+<td align="left">views/</td>
+<td align="left">The default folder for defining views</td>
+</tr>
+<tr class="even">
+<td align="left">Application.hs</td>
+<td align="left">Initial setup and route configuration</td>
+</tr>
+<tr class="odd">
+<td align="left">blog.cabal</td>
+<td align="left">Used by cabal to resolve package dependencies and compile the app</td>
+</tr>
+<tr class="even">
+<td align="left">Main.hs</td>
+<td align="left">Contains the main function used to start the application</td>
+</tr>
+</tbody>
+</table>
+<h2 id="getting-up-and-running"><a href="#getting-up-and-running">Getting up and running</a></h2>
+<p>Our application is ready for us to get to work. Now we'll get a server up and running and start adding functionality to our application.</p>
+<h3 id="starting-the-server"><a href="#starting-the-server">Starting the server</a></h3>
+<p><em>Simple</em> apps are built on top of the WAI package, and can be run with any WAI compatible server, like <a href="http://hackage.haskell.org/package/warp">warp</a>. The <code>smpl</code> utility helps run applications in development mode. First, install the package <code>wai-handler-devel</code>:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> install wai-handler-devel</code></pre>
+<p>Now we can run the <em>Simple</em> development server. From our application directory, run:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">smpl</span> server</code></pre>
+<p>This will fire up <code>wai-handler-devel</code> on port <em>3000</em>, and set the environment variable &quot;ENV&quot; to &quot;development&quot;. To see the application in action, open a browser and navigate to <a href="http://localhost:3000">http://localhost:3000/</a>. You should see the default generated home page:</p>
+<div class="figure">
+<img src="images/screenshot-hello.png" title="&quot;Hello World&quot; Screenshot" />
+</div>
+<aside>
+
+<p>You can of course compile and run applications without the <code>smpl</code> utility (in fact, this is probably how you will deploy apps, as wai-handler-devel is not suitable for production).</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> run</code></pre>
+<p>This will compile and run <code>Main.hs</code>, which by default runs the application using warp on port <em>3000</em>. You can specify a different port by setting the &quot;PORT&quot; environment variable, for example, to run the application on port <em>8080</em>:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="ot">PORT=</span>8080 <span class="kw">cabal</span> run</code></pre>
+</aside>
+
+<h3 id="adding-a-controller"><a href="#adding-a-controller">Adding a Controller</a></h3>
+<p>The default generated application isn't very interesting, displaying only a boilerplate homepage. We'll start by adding some content. For simplicity we can store blog posts in the filesystem. Let's create some dummy data:</p>
+<pre><code>$ mkdir data
+$ cat &gt; data/00001
+The Title of Your First Post on a Single Line
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Etiam vitae interdum sapien. In congue... 
+
+$ cat &gt; data/00002
+The Title of Your Second Post
+Aliquam tempor varius justo vitae bibendum! Duis vitae rutrum
+neque. Sed ut sed...</code></pre>
+<p>We'll use the filename to order posts, the first line of the file for post title and the rest for the post body. Now that we have some data to play with, let's list and display our posts. Modify &quot;Application.hs&quot;:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Application</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Control.Monad.IO.Class</span>
+<span class="kw">import </span><span class="dt">Blog.Common</span>
+<span class="kw">import </span><span class="dt">Data.Aeson</span>
+<span class="kw">import </span><span class="dt">System.Directory</span>
+<span class="kw">import </span><span class="dt">System.FilePath</span>
+<span class="kw">import </span><span class="dt">System.IO</span>
+<span class="kw">import </span><span class="dt">Web.Simple</span>
+<span class="kw">import </span><span class="dt">Web.Simple.Templates</span>
+
+<span class="ot">app ::</span> (<span class="dt">Application</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+app runner <span class="fu">=</span> <span class="kw">do</span>
+  settings <span class="ot">&lt;-</span> newAppSettings
+  runner <span class="fu">$</span> controllerApp settings <span class="fu">$</span> <span class="kw">do</span>
+    <span class="co">-- Respond to the root route</span>
+    routeTop <span class="fu">$</span> <span class="kw">do</span>
+      posts <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+        postFiles <span class="ot">&lt;-</span> filter (\(c<span class="fu">:</span>_) <span class="ot">-&gt;</span> c <span class="fu">/=</span> <span class="ch">&#39;.&#39;</span>) <span class="ot">`fmap`</span>
+          getDirectoryContents <span class="st">&quot;data&quot;</span>
+        forM postFiles <span class="fu">$</span> \postFile <span class="ot">-&gt;</span> <span class="kw">do</span>
+          postHandle <span class="ot">&lt;-</span> openFile (<span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> postFile) <span class="dt">ReadMode</span>
+          title <span class="ot">&lt;-</span> hGetLine postHandle
+          hClose postHandle
+          return <span class="fu">$</span> object [<span class="st">&quot;id&quot;</span> <span class="fu">.=</span> postFile, <span class="st">&quot;title&quot;</span> <span class="fu">.=</span> title]
+      render <span class="st">&quot;index.html&quot;</span> <span class="fu">$</span> object [<span class="st">&quot;posts&quot;</span> <span class="fu">.=</span> posts]</code></pre>
+<aside>
+
+<p><code>Controller</code> is the main type used in <em>Simple</em>. It contains the request (accessible through the monadic <code>request</code> function), as well as an application-specific value (in our case, of type <code>AppSettings</code>). A <code>Controller</code> falls-through unless it explicitly <code>respond</code>s to a request.</p>
+</aside>
+
+<p>The above code responds to a GET request for the root route (&quot;/&quot;), rendering the template &quot;views/index.html&quot; and passing it an <a href="http://hackage.haskell.org/packages/aeson">aeson</a> value containing a list of post objects. Each post contains an <em>id</em> and <em>title</em>. <code>routeTop</code> ensures that the route is only invoked if there is no path remaining to consume. The rest of the code simply reads the first line (the title) of each file in the &quot;data&quot; directory.</p>
+<aside>
+
+<p>Most of the imports we added were for reading the posts from the filesystem (<code>System.Directory</code>, <code>System.FilePath</code> and System.IO) or for basic Monad manipulations (<code>Control.Monad</code> and <code>Control.Monad.IO.Class</code>).</p>
+</aside>
+
+<p>Let's now modify &quot;views/index.html&quot; to make use of the posts:</p>
+<pre class="sourceCode html"><code class="sourceCode html">$if(null(posts))$
+No posts.
+$else$
+<span class="kw">&lt;ul&gt;</span>
+$for(post in posts)$
+<span class="kw">&lt;li&gt;&lt;a</span><span class="ot"> href=</span><span class="st">&quot;/$post.id$&quot;</span><span class="kw">&gt;</span>$post.title$<span class="kw">&lt;/a&gt;&lt;/li&gt;</span>
+$endfor$
+<span class="kw">&lt;/ul&gt;</span>
+$endif$</code></pre>
+<p><em>Simple</em> templates are embedded templates -- meaning they are embedded inside HTML, or whichever relevant output format. Template directives (like control statments and variable expansions) are surrounded by dollar signs ($). Our template lists the post titles and links to the post itself at &quot;/:post.id&quot;.</p>
+<p>Let's add the route for displaying individual posts:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">    <span class="co">-- Repond to &quot;/:post_id&quot;</span>
+    routeVar <span class="st">&quot;post_id&quot;</span> <span class="fu">$</span> routeTop <span class="fu">$</span> <span class="kw">do</span>
+      postId <span class="ot">&lt;-</span> queryParam&#39; <span class="st">&quot;id&quot;</span>
+      (title, body) <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+        postHandle <span class="ot">&lt;-</span> openFile (<span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> postId) <span class="dt">ReadMode</span>
+        liftM2 (,) (hGetLine postHandle) (hGetContents postHandle)
+      render <span class="st">&quot;show.html&quot;</span> <span class="fu">$</span>
+        object [<span class="st">&quot;title&quot;</span> <span class="fu">.=</span> title, <span class="st">&quot;body&quot;</span> <span class="fu">.=</span> body]</code></pre>
+<p>The above code responds to a GET request for the sub-path <code>/new/</code> with the plaintext &quot;Placeholder for new posts form&quot;. <code>okHtml</code> simply wraps this text in an HTTP response with status code <em>200 OK</em> and content type &quot;text/html&quot;.</p>
+<p>We imported <code>Blog.Common</code> to get access to <code>AppSettings</code>. <code>Web.Frank</code> gives us a <a href="http://sinatrarb.com">Sinatra</a>-like DSL for routing. Finally <code>Web.Simple</code> exposes <code>Controller</code>, <code>respond</code> and <code>okHtml</code></p>
+<p>We must also modify <code>Application.hs</code> to actually route to our new controller:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">...</span>other imports<span class="fu">...</span>
+<span class="kw">import </span><span class="dt">Blog.Controllers.Posts</span>
+
+<span class="ot">app ::</span> (<span class="dt">Application</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+app runner <span class="fu">=</span> <span class="kw">do</span>
+  settings <span class="ot">&lt;-</span> newSettings
+
+  runner <span class="fu">$</span> controllerApp settings <span class="fu">$</span> <span class="kw">do</span>
+    routeTop <span class="fu">$</span> render <span class="st">&quot;index.html&quot;</span> ()
+    routeName <span class="st">&quot;posts&quot;</span> postsController</code></pre>
+<p>We've simply imported our posts controller module and added a line inside the routing block that routes all requests witha path beginning with &quot;/posts/&quot; to the <code>postsController</code>. Now, pointing your browser <a href="http://localhost:3000/posts/new">http://localhost:3000/posts/new</a> should show our placeholder for the form.</p>
+<p>Of course, we actually want to display a form, not just some random text. We can add a form easily using <code>Web.Templates</code>. Create a new template in the file <code>views/posts/new.html</code>:</p>
+<pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;h2&gt;</span>New Post<span class="kw">&lt;/h2&gt;</span>
+<span class="kw">&lt;form</span><span class="ot"> action=</span><span class="st">&quot;/posts/&quot;</span><span class="ot"> method=</span><span class="st">&quot;POST&quot;</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;p&gt;</span>
+    <span class="kw">&lt;label</span><span class="ot"> for=</span><span class="st">&quot;title&quot;</span><span class="kw">&gt;</span>Title<span class="kw">&lt;/label&gt;</span>
+    <span class="kw">&lt;input</span><span class="ot"> type=</span><span class="st">&quot;text&quot;</span><span class="ot"> name=</span><span class="st">&quot;title&quot;</span><span class="ot"> id=</span><span class="st">&quot;title&quot;</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;p&gt;</span>
+    <span class="kw">&lt;label</span><span class="ot"> for=</span><span class="st">&quot;body&quot;</span><span class="kw">&gt;</span>Body<span class="kw">&lt;/label&gt;</span>
+    <span class="kw">&lt;textarea</span><span class="ot"> name=</span><span class="st">&quot;body&quot;</span><span class="ot"> id=</span><span class="st">&quot;body&quot;</span><span class="kw">&gt;&lt;/textarea&gt;</span>
+  <span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;p&gt;&lt;input</span><span class="ot"> type=</span><span class="st">&quot;submit&quot;</span><span class="ot"> value=</span><span class="st">&quot;Create&quot;</span><span class="kw">/&gt;&lt;/p&gt;</span>
+<span class="kw">&lt;/form&gt;</span></code></pre>
+<p>Next, we'll modify the posts controller to render this template as opposed to the placeholder text. In <code>Blog/Controllers/Posts.hs</code>, add the import <code>Web.Simple.Templates</code> and change the line that beings with <code>respond</code> to <code>render &quot;posts/index.html&quot; ()</code>, to get:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Blog.Controllers.Posts</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Blog.Common</span>
+<span class="kw">import </span><span class="dt">Web.Frank</span>
+<span class="kw">import </span><span class="dt">Web.Simple</span>
+<span class="kw">import </span><span class="dt">Web.Simple.Templates</span>
+
+<span class="ot">postsController ::</span> <span class="dt">Controller</span> <span class="dt">AppSettings</span> ()
+postsController <span class="fu">=</span> <span class="kw">do</span>
+  get <span class="st">&quot;new&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+    render <span class="st">&quot;posts/new.html&quot;</span> ()</code></pre>
+<p><code>render</code> finds the specified template under the <em>views</em> directory, renders the template (passing in the third parameter as an argument) and calls <code>respond</code> with the result. Now, navigating to the same page <a href="http://localhost:3000/posts/new">http://localhost:3000/posts/new</a> should display:</p>
+<div class="figure">
+<img src="images/screenshot-new-post.png" title="New Post Screenshot" />
+</div>
+<aside>
+
+<p>Notice that we didn't specify any of the page style, main heading or any boilerplate HTML for that matter, yet the generate page still displays it. That's because <code>Web.Simple.Templates</code> renders all templates within the layout in <code>layouts/main.html</code>. This behavior can be customized for a particular page by calling <code>renderLayout</code> with a specific layout or <code>renderPlain</code> to render a template with no layout. It can also be changed globally by modifying the instance of <code>HasTemplates</code> in <code>Blog.Common</code>.</p>
+</aside>
+      </section>
+    </div>
+  </div>
+  <footer>
+    <div class="content">
+      This work is licensed under a
+      <a href="http://creativecommons.org/licenses/by-sa/4.0/">
+        Creative Commons Attribution-Share Alike 4.0 License</a>.
+    </div>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,154 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="shortcut icon" href="favicon.ico" />
+    <title>Simple - Simple Templates</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <meta charset="utf-8">
+</head>
+<body>
+  <div id="wrapper">
+    <div id="navbar">
+      <div class="content">
+        <header>
+          <h1><a href="/">Simple</a></h1>
+          <h2>a Haskell web framework</h2>
+        </header>
+        <ul class="nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="documentation.html">Documentation</a></li>
+          <li><a href="api.html">API</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="content">
+      <section id="toc">
+<ul>
+<li><a href="#using-with-a-simple-app">Using with a <em>Simple</em> app</a></li>
+<li><a href="#language-description">Language Description</a><ul>
+<li><a href="#primitive-types">Primitive Types</a></li>
+<li><a href="#variable-substitution">Variable substitution</a></li>
+<li><a href="#function-invocation">Function Invocation</a></li>
+<li><a href="#conditionals">Conditionals</a></li>
+<li><a href="#loops">Loops</a></li>
+</ul></li>
+</ul>
+      </section>
+      <section id="river">
+      <h1>Simple Templates</h1>
+<p><em>Simple</em> comes with support for the embedded templating language defined in the package <code>simple-templates</code>. Templates let you embed dynamic content in HTML, JSON or any other text format you return in your responses.</p>
+<h2 id="using-with-a-simple-app"><a href="#using-with-a-simple-app">Using with a <em>Simple</em> app</a></h2>
+<p>Adding template support in your app is as easy as declaring an instance of <code>HasTemplates</code> for your app settings:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Web.Simple.Templates</span>
+
+<span class="kw">data</span> <span class="dt">MyAppSettings</span> <span class="fu">=</span> <span class="fu">...</span>
+
+<span class="kw">instance</span> <span class="dt">HasTemplates</span> <span class="dt">MyAppSettings</span></code></pre>
+<p><code>HasTemplates</code> has default definitions for all of its methods. However, in most cases you’ll probably want to override at least:</p>
+<p><em>TODO</em></p>
+<h2 id="language-description"><a href="#language-description">Language Description</a></h2>
+<p>A template may contain plain-text, which is reproduced as is, as well as blocks of code, denoted by encapsulating them with dollar-signs ($), supporting variable expansion, function invocation, conditionals and loops. For example, given a global variable “answer” with the value <em>42</em>,</p>
+<pre><code> The answer to the universe is $answer$.</code></pre>
+<p>would expand to</p>
+<pre><code> The answer to the universe is 42.</code></pre>
+<p>Since the dollar-sign is used to denote code sections, it must be escaped in plaintext sections by typing two dollar-signs. For example, to reproduce the lyrics for <em>Bonzo Goes to Bitburg</em>, by The Ramones:</p>
+<pre><code> Shouldn&#39;t wish you happiness,
+ wish her the very best.
+ $$50,000 dress
+ Shaking hands with your highness</code></pre>
+<h3 id="primitive-types"><a href="#primitive-types">Primitive Types</a></h3>
+<p><em>Booleans</em>, <em>Numbers</em>, <em>Strings</em>, <em>Arrays</em> and <em>Null</em> values can be typed as literals:</p>
+<ul>
+<li><strong>Booleans</strong> are the lower-case <code>true</code> and <code>false</code></li>
+<li><strong>Numbers</strong> are rationals, parsed according to the rules in attoparsec’s <a href="http://hackage.haskell.org/package/attoparsec-0.10.4.0/docs/Data-Attoparsec-Text.html#v:rational">rational</a> parser (roughly, decimal numbers with an optional decimal point and optional exponent)</li>
+</ul>
+<blockquote>
+<pre><code>Pi is approximately $3.14159$</code></pre>
+</blockquote>
+<ul>
+<li><strong>String</strong> literals are surrounded by double-quotes (&quot;). Double-quotes inside a string can be escaped by proceeding it with a backslash (\&quot;), however backslashes themselves do not need to be escaped:</li>
+</ul>
+<blockquote>
+<pre><code>And then, Dr. Evil said:
+$&quot;Mini Me, stop humping the \&quot;laser\&quot;.&quot;$</code></pre>
+</blockquote>
+<ul>
+<li><strong>Arrays</strong> are surrounded by square-brackets ([ ]) and elements are comma separated. Elements can be literals, variables or function invokations, and do not have to be the same type. Spaces between elements are ignored:</li>
+</ul>
+<blockquote>
+<pre><code>$[&quot;Foo&quot;, 42, [&quot;bar&quot;, &quot;baz&quot;], length([1, 2, 3, 6])]$</code></pre>
+</blockquote>
+<ul>
+<li><strong>Null</strong> is typed as the literal <em>null</em> (in lower case):</li>
+</ul>
+<blockquote>
+<pre><code>$null$</code></pre>
+</blockquote>
+<ul>
+<li><strong>Objects</strong> map from String keys to values of any type. Objects cannot be typed literally.</li>
+</ul>
+<h3 id="variable-substitution"><a href="#variable-substitution">Variable substitution</a></h3>
+<p>Templates are evaluated with a single global variable called <code>@</code>. For example, you can reference the global in your template like so:</p>
+<pre><code> The value in my global is $@$.</code></pre>
+<p>If the global is an <em>Object</em>, it can be indexed using dot-notation:</p>
+<pre><code> The Sex Pistols&#39; bassist was $@.bassist.name.first$</code></pre>
+<p>In this case, you may also discard the <code>@</code> global reference and simply name the field in the global object, for example:</p>
+<pre><code> Field &#39;foo&#39; is $foo$.
+ Field &#39;bar.baz&#39; is $bar.baz$.</code></pre>
+<p>Strings, Numbers and Booleans are meaningful when evaluated to text in a template. Objects and Arrays render as a string representing their types (e.g. “[object]”). Null renders the empty string. However, values of all types can be used as arguments to functions, or in conditionals and loops.</p>
+<h3 id="function-invocation"><a href="#function-invocation">Function Invocation</a></h3>
+<p>Functions are invoked with similar syntax to imperative languages:</p>
+<pre><code> $myfunc(arg1, arg2, arg3)$</code></pre>
+<p>where arguments can be literals, variables or other function calls – basically anything that can be evaluated can be an argument to a function. Function names are in a separate namespace than variables, so there can be a function and variable both named <em>foo</em> and they are differentiated by their use. For example:</p>
+<pre><code> $mysymbol$</code></pre>
+<p>is a variable expansion, whereas</p>
+<pre><code> $mysymbol()$</code></pre>
+<p>is a function invocation.</p>
+<h3 id="conditionals"><a href="#conditionals">Conditionals</a></h3>
+<p>Branching is supported through the common <em>if</em> statement with an optional <em>else</em> branch. Conditions can be any expression. <em>false</em> and <em>null</em> are evaluated as <em>false</em>, while everything else is evaluated as <em>true</em>.</p>
+<p><em>if</em> blocks are surround by an <em>if</em>-statement and and <em>endif</em>, each surrounded separately by dollar signs. Optionally, the <em>else</em> branch is declared by with “$else$”. The blocks themselves are templates and may contain regular text as well as evaluable expressions.</p>
+<pre><code> Should I stay or should I go?
+ $if(go)$
+ Trouble will be $trouble$.
+ $else$
+ Trouble will be $double(trouble)$
+ $endif$</code></pre>
+<h3 id="loops"><a href="#loops">Loops</a></h3>
+<p>For loops iterate over collections, setting a variable name to one element in the collection for each iteration of the loop. Collections are usually <code>Array</code>s, however non-false expressions (e.g., <code>String</code>s and <code>Number</code>s) are treated as collections with one element. A loop starts with a <em>for</em>-statement surrounded by dollar-signs and end with an “$endfor$”:</p>
+<pre><code> &lt;h1&gt;The Clash&lt;/h1&gt;
+ &lt;ul&gt;
+ $for(member in band)$
+ &lt;li&gt;$member.name$ played the $member.instrument$&lt;/li&gt;
+ $endfor$
+ &lt;/ul&gt;</code></pre>
+<p>There is also an optional “$sep$” (for <em>separator</em>) clause, which is rendered <em>between</em> iterations. So if I have a collection with three items, the <em>sep</em> clause will be rendered after the first and second, but not third elements:</p>
+<pre><code> &lt;h1&gt;Grocery list&lt;/h1&gt;
+ &lt;p&gt;
+ $for(item in groceries)$
+ $item.quantity$ $item.name$(s).
+ $sep$
+ &lt;br/&gt;
+ $endfor$
+ &lt;/p&gt;</code></pre>
+<p>Will render something like:</p>
+<pre><code> &lt;h1&gt;Grocery list&lt;/h1&gt;
+ &lt;p&gt;
+ 2 MC(s).
+ &lt;br/&gt;
+ 1 DJ(s)
+ &lt;br/&gt;
+ &lt;/p&gt;</code></pre>
+      </section>
+    </div>
+    <div class="push"></div>
+  </div>
+  <footer>
+    <div>
+      This work is licensed under a
+      <a href="http://creativecommons.org/licenses/by-sa/4.0/">
+        Creative Commons Attribution-Share Alike 4.0 License</a>.
+    </div>
+  </footer>
+</body>
+</html>

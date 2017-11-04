@@ -1,0 +1,104 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="shortcut icon" href="favicon.ico" />
+    <title>Simple - PostgreSQL ORM</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <meta charset="utf-8">
+</head>
+<body>
+  <div id="wrapper">
+    <div id="navbar">
+      <div class="content">
+        <header>
+          <h1><a href="/">Simple</a></h1>
+          <h2>a Haskell web framework</h2>
+        </header>
+        <ul class="nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="documentation.html">Documentation</a></li>
+          <li><a href="api.html">API</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="content">
+      <section id="toc">
+<ul>
+<li><a href="#declaration">Declaration</a></li>
+<li><a href="#usage">Usage</a></li>
+</ul>
+      </section>
+      <section id="river">
+      <h1>PostgreSQL ORM</h1>
+<div class="warning">
+This document is still a draft. Please contribute by making suggestions, filing bugs or making pull requests at <a href="http://github.com/alevy/simple.cx">htts://github.com/alevy/simple.cx</a>
+</div>
+<p>PostgreSQL-ORM is an Object Relational Mapper (ORM) that complements <em>Simple</em>. It knows how to map high-level operations to PostgreSQL flavored SQL for Haskell types that are instances of the <code>Model</code> type-class, as well as perform join operations on associations between <code>Model</code> instances.</p>
+<h2 id="declaration"><a href="#declaration">Declaration</a></h2>
+<p>Creating a <code>Model</code> in Haskell is easy. We simply declare a datatype using record syntax, include a field of type <code>DBKey</code> to hold the primary key and let Haskell Generics do the rest:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE DeriveGeneric #-}</span>
+
+<span class="fu">...</span>
+
+<span class="kw">data</span> <span class="dt">Post</span> <span class="fu">=</span> <span class="dt">Post</span> {
+<span class="ot">    postId ::</span> <span class="dt">DBKey</span>
+  ,<span class="ot"> postTitle ::</span> <span class="dt">Text</span>
+  ,<span class="ot"> postBody ::</span> <span class="dt">Text</span>
+  } <span class="kw">deriving</span> (<span class="dt">Generic</span>)
+
+<span class="kw">instance</span> <span class="dt">Model</span> <span class="dt">Post</span></code></pre>
+<p>Voila! <code>Post</code> is now an instance of <code>Model</code> that maps to a SQL table named <code>&quot;post&quot;</code>. We can use post to talk to a database containing a table declaration like that matches:</p>
+<pre class="sourceCode sql"><code class="sourceCode sql"><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="ot">&quot;post&quot;</span> {
+  postId serial <span class="kw">primary</span> <span class="kw">key</span>,
+  postTitle text <span class="kw">NOT</span> <span class="kw">NULL</span>,
+  postBody text <span class="kw">NOT</span> <span class="kw">NULL</span>
+}</code></pre>
+<aside>
+<code>DBKey</code> is the only special in our model. It represents the primary key of a table. A <code>DBKey</code> is either an 64-bit integer or <code>NullKey</code>. Since PostgreSQL will generate the primary id for us, we’ll use <code>NullKey</code> when creating a new <code>Post</code> that has not yet been stored in the database.
+</aside>
+
+<h2 id="usage"><a href="#usage">Usage</a></h2>
+<p>There are several high level functions that operate on <code>Models</code>:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">findAll ::</span> <span class="dt">Model</span> a <span class="ot">=&gt;</span> <span class="dt">Connection</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> [a]
+<span class="ot">findRow ::</span> <span class="dt">Model</span> a <span class="ot">=&gt;</span> <span class="dt">Connection</span> <span class="ot">-&gt;</span> <span class="dt">DBKey</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> a
+<span class="ot">save    ::</span> <span class="dt">Model</span> a <span class="ot">=&gt;</span> <span class="dt">Connection</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> a
+<span class="ot">destroy ::</span> <span class="dt">Model</span> a <span class="ot">=&gt;</span> <span class="dt">Connection</span> <span class="ot">-&gt;</span> a <span class="ot">-&gt;</span> <span class="dt">IO</span> ()</code></pre>
+<hr />
+<p>Instances of the <code>Model</code> typeclass implement three methods:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">class</span> <span class="dt">Model</span> a <span class="kw">where</span>
+<span class="ot">  modelInfo  ::</span> <span class="dt">ModelInfo</span> a
+<span class="ot">  modelRead  ::</span> <span class="dt">RowParser</span> a
+<span class="ot">  modelWrite ::</span> a <span class="ot">-&gt;</span> [<span class="dt">Action</span>]</code></pre>
+<ul>
+<li><p><code>modelInfo</code> contains information about how the <code>Model</code> is stored in the database. This includes the name of the database table, the names of the database columns, the index of the primary key in the list of columns and a function to get the primary key from the <code>Model</code>.</p></li>
+<li><p><code>modelRead</code> returns a <code>RowParser</code> — a type from the underlying PostgreSQL library that takes a SQL row and parses it into a Haskell type (a <code>Model</code> in this case). Assuming the order of columns in <code>modelInfo</code> and the Haskell type is the same, <code>modelRead</code> is trivially implemented using the <code>field</code> function: <code>MyConstructor &lt;$&gt; field &lt;*&gt; field ...</code></p></li>
+<li><p><code>modelWrite</code> takes the <code>Model</code> as an argument and returns a list of <code>Action</code>s — another type from the underlying PostgreSQL library which more or less is a wrapper around <code>ByteString</code>. <code>modelWrite</code> must marshal all fields <strong>except</strong> for the primary id. This allows the primary id to be included separately for <code>update</code> queries and excluded for <code>insert</code> queries (as it will be auto-generated by PostgreSQL).</p></li>
+</ul>
+<p>That is enough information for the library to implement a low-level typed-SQL API as well as high level operations like save, find a row by key and list all rows. It also allows PostgreSQL-ORM to provide typed model associations (join relations). There are subtleties though. As mentioned above, the implementations of <code>modelInfo</code>, <code>modelRead</code> and <code>modelWrite</code> are closely intertwined, and careless implementations will lead to bugs that cannot be detected at compile time. However, for common cases, where a <code>Model</code> is a record, PostgreSQL-ORM (optionally) uses Haskell Generics to automate the instance definition. In such cases, the a model definition might look like:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">data</span> <span class="dt">User</span> <span class="fu">=</span> <span class="dt">User</span> {
+<span class="ot">    userId ::</span> <span class="dt">DBKey</span>
+  ,<span class="ot"> userFirstName ::</span> <span class="dt">String</span>
+  ,<span class="ot"> userLastName ::</span> <span class="dt">String</span>
+  ,<span class="ot"> userAge ::</span> <span class="dt">Integer</span>
+  } <span class="kw">deriving</span> (<span class="dt">Generic</span>)
+
+<span class="kw">instance</span> <span class="dt">Model</span> <span class="dt">User</span></code></pre>
+<p>Such an instance maps the <code>User</code> Haskell data type to a SQL table called “user” with columns <code>&quot;userId&quot;</code>, <code>&quot;userFirstName&quot;</code>, <code>&quot;userLastName&quot;</code> and <code>&quot;userAge&quot;</code>. Note that the <code>Generic</code> implementation of a <code>modelInfo</code> simply uses the contructor in lower case for the table name and the records as-is for the column names. This makes <code>modelInfo</code> a convenient point of interposition customizing the naming policy. For example, table names can be customized by updating the <code>modelTable</code> field of <code>defaultModelInfo</code>:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">instance</span> <span class="dt">Model</span> <span class="dt">User</span> <span class="kw">where</span>
+  modelInfo <span class="fu">=</span> defaultModelInfo
+    { modelTable <span class="fu">=</span> <span class="st">&quot;myprefix_user&quot;</span> }</code></pre>
+<p>Of course, this task can be standardized with combinators. The library comes with a combinator, <code>underscoreModelInfo</code> which discards a prefix of the column names and converts the remainder from camel-case to underscore notation (a common convention for naming in SQL).</p>
+      </section>
+    </div>
+    <div class="push"></div>
+  </div>
+  <footer>
+    <div>
+      This work is licensed under a
+      <a href="http://creativecommons.org/licenses/by-sa/4.0/">
+        Creative Commons Attribution-Share Alike 4.0 License</a>.
+    </div>
+  </footer>
+</body>
+</html>
