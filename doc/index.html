@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="shortcut icon" href="favicon.ico" />
+    <title>Simple - Home</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <meta charset="utf-8">
+</head>
+<body>
+  <div id="wrapper">
+    <div id="navbar">
+      <div class="content">
+        <header>
+          <h1><a href="/">Simple</a></h1>
+          <h2>a Haskell web framework</h2>
+        </header>
+        <ul class="nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="documentation.html">Documentation</a></li>
+          <li><a href="api.html">API</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="content">
+      <section id="river">
+      <h1>Home</h1>
+<p>Simple is “framework-less” web framework for Haskell web applications. Unlike many other frameworks, Simple does not enforce a particular structure or paradigm for web applications. Rather, Simple provides enough infrastructure to help you create your own patterns (or re-create existing ones). Simple is minimalist, providing a lightweight base. Everything else (e.g. sessions, controllers, persistence, caching) is provided in composable units, so you can include only the ones you need in your app, and easily replace with your own components.</p>
+<h2 id="quick-start"><a href="#quick-start">Quick Start</a></h2>
+<p>If you already have Haskell setup, you can install and create your first application with just a few simple commands:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> install simple
+$ <span class="kw">smpl</span> create test_app
+$ <span class="kw">cd</span> test_app
+$ <span class="kw">cabal</span> install --only-dependencies
+$ <span class="kw">cabal</span> run</code></pre>
+<p>You can now navigate to your web app at <a href="http://localhost:3000">http://localhost:3000</a>!</p>
+<p>You can expand your app with a persistent datastore, session data, templates and more. Build a fully function blog in the <a href="tutorial.html">Getting Started Tutorial</a>!</p>
+      </section>
+    </div>
+    <div class="push"></div>
+  </div>
+  <footer>
+    <div>
+      This work is licensed under a
+      <a href="http://creativecommons.org/licenses/by-sa/4.0/">
+        Creative Commons Attribution-Share Alike 4.0 License</a>.
+    </div>
+  </footer>
+</body>
+</html>

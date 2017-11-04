@@ -1,0 +1,71 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="shortcut icon" href="favicon.ico" />
+    <title>Simple - The smpl Command-line Utility</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <meta charset="utf-8">
+</head>
+<body>
+  <div id="wrapper">
+    <div id="navbar">
+      <div class="content">
+        <header>
+          <h1><a href="/">Simple</a></h1>
+          <h2>a Haskell web framework</h2>
+        </header>
+        <ul class="nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="documentation.html">Documentation</a></li>
+          <li><a href="api.html">API</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="content">
+      <section id="toc">
+<ul>
+<li><a href="#synopsis">Synopsis</a></li>
+<li><a href="#global-options">Global Options</a></li>
+<li><a href="#creating-an-application">Creating an application</a></li>
+<li><a href="#running-an-application">Running an application</a></li>
+</ul>
+      </section>
+      <section id="river">
+      <h1>The smpl Command-line Utility</h1>
+<p><em>Simple</em> ships with a command-line utility, <code>smpl</code>, that helps bootstrap applications as well as run then in development mode.</p>
+<h2 id="synopsis"><a href="#synopsis">Synopsis</a></h2>
+<pre><code>smpl [server] [OPTIONS]
+smpl create [OPTIONS] &lt;app_name&gt;</code></pre>
+<h2 id="global-options"><a href="#global-options">Global Options</a></h2>
+<pre><code>-? --help           Display help message
+-V --version        Print version information</code></pre>
+<h2 id="creating-an-application"><a href="#creating-an-application">Creating an application</a></h2>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">smpl</span> create [OPTIONS] <span class="kw">&lt;</span>app_name<span class="kw">&gt;</span></code></pre>
+<p>Creates a new <em>Simple</em> application in the directory <code>app_name</code>. The Haskell module for the new application is the <em>CamelCase</em> derivation of <code>app_name</code>. For example, an app with the name <code>test_app</code> would be created with the module name <code>TestApp</code>.</p>
+<p>By default, only minimal functionality is included in generated apps. The following options add additional functionality:</p>
+<ul>
+<li><p><code>--templates</code> includes support for rendering templates taken from the “views” subdirectory.</p></li>
+<li><p><code>--postgresql</code> adds support for creating models that serialize to PostgreSQL, as well as convenience methods for accessing a global PostgreSQL connection.</p></li>
+<li><p><code>--sessions</code> adds the ability to interact with a cookie-based session map.</p></li>
+<li><p><code>--all</code> includes all of the above.</p></li>
+</ul>
+<p>All of these options modify the <code>[AppName].Common</code> module by adding various instances for <code>AppSettings</code> type, as well as add dependencies on necessary packages in the app’s cabal file. The <code>--templates</code> flag also changes the default app handler to use render a placeholder view instead of a simple string.</p>
+<h2 id="running-an-application"><a href="#running-an-application">Running an application</a></h2>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">smpl</span> server</code></pre>
+<p>Running the above command from within an application directory invokes <code>wai-handler-devel</code> to run an application in development mode. In particular, it expects <code>app</code> function from the <code>Application</code> module to have the type signature <code>(Application -&gt; IO()) -&gt; IO ()</code> and passes in a continuation to run the <code>Application</code>. The server will watch for changed files, and recompile and reload the application as necessary.</p>
+<p>By default, the server runs on port 3000, but this can be changed with <code>-p PORT</code> or <code>--port=PORT</code>. If your <code>app</code> function resides in a different module, use <code>--module=MODULE</code> to specify it.</p>
+<p>The server sets the <code>ENV</code> environment variable to <code>development</code>. This can be used by the application that it is running in development mode. For example, <code>simple-postgresql-orm</code> uses this to start a PostgreSQL server in a subdirectory of the app as well as run all migrations when in development mode.</p>
+      </section>
+    </div>
+    <div class="push"></div>
+  </div>
+  <footer>
+    <div>
+      This work is licensed under a
+      <a href="http://creativecommons.org/licenses/by-sa/4.0/">
+        Creative Commons Attribution-Share Alike 4.0 License</a>.
+    </div>
+  </footer>
+</body>
+</html>

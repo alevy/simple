@@ -1,0 +1,257 @@
+@import url(//fonts.googleapis.com/css?family=Open+Sans:400,400italic,700,700italic|Ubuntu+Mono|Pacifico);
+
+html, body {
+  margin: 0;
+  height: 100%;
+}
+
+body {
+  background-color: white;
+  font-family: Open Sans, Helvetica, Arial;
+  font-size: 16px;
+  overflow-x: hidden;
+  color: #2e2d29;
+  height: 100%;
+}
+
+h1, h2, h3 h4 {
+  margin-top: 0px;
+  padding: 0px;
+}
+
+#wrapper {
+  min-height: 100%;
+  margin: 0 auto -3em
+}
+
+.content {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-bottom: 10px;
+}
+
+.warning {
+  padding: 5px;
+  font-style: italic;
+  border: 3px solid #fbf236;
+  background-color: #fff975;
+}
+
+#navbar {
+  width: 100%;
+  padding-top: 0px;
+  padding-left: 40px;
+  background-color: #8C1515;
+  color: white;
+  min-height: 75px;
+}
+
+#navbar header {
+  display: inline-block;
+  width: 200px;
+  float: left;
+}
+
+#navbar header h1 {
+  font-family: Pacifico;
+  font-weight: normal;
+  font-size: 27pt;
+  line-height: 36pt;
+}
+
+#navbar header h2 {
+  font-size: 10pt;
+  font-style: italic;
+  line-height: 20pt;
+}
+
+#navbar h1, #navbar h2 {
+  margin-bottom: 0px;
+}
+
+#navbar h2 {
+  font-size: 16px;
+}
+
+#navbar ul.nav {
+  display: inline-block;
+  list-style-type: none;
+  padding: 0px;
+  padding-top: 10px;
+  text-transform: lowercase;
+  text-align: center;
+  margin-top: 0px;
+}
+
+#navbar ul.nav li {
+  display: inline-block;
+  margin-top: 10px;
+  font-weight: 700;
+}
+
+#navbar ul.nav li + li a::before {
+    content: " | ";
+}
+
+#navbar ul.nav a {
+  text-decoration: none;
+  color: #f8f6ea;
+  padding: 5px;
+  padding-left: 0px;
+  display: block;
+}
+
+#navbar ul.nav a:hover {
+  color: #e9e6df;
+}
+
+#toc {
+  float: right;
+  margin-top: 40px;
+  max-width: 215px;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: #f2f1eb;
+}
+
+#toc a {
+  color: #3f3c30;
+  text-decoration: none;
+}
+
+#toc a:hover {
+  text-decoration: underline;
+}
+
+#toc ul {
+  padding-left: 1em;
+  list-style: decimal;
+}
+
+#toc ul ul {
+  padding-left: 10px;
+  list-style: disc;
+}
+
+#river {
+  padding-top: 40px;
+  padding-left: 40px;
+  max-width: 600px;
+}
+
+#river h1, #river h2 {
+  color: black;
+}
+
+#river h2 {
+  padding-top: 15px;
+}
+
+#river p {
+  text-align: justify;
+}
+
+#river table {
+  border: 2px solid #ccc;
+  border-collapse: collapse;
+}
+
+#river table th, #river table td {
+  border: 1px solid #ccc;
+  border-collapse: collapse;
+  padding: 9px 10px;
+}
+
+#river table th {
+  border-bottom: 2px solid #ccc;
+  background-color: #eee;
+}
+
+#river .figure img {
+  display: block;
+  margin: 0 auto;
+  border: 1px solid #ccc;
+}
+
+.figure {
+  padding: 10px 0;
+}
+
+aside {
+  background: url("../images/tab_info.gif") no-repeat scroll left top rgb(213, 233, 246);
+  padding: 0.25em 1em 0.25em 48px;
+}
+
+h1 {
+  font-size: 175%;
+}
+
+h2 {
+  font-size: 135%;
+}
+
+h1 a, h2 a, h3 a {
+  color: inherit;
+  text-decoration: inherit;
+}
+
+hr {
+  border: 0px;
+  border-top: 1px solid #666;
+}
+
+code {
+  font-family: Ubuntu Mono, monospace;
+  white-space: nowrap;
+  font-weight: 700;
+}
+
+pre {
+  padding: 15px;
+  border-radius: 5px;
+  background-color: #EEF;
+  box-shadow: 1px 1px 5px #ccc;
+  font-family: Ubuntu Mono, monospace;
+  font-weight: 700;
+}
+
+pre code {
+  border-radius: 0px;
+  box-shadow: none;
+  white-space: inherit;
+  background-color: inherit;
+  padding: 0px;
+}
+
+.sourceCode .kw { color: #268BD2; }
+.sourceCode .dt { color: #268BD2; }
+.sourceCode .dv, .sourceCode .bn, .sourceCode .fl { color: #D33682; }
+.sourceCode .ch { color: #DC322F; }
+.sourceCode .st { color: #2AA198; }
+.sourceCode .co { color: #93A1A1; }
+.sourceCode .ot { color: #A57800; }
+.sourceCode .al { color: #CB4B16; font-weight: bold; }
+.sourceCode .fu { color: #268BD2; }
+.sourceCode .re { }
+.sourceCode .er { color: #D30102; font-weight: bold; }
+
+footer {
+  width: 100%;
+  background-color: #333;
+  color: white;
+  line-height: 3em;
+}
+
+footer > div {
+  margin: 0 auto;
+  max-width: 920px;
+}
+
+footer, .push {
+  height: 3em;
+}
+
+footer a {
+  color: #fff;
+}
+

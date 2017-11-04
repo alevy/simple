@@ -1,0 +1,395 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <link rel="shortcut icon" href="favicon.ico" />
+    <title>Simple - Getting Started Tutorial</title>
+    <link rel="stylesheet" type="text/css" href="css/style.css">
+    <meta charset="utf-8">
+</head>
+<body>
+  <div id="wrapper">
+    <div id="navbar">
+      <div class="content">
+        <header>
+          <h1><a href="/">Simple</a></h1>
+          <h2>a Haskell web framework</h2>
+        </header>
+        <ul class="nav">
+          <li><a href="index.html">Home</a></li>
+          <li><a href="tutorial.html">Tutorial</a></li>
+          <li><a href="documentation.html">Documentation</a></li>
+          <li><a href="api.html">API</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="content">
+      <section id="toc">
+<ul>
+<li><a href="#guide-assumptions">Guide Assumptions</a></li>
+<li><a href="#creating-a-new-simple-app">Creating a new <em>Simple</em> app</a><ul>
+<li><a href="#installing-simple">Installing <em>Simple</em></a></li>
+<li><a href="#creating-the-blog-application">Creating the Blog application</a></li>
+</ul></li>
+<li><a href="#starting-the-server">Starting the server</a></li>
+<li><a href="#displaying-content">Displaying Content</a><ul>
+<li><a href="#list-posts">List posts</a></li>
+<li><a href="#show-post">Show post</a></li>
+</ul></li>
+<li><a href="#creating-content">Creating content</a><ul>
+<li><a href="#new-post-form">New post form</a></li>
+<li><a href="#parsing-the-form">Parsing the form</a></li>
+</ul></li>
+<li><a href="#bonus-routing-dsls">Bonus! Routing DSLs</a></li>
+<li><a href="#next-steps">Next Steps</a></li>
+</ul>
+      </section>
+      <section id="river">
+      <h1>Getting Started Tutorial</h1>
+<p>This getting started tutorial will get you up and running with a basic web application. At the end you will know</p>
+<ol style="list-style-type: decimal">
+<li><p>how install <em>Simple</em></p></li>
+<li><p>how to create a <em>Simple</em> application from scratch</p></li>
+<li><p>the structure of a <em>Simple</em> application</p></li>
+<li><p>how to add persistence with PostgreSQL.</p></li>
+</ol>
+<h2 id="guide-assumptions"><a href="#guide-assumptions">Guide Assumptions</a></h2>
+<p>This guide assumes you have a working version of the GHC Haskell compiler, the cabal package manager and an up-to-date version of the PostgreSQL database. The best way to get GHC and cabal setup is by installing the <a href="http://www.haskell.org/platform">Haskell platform</a>. Most Linux distributions have PostgreSQL in their package repositories (e.g. <code>apt-get install postgresql</code>, <code>pacman -S postgresql</code>). Mac OS X comes with PostgreSQL, however, some of the utilities that this guide relies on (like <code>pg_ctl</code>) are not shipped by default. However, installing PostgreSQL from Homebrew will also install the appropriate utilities.</p>
+<p>The guide also assumes you have a basic understand of Haskell programming, web programming and preferably have built a few web applications in the past. For a good starting guide to Haskell see <a href="http://learnyouahaskell.com">Learn You a Haskell for Great Good!</a> and/or <a href="http://book.realworldhaskell.org/">Real World Haskell</a>.</p>
+<h2 id="creating-a-new-simple-app"><a href="#creating-a-new-simple-app">Creating a new <em>Simple</em> app</a></h2>
+<h3 id="installing-simple"><a href="#installing-simple">Installing <em>Simple</em></a></h3>
+<p>Open up a terminal. Commands prefaced with a dollar sign ($) should be run in terminal. Use cabal to install <em>Simple</em>:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> install simple</code></pre>
+<p>To verify that <em>Simple</em> installed properly run the following command:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">smpl</span> --help</code></pre>
+<p>which should print out the subcommands and options available for the <code>smpl</code> utility that comes with <em>Simple</em>.</p>
+<h3 id="creating-the-blog-application"><a href="#creating-the-blog-application">Creating the Blog application</a></h3>
+<p>The <code>smpl</code> utility helps you create a new, blank <em>Simple</em> application from the command-line. To create our application, open a terminal, navigate to a folder where you would like to create the project (for example <code>cd ~/hack</code>) and create a new <em>Simple</em> project called “blog”:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">smpl</span> create --templates blog</code></pre>
+<p>This will create a new subdirectory called “blog” containing our app. The “–templates” flag tells <code>smpl</code> to include boilerplate code for templates. The directory contains a ready-to-run app with the following structure:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">File/Folder</th>
+<th align="left">Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Blog/</td>
+<td align="left">Parent directory for app specific modules</td>
+</tr>
+<tr class="even">
+<td align="left">Blog/Common.hs</td>
+<td align="left">A base module that defines the application type</td>
+</tr>
+<tr class="odd">
+<td align="left">layouts/</td>
+<td align="left">The default folder for defining view templates</td>
+</tr>
+<tr class="even">
+<td align="left">views/</td>
+<td align="left">The default folder for defining views</td>
+</tr>
+<tr class="odd">
+<td align="left">Application.hs</td>
+<td align="left">Initial setup and route configuration</td>
+</tr>
+<tr class="even">
+<td align="left">blog.cabal</td>
+<td align="left">Used by cabal to resolve package dependencies and compile the app</td>
+</tr>
+<tr class="odd">
+<td align="left">Main.hs</td>
+<td align="left">Contains the main function used to start the application</td>
+</tr>
+</tbody>
+</table>
+<h2 id="starting-the-server"><a href="#starting-the-server">Starting the server</a></h2>
+<p>Our application is ready for us to get to work. Now we’ll get a server up and running and start adding functionality to our application.</p>
+<p><em>Simple</em> apps can be run using the <a href="http://hackage.haskell.org/package/warp">warp</a> web server (or any other <a href="http://hackage/haskell.org/package/wai">WAI</a> compatible server). The generated <code>Main.hs</code> file does exactly this. The following commands will start a server on port 3000.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> install --only-dependencies
+$ <span class="kw">cabal</span> run</code></pre>
+<p>To see the application in action, open a browser and navigate to <a href="http://localhost:3000">http://localhost:3000/</a>. You should see the default generated home page:</p>
+<div class="figure">
+<img src="images/screenshot-hello.png" title="&quot;Hello World&quot; Screenshot" />
+</div>
+<aside>
+
+<p><code>smpl</code> utility helps run applications in development mode. First, ensure the package <code>wai-handler-devel</code> is installed, then run <code>smpl server</code>:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash">$ <span class="kw">cabal</span> install wai-handler-devel
+$ <span class="kw">smpl</span> server</code></pre>
+<p>This will fire up <code>wai-handler-devel</code> on port <em>3000</em>, and set the environment variable “ENV” to “development”. To see the application in action, open a browser and navigate to <a href="http://localhost:3000">http://localhost:3000/</a>. You should see the default generated home page:</p>
+</aside>
+
+<h2 id="displaying-content"><a href="#displaying-content">Displaying Content</a></h2>
+<p>The default generated application isn’t very interesting, displaying only a boilerplate homepage. We’ll start by adding some content. For simplicity we can store blog posts in the filesystem. Let’s create some dummy data:</p>
+<pre><code>$ mkdir data
+$ cat &gt; data/00001
+The Title of Your First Post on a Single Line
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Etiam vitae interdum sapien. In congue... 
+
+$ cat &gt; data/00002
+The Title of Your Second Post
+Aliquam tempor varius justo vitae bibendum! Duis vitae rutrum
+neque. Sed ut sed...</code></pre>
+<h3 id="list-posts"><a href="#list-posts">List posts</a></h3>
+<p>We’ll use the filename to order posts, the first line of the file for post title and the rest for the post body. Now that we have some data to play with, let’s list and display our posts.</p>
+<p>For this simple tutorial, we’ll write all of our application logic in “Application.hs”. First, add the following imports:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Control.Monad.IO.Class</span>
+<span class="kw">import </span><span class="dt">Data.Aeson</span>
+<span class="kw">import </span><span class="dt">Data.List</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Types</span>
+<span class="kw">import </span><span class="dt">System.Directory</span>
+<span class="kw">import </span><span class="dt">System.FilePath</span>
+<span class="kw">import </span><span class="dt">System.IO</span></code></pre>
+<aside>
+
+<p>Most of these imports are for reading the posts from the filesystem (<code>System.Directory</code>, <code>System.FilePath</code> and System.IO) or for basic Monad manipulations (<code>Control.Monad</code> and <code>Control.Monad.IO.Class</code>). <code>Data.Aeson</code> lets us construct values to pass to templates. <code>Data.List</code> is used to manipulate the list of files returned from the “data” directory. Finally, we need <code>Network.HTTP.Types</code> for HTTP method keywords to use in our routing.</p>
+</aside>
+
+<p>Next, let’s modify the actual application in the <code>app</code> function. The first line in the function sets up the app <em>settings</em> – which is defined in <code>Blog.Common</code>. The rest of the function runs the HTTP server (<code>runner</code>) using the application defined in the block:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">app runner <span class="fu">=</span> <span class="kw">do</span>
+  settings <span class="ot">&lt;-</span> newAppSettings
+
+  runner <span class="fu">$</span> controllerApp settings <span class="fu">$</span> <span class="kw">do</span>
+    routeTop <span class="fu">$</span> render <span class="st">&quot;index.html&quot;</span> ()</code></pre>
+<p>Replace <code>routeTop $ render &quot;index.html ()&quot;</code> with logic to read posts from the filesystem and and render them in the “index.html” template:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">routeMethod <span class="dt">GET</span> <span class="fu">$</span> <span class="kw">do</span>
+  <span class="co">-- Respond to the root route</span>
+  routeTop <span class="fu">$</span> <span class="kw">do</span>
+    posts <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+      dataDir <span class="ot">&lt;-</span> getDirectoryContents <span class="st">&quot;data&quot;</span>
+      <span class="kw">let</span> postFiles <span class="fu">=</span> sort <span class="fu">$</span>
+            filter (not <span class="fu">.</span> isPrefixOf <span class="st">&quot;.&quot;</span>) dataDir
+      forM postFiles <span class="fu">$</span> \postFile <span class="ot">-&gt;</span> <span class="kw">do</span>
+        withFile (<span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> postFile) <span class="dt">ReadMode</span> <span class="fu">$</span> \h <span class="ot">-&gt;</span> <span class="kw">do</span>
+          title <span class="ot">&lt;-</span> hGetLine h
+          return <span class="fu">$</span> object [<span class="st">&quot;id&quot;</span> <span class="fu">.=</span> postFile
+                          , <span class="st">&quot;title&quot;</span> <span class="fu">.=</span> title]
+    render <span class="st">&quot;index.html&quot;</span> <span class="fu">$</span> object [<span class="st">&quot;posts&quot;</span> <span class="fu">.=</span> posts]</code></pre>
+<p>The above code responds to a GET request for the root route (“/”), rendering the template “views/index.html” and passing it an JSON value (a <a href="http://hackage.haskell.org/packages/aeson">aeson</a> <code>Value</code>) containing a list of post objects. Each post contains an <em>id</em> and <em>title</em>. <code>routeTop</code> ensures that the route is only invoked if there is no path remaining to consume. The rest of the code simply reads the first line (the title) of each file in the “data” directory.</p>
+<aside>
+
+<p>Our code is running in the <code>Controller</code> monad, which is the main type used in <em>Simple</em>. It contains the request (accessible through the monadic <code>request</code> function), as well as an application-specific value (in our case, of type <code>AppSettings</code>). A <code>Controller</code> falls-through unless it explicitly <code>respond</code>s to a request. <code>Controller</code> is an instance of <code>MonadIO</code>, so to perform IO actions (like reading from the filesystem), simply wrap them in <code>liftIO</code></p>
+</aside>
+
+<p>We also need to add the packages <code>aeson</code>, <code>directory</code>, <code>filepath</code>, <code>http-types</code> and <code>transformers</code> as dependencies in <code>blog.cabal</code> (they should already be installed since <em>Simple</em> depends on them anyway):</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">build<span class="fu">-</span>depends<span class="fu">:</span>
+  base
+  , aeson
+  , directory
+  , filepath
+  , http<span class="fu">-</span>types
+  , transformers
+  , simple <span class="fu">&gt;=</span> <span class="dv">0</span><span class="fu">.</span><span class="dv">7</span><span class="fu">.</span><span class="dv">0</span>
+  , wai
+  , wai<span class="fu">-</span>extra
+  , warp</code></pre>
+<p>Let’s now modify “views/index.html” to make use of the posts:</p>
+<pre class="sourceCode html"><code class="sourceCode html">$if(null(posts))$
+No posts.
+$else$
+<span class="kw">&lt;ul&gt;</span>
+$for(post in posts)$
+<span class="kw">&lt;li&gt;&lt;a</span><span class="ot"> href=</span><span class="st">&quot;/$post.id$&quot;</span><span class="kw">&gt;</span>$post.title$<span class="kw">&lt;/a&gt;&lt;/li&gt;</span>
+$endfor$
+<span class="kw">&lt;/ul&gt;</span>
+$endif$</code></pre>
+<p><em>Simple</em> templates are embedded templates – meaning they are embedded inside HTML, or whichever relevant output format. Template directives (like control statements and variable expansions) are surrounded by dollar signs ($). Our template lists the post titles and links to the post itself at “/:post.id”. For a comprehensive overview of the templating language, see the <a href="http://hackage.haskell.org/package/simple-templates-0.7.0/docs/Web-Simple-Templates-Language.html#g:1">Haddock documentation</a>.</p>
+<div class="figure">
+<img src="images/screenshot-index.png" title="Posts index Screenshot" />
+</div>
+<aside>
+
+<p>Notice that we didn’t specify any of the page style, main heading or any boilerplate HTML for that matter, yet the generates page still displays it. That’s because <code>Web.Simple.Templates</code> renders all templates within the layout in <code>layouts/main.html</code>. This behavior can be customized for a particular page by calling <code>renderLayout</code> with a specific layout or <code>renderPlain</code> to render a template with no layout. It can also be changed globally by modifying the instance of <code>HasTemplates</code> in <code>Blog.Common</code>.</p>
+</aside>
+
+<h3 id="show-post"><a href="#show-post">Show post</a></h3>
+<p>If we click on any of the links now, we’ll get a 404 (not found) page. That’s because we still need to add the route for displaying individual posts. Let’s another route in “Application.hs” (make sure it’s as indented as the main route - two indentations):</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Respond to &quot;/:post_id&quot;</span>
+routeVar <span class="st">&quot;post_id&quot;</span> <span class="fu">$</span> routeTop <span class="fu">$</span> <span class="kw">do</span>
+  postId <span class="ot">&lt;-</span> queryParam&#39; <span class="st">&quot;post_id&quot;</span>
+  <span class="kw">let</span> postFile <span class="fu">=</span> <span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> (takeFileName postId)
+  post <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+    h <span class="ot">&lt;-</span> openFile postFile <span class="dt">ReadMode</span>
+    title <span class="ot">&lt;-</span> hGetLine h
+    body <span class="ot">&lt;-</span> hGetContents h
+    return <span class="fu">$</span> object [<span class="st">&quot;title&quot;</span> <span class="fu">.=</span> title, <span class="st">&quot;body&quot;</span> <span class="fu">.=</span> body]
+  render <span class="st">&quot;show.html&quot;</span> post</code></pre>
+<aside>
+
+<p><code>routeVar</code> consumes the next directory in the request path, but instead of matching a particular string (like <code>routeName</code>), it sticks the directory name in the given query parameters. So, for example, <code>routeVar &quot;post_id&quot;</code> will match paths will at least one directory left, and make the name of the directory available in the <code>post_id</code> query parameter from within the controller.</p>
+</aside>
+
+<p>and add a view template in “views/show.html”:</p>
+<pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;h2&gt;</span>$title$<span class="kw">&lt;/h2&gt;</span>
+<span class="kw">&lt;p&gt;</span>
+$body$
+<span class="kw">&lt;/p&gt;</span></code></pre>
+<p>Now, if we click on a link from the main page, our app will display the post body:</p>
+<div class="figure">
+<img src="images/screenshot-post.png" title="Show Post Screenshot" />
+</div>
+<p>We nearly have a complete (albeit minimal) blog application. We’re just missing a way to generate the content in the first place…</p>
+<h2 id="creating-content"><a href="#creating-content">Creating content</a></h2>
+<h3 id="new-post-form"><a href="#new-post-form">New post form</a></h3>
+<p>Our first step towards being able to author new posts is to display an HTML form. This is fairly straight forward since it involves no dynamic content. We’ll add the route “/new” which will simply render the form:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="co">-- Render new post form</span>
+routeName <span class="st">&quot;new&quot;</span> <span class="fu">$</span> routeTop <span class="fu">$</span> <span class="kw">do</span>
+  render <span class="st">&quot;new.html&quot;</span> ()</code></pre>
+<p>It’s imperative that this route appears before the route for displaying posts. That’s because routes are evaluated in order, and <code>routeVar &quot;post_id&quot;</code> would match “/new”, which we don’t want.</p>
+<p>Finally, we need to add a template in “views/new.html”:</p>
+<pre class="sourceCode html"><code class="sourceCode html"><span class="kw">&lt;form</span><span class="ot"> action=</span><span class="st">&quot;/&quot;</span><span class="ot"> method=</span><span class="st">&quot;POST&quot;</span><span class="kw">&gt;</span>
+  <span class="kw">&lt;p&gt;</span>
+    <span class="kw">&lt;label</span><span class="ot"> for=</span><span class="st">&quot;title&quot;</span><span class="kw">&gt;</span>Title<span class="kw">&lt;/label&gt;</span>
+    <span class="kw">&lt;input</span><span class="ot"> type=</span><span class="st">&quot;text&quot;</span><span class="ot"> name=</span><span class="st">&quot;title&quot;</span><span class="ot"> id=</span><span class="st">&quot;title&quot;</span><span class="kw">/&gt;</span>
+  <span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;p&gt;</span>
+    <span class="kw">&lt;textarea</span><span class="ot"> name=</span><span class="st">&quot;body&quot;</span><span class="kw">&gt;&lt;/textarea&gt;</span>
+  <span class="kw">&lt;/p&gt;</span>
+  <span class="kw">&lt;p&gt;&lt;input</span><span class="ot"> type=</span><span class="st">&quot;submit&quot;</span><span class="ot"> value=</span><span class="st">&quot;Create&quot;</span><span class="kw">/&gt;</span>
+<span class="kw">&lt;/form&gt;</span></code></pre>
+<p>Now, <a href="http://localhost:3000/new">http://localhost:3000/new</a>:</p>
+<div class="figure">
+<img src="images/screenshot-new.png" title="New Post Screenshot" />
+</div>
+<h3 id="parsing-the-form"><a href="#parsing-the-form">Parsing the form</a></h3>
+<p>Submitting the form above will perform a “POST” request to the root path with a URL-encoded body containing the contents of the form. In order to store the new post, we need to parse the form and ensure that the data is valid (i.e. the title and body fields are non-empty).</p>
+<p>The monadic <code>parseFrom</code> function parses a form into a list of parameters (each a pair of strict <code>ByteString</code>s for the key and value) and a list of <code>FileInfo</code>s (<code>FileInfo</code> represents an uploaded file, but we won’t go into that now as it’s not relevant for our example).</p>
+<p><code>parseForm</code> lets us save new posts relatively easily:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="fu">...</span>
+<span class="kw">import qualified</span> <span class="dt">Data.ByteString.Char8</span> <span class="kw">as</span> <span class="dt">S8</span>
+<span class="fu">...</span>
+
+<span class="co">-- Create form</span>
+routeMethod <span class="dt">POST</span> <span class="fu">$</span> routeTop <span class="fu">$</span> <span class="kw">do</span>
+  (params, _) <span class="ot">&lt;-</span> parseForm
+  <span class="kw">let</span> notNull <span class="fu">=</span> not <span class="fu">.</span> S8.null
+  <span class="kw">let</span> mpost <span class="fu">=</span> <span class="kw">do</span>
+        title <span class="ot">&lt;-</span> notNull <span class="ot">`mfilter`</span> lookup <span class="st">&quot;title&quot;</span> params
+        body <span class="ot">&lt;-</span> notNull <span class="ot">`mfilter`</span> lookup <span class="st">&quot;body&quot;</span> params
+        return (title, body)
+  <span class="kw">case</span> mpost <span class="kw">of</span>
+    <span class="dt">Nothing</span> <span class="ot">-&gt;</span> redirectBack
+    <span class="dt">Just</span> (title, body) <span class="ot">-&gt;</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+      files <span class="ot">&lt;-</span> filter (\(c<span class="fu">:</span>_) <span class="ot">-&gt;</span> c <span class="fu">/=</span> <span class="ch">&#39;.&#39;</span>) <span class="ot">`fmap`</span>
+        getDirectoryContents <span class="st">&quot;data&quot;</span>
+      <span class="kw">let</span> lastFileNum <span class="fu">=</span> show <span class="fu">$</span> length files <span class="fu">+</span> <span class="dv">1</span>
+      <span class="kw">let</span> fileName <span class="fu">=</span>
+            take (<span class="dv">5</span> <span class="fu">-</span> length lastFileNum)
+              [z <span class="fu">|</span> _ <span class="ot">&lt;-</span> [<span class="dv">0</span><span class="fu">..</span>], <span class="kw">let</span> z <span class="fu">=</span> <span class="ch">&#39;0&#39;</span>] <span class="fu">++</span>
+            lastFileNum
+      withFile (<span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> fileName) <span class="dt">WriteMode</span> <span class="fu">$</span> \h <span class="ot">-&gt;</span> <span class="kw">do</span>
+        S8.hPutStrLn h title
+        S8.hPutStr h body
+  respond <span class="fu">$</span> redirectTo <span class="st">&quot;/&quot;</span></code></pre>
+<p>Once we’ve extracted the parameters from the request body, we lookup the “title” and “body” fields (note that these just correspond to the “name” attribute we gave the inputs in our HTML form) and ensure they are not empty (with <code>notNull</code> and `mfilter). If this fails (i.e. if “title” or “body” are either not present or empty), we redirect to the referrer (the new post form). In a real application, we’d probably want to give the user some hint as to what went wrong. If the form is complete, we store the post and redirect to the post listings.</p>
+<aside>
+Note that we’ve imported <code>Data.ByteString.Char8</code>. To build with cabal, you’ll need to add the <code>bytestring</code> package as a dependency in <code>blog.cabal</code>.
+</aside>
+
+<p>We’re basically done! Our blog app, while very simple, is totally functional!</p>
+<h2 id="bonus-routing-dsls"><a href="#bonus-routing-dsls">Bonus! Routing DSLs</a></h2>
+<p>The <code>route*</code> combinators are very expressive and are, therefore, great for customizing exactly how to route a request. However, in the common case, where an application follows a simple pattern, they can get a bit cumbersome to use. <em>Simple</em> ships with two DSLs on top of the <code>route*</code> combinators that make common routing tasks easy. Let’s use one of these DSLs, “Frank”, to rewrite out blog application more concisely.</p>
+<p>“Frank” exposes an interface based on the <a href="http://sinatrarb.com">Sinatra</a> framework for Ruby. For example, the route:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">get <span class="st">&quot;/:post_id&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+  <span class="fu">...</span></code></pre>
+<p>will match GET requests which have exactly one unconsumed directory in the path and use its contents for the “post_id” query parameters. The route is equivalent to (and in fact implemented as):</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell">routeMethod <span class="dt">GET</span> <span class="fu">$</span> routePattern <span class="st">&quot;/:post_id&quot;</span> <span class="fu">$</span> routeTop</code></pre>
+<p>There are similar methods for <code>post</code>, <code>put</code> and <code>delete</code>.</p>
+<p>Once we import <code>Web.Frank</code>, we can rewrite our application much more cleanly using this interface. The full listing is:</p>
+<pre class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">{-# LANGUAGE OverloadedStrings #-}</span>
+<span class="kw">module</span> <span class="dt">Application</span> <span class="kw">where</span>
+
+<span class="kw">import </span><span class="dt">Control.Monad</span>
+<span class="kw">import </span><span class="dt">Control.Monad.IO.Class</span>
+<span class="kw">import </span><span class="dt">Blog.Common</span>
+<span class="kw">import </span><span class="dt">Data.Aeson</span>
+<span class="kw">import qualified</span> <span class="dt">Data.ByteString.Char8</span> <span class="kw">as</span> <span class="dt">S8</span>
+<span class="kw">import </span><span class="dt">Data.List</span>
+<span class="kw">import </span><span class="dt">Network.HTTP.Types</span>
+<span class="kw">import </span><span class="dt">System.Directory</span>
+<span class="kw">import </span><span class="dt">System.FilePath</span>
+<span class="kw">import </span><span class="dt">System.IO</span>
+<span class="kw">import </span><span class="dt">Web.Frank</span>
+<span class="kw">import </span><span class="dt">Web.Simple</span>
+<span class="kw">import </span><span class="dt">Web.Simple.Templates</span>
+
+<span class="ot">app ::</span> (<span class="dt">Application</span> <span class="ot">-&gt;</span> <span class="dt">IO</span> ()) <span class="ot">-&gt;</span> <span class="dt">IO</span> ()
+app runner <span class="fu">=</span> <span class="kw">do</span>
+  settings <span class="ot">&lt;-</span> newAppSettings
+
+  runner <span class="fu">$</span> controllerApp settings <span class="fu">$</span> <span class="kw">do</span>
+    get <span class="st">&quot;/&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+      posts <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+        dataDir <span class="ot">&lt;-</span> getDirectoryContents <span class="st">&quot;data&quot;</span>
+        <span class="kw">let</span> postFiles <span class="fu">=</span> sort <span class="fu">$</span>
+              filter (not <span class="fu">.</span> isPrefixOf <span class="st">&quot;.&quot;</span>) dataDir
+        forM postFiles <span class="fu">$</span> \postFile <span class="ot">-&gt;</span> <span class="kw">do</span>
+          withFile (<span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> postFile) <span class="dt">ReadMode</span> <span class="fu">$</span> \h <span class="ot">-&gt;</span> <span class="kw">do</span>
+            title <span class="ot">&lt;-</span> hGetLine h
+            return <span class="fu">$</span> object [<span class="st">&quot;id&quot;</span> <span class="fu">.=</span> postFile
+                            , <span class="st">&quot;title&quot;</span> <span class="fu">.=</span> title]
+      render <span class="st">&quot;index.html&quot;</span> <span class="fu">$</span> object [<span class="st">&quot;posts&quot;</span> <span class="fu">.=</span> posts]
+
+    <span class="co">-- Respond to &quot;/new&quot;</span>
+    get <span class="st">&quot;/new&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+      render <span class="st">&quot;new.html&quot;</span> ()
+
+    <span class="co">-- Respond to &quot;/:post_id&quot;</span>
+    get <span class="st">&quot;/:post_id&quot;</span> <span class="fu">$</span> routeTop <span class="fu">$</span> <span class="kw">do</span>
+      postId <span class="ot">&lt;-</span> queryParam&#39; <span class="st">&quot;post_id&quot;</span>
+      <span class="kw">let</span> postFile <span class="fu">=</span> <span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> (takeFileName postId)
+      post <span class="ot">&lt;-</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+        h <span class="ot">&lt;-</span> openFile postFile <span class="dt">ReadMode</span>
+        title <span class="ot">&lt;-</span> hGetLine h
+        body <span class="ot">&lt;-</span> hGetContents h
+        return <span class="fu">$</span> object [<span class="st">&quot;title&quot;</span> <span class="fu">.=</span> title, <span class="st">&quot;body&quot;</span> <span class="fu">.=</span> body]
+      render <span class="st">&quot;show.html&quot;</span> post
+
+    <span class="co">-- Create form</span>
+    post <span class="st">&quot;/&quot;</span> <span class="fu">$</span> <span class="kw">do</span>
+      (params, _) <span class="ot">&lt;-</span> parseForm
+      <span class="kw">let</span> notNull <span class="fu">=</span> not <span class="fu">.</span> S8.null
+      <span class="kw">let</span> mpost <span class="fu">=</span> <span class="kw">do</span>
+            title <span class="ot">&lt;-</span> notNull <span class="ot">`mfilter`</span> lookup <span class="st">&quot;title&quot;</span> params
+            body <span class="ot">&lt;-</span> notNull <span class="ot">`mfilter`</span> lookup <span class="st">&quot;body&quot;</span> params
+            return (title, body)
+      <span class="kw">case</span> mpost <span class="kw">of</span>
+        <span class="dt">Nothing</span> <span class="ot">-&gt;</span> redirectBack
+        <span class="dt">Just</span> (title, body) <span class="ot">-&gt;</span> liftIO <span class="fu">$</span> <span class="kw">do</span>
+          files <span class="ot">&lt;-</span> filter (\(c<span class="fu">:</span>_) <span class="ot">-&gt;</span> c <span class="fu">/=</span> <span class="ch">&#39;.&#39;</span>) <span class="ot">`fmap`</span>
+            getDirectoryContents <span class="st">&quot;data&quot;</span>
+          <span class="kw">let</span> lastFileNum <span class="fu">=</span> show <span class="fu">$</span> length files <span class="fu">+</span> <span class="dv">1</span>
+          <span class="kw">let</span> fileName <span class="fu">=</span>
+                take (<span class="dv">5</span> <span class="fu">-</span> length lastFileNum)
+                  [z <span class="fu">|</span> _ <span class="ot">&lt;-</span> [<span class="dv">0</span><span class="fu">..</span>], <span class="kw">let</span> z <span class="fu">=</span> <span class="ch">&#39;0&#39;</span>] <span class="fu">++</span>
+                lastFileNum
+          withFile (<span class="st">&quot;data&quot;</span> <span class="fu">&lt;/&gt;</span> fileName) <span class="dt">WriteMode</span> <span class="fu">$</span> \h <span class="ot">-&gt;</span> <span class="kw">do</span>
+            S8.hPutStrLn h title
+            S8.hPutStr h body
+      respond <span class="fu">$</span> redirectTo <span class="st">&quot;/&quot;</span></code></pre>
+<h2 id="next-steps"><a href="#next-steps">Next Steps</a></h2>
+<ul>
+<li><a href="smpl.html">The <em>smpl</em> command line tool</a></li>
+<li><a href="architecture.html">Architecture of a <em>Simple</em> app</a></li>
+<li><a href="templates.html"><em>Simple</em> template system in depth</a></li>
+<li><a href="postgresql-orm.html">Modeling data with PostgreSQL</a></li>
+<li><a href="sessions.html">Cookie-based session management</a></li>
+<li><a href="api.html">In depth reference</a></li>
+</ul>
+      </section>
+    </div>
+    <div class="push"></div>
+  </div>
+  <footer>
+    <div>
+      This work is licensed under a
+      <a href="http://creativecommons.org/licenses/by-sa/4.0/">
+        Creative Commons Attribution-Share Alike 4.0 License</a>.
+    </div>
+  </footer>
+</body>
+</html>
