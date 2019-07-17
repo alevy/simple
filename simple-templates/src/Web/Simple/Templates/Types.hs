@@ -4,6 +4,7 @@ module Web.Simple.Templates.Types where
 
 import qualified Data.HashMap.Strict as H
 import Data.Monoid
+import Data.Semigroup
 import Data.Text (Text)
 import Data.Aeson
 import qualified Data.Vector as V
@@ -60,10 +61,12 @@ type FunctionMap = H.HashMap Identifier Function
 newtype Template = Template
   { renderTemplate :: FunctionMap -> Value -> Text }
 
+instance Semigroup Template where
+  tm1 <> tm2 = Template $ \fm global ->
+    renderTemplate tm1 fm global <> renderTemplate tm2 fm global
+
 instance Monoid Template where
   mempty = Template $ const $ const mempty
-  tm1 `mappend` tm2 = Template $ \fm global ->
-    renderTemplate tm1 fm global <> renderTemplate tm2 fm global
 
 -- | A symbol identifier following the format [a-z][a-zA-Z0-9_-]*
 type Identifier = Text
