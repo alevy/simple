@@ -1,4 +1,4 @@
-{-# LANGUAGE Trustworthy, FlexibleInstances, OverloadedStrings #-}
+{-# LANGUAGE Safe, FlexibleInstances, OverloadedStrings #-}
 {- |
 
 REST is a DSL for creating routes using RESTful HTTP verbs.
