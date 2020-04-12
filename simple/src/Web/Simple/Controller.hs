@@ -52,7 +52,6 @@ import qualified Data.ByteString as S
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as L8
-import           Data.Monoid
 import           Data.Text (Text)
 import           Network.HTTP.Types
 import           Network.Wai
@@ -213,7 +212,7 @@ parseForm = do
 -- | Reads and returns the body of the HTTP request.
 body :: Controller s L8.ByteString
 body = do
-  bodyProducer <- requestBody `fmap` request
+  bodyProducer <- getRequestBodyChunk `fmap` request
   liftIO $ do
     result <- consume mempty bodyProducer
     return $ toLazyByteString result

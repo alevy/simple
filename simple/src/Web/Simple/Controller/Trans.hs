@@ -95,6 +95,9 @@ instance Monad m => MonadReader Request (ControllerT s m) where
 instance MonadIO m => MonadIO (ControllerT s m) where
   liftIO = lift . liftIO
 
+instance Monad m => MonadFail (ControllerT s m) where
+  fail = err
+
 instance (Applicative m, Monad m, MonadBase m m) => MonadBase m (ControllerT s m) where
   liftBase = liftBaseDefault
 
