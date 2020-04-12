@@ -4,13 +4,11 @@
 module Main (main) where
 
 import Prelude hiding (writeFile, FilePath, all)
-import Control.Applicative
 import Control.Monad (when)
 import Data.Aeson
 import Data.Char
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.Text.Encoding as T
-import Data.Monoid (mempty)
 import Data.Version
 import System.Console.CmdArgs
 import System.Directory
