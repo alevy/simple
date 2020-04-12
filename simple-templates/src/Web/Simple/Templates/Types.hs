@@ -3,8 +3,6 @@
 module Web.Simple.Templates.Types where
 
 import qualified Data.HashMap.Strict as H
-import Data.Monoid
-import Data.Semigroup
 import Data.Text (Text)
 import Data.Aeson
 import qualified Data.Vector as V

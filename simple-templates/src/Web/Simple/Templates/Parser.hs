@@ -16,7 +16,6 @@ module Web.Simple.Templates.Parser
 import Control.Applicative
 import Control.Monad
 import Data.Char (isAlphaNum)
-import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Aeson

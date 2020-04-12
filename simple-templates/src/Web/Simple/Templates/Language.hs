@@ -35,11 +35,9 @@ module Web.Simple.Templates.Language
   , module Web.Simple.Templates.Types
   ) where
 
-import Control.Applicative
 import qualified Data.HashMap.Strict as H
 import Data.Aeson
 import Data.Maybe
-import Data.Monoid
 import Data.Scientific
 import Data.Text (Text)
 import qualified Data.Text as T
