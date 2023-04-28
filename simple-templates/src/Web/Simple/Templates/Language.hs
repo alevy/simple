@@ -37,6 +37,8 @@ module Web.Simple.Templates.Language
 
 import qualified Data.HashMap.Strict as H
 import Data.Aeson
+import qualified Data.Aeson.Key as K
+import qualified Data.Aeson.KeyMap as K
 import Data.Maybe
 import Data.Scientific
 import Data.Text (Text)
@@ -68,13 +70,13 @@ evaluateAST fm global ast =
     ASTVar ident ->
       if ident == "@" then global else
         case global of
-          Object obj -> fromMaybe Null $ H.lookup ident obj
+          Object obj -> fromMaybe Null $ K.lookup (K.fromText ident) obj
           _ -> Null
 
     ASTIndex objAst idents ->
       foldl (\val ident -> 
         case val of
-          Object obj -> fromMaybe Null $ H.lookup ident obj
+          Object obj -> fromMaybe Null $ K.lookup (K.fromText ident) obj
           _ -> Null) (evaluateAST fm global objAst) idents
 
     ASTArray asts -> Array $ V.map (evaluateAST fm global) asts
@@ -98,7 +100,7 @@ astForLoop fm global mkeyName valName lst body msep =
     Bool False -> String ""
     Array vec ->
       String $ go (zip [0..(V.length vec)] $ V.toList vec) mempty
-    Object obj -> String $ go (H.toList obj) mempty
+    Object obj -> String $ go (K.toList obj) mempty
     v -> evaluateAST fm (replaceVar global valName v) body
   where sep = maybe (String "") (evaluateAST fm global) msep
         val = evaluateAST fm global lst
@@ -118,8 +120,8 @@ astForLoop fm global mkeyName valName lst body msep =
           maybe global (\k -> replaceVar global k $ toJSON v) mkeyName
 
 replaceVar :: Value -> Identifier -> Value -> Value
-replaceVar (Object orig) varName newVal = Object $ H.insert varName newVal orig
-replaceVar _ varName newVal = object [varName .= newVal]
+replaceVar (Object orig) varName newVal = Object $ K.insert (K.fromText varName) newVal orig
+replaceVar _ varName newVal = object [(K.fromText varName) .= newVal]
 
 evaluate :: AST -> Template
 evaluate ast = Template $ \fm global ->

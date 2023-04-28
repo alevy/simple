@@ -60,11 +60,11 @@ instance Functor m => Functor (ControllerT s m) where
                               Right result -> (Right $ f result, st)
 
 instance (Monad m, Functor m) => Applicative (ControllerT s m) where
-  pure = return
+  pure a = ControllerT $ \st _ -> return $ (Right a, st)
   (<*>) = ap
 
 instance Monad m => Monad (ControllerT s m) where
-  return a = ControllerT $ \st _ -> return $ (Right a, st)
+  return = pure
   (ControllerT act) >>= fn = ControllerT $ \st0 req -> do
     (eres, st) <- act st0 req
     case eres of
