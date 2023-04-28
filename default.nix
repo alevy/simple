@@ -1,8 +1,11 @@
-{ nixpkgs ? import <nixpkgs> {}, compiler ? "ghc883" }:
-
-rec {
-  simple-templates = import ./simple-templates { inherit nixpkgs compiler; };
-  simple = import ./simple { inherit nixpkgs compiler simple-templates; };
-  simple-postgresql-orm = import ./simple-postgresql-orm { inherit nixpkgs compiler simple; };
-  simple-session = import ./simple-session { inherit nixpkgs compiler simple; };
-}
+# -*- compile-command: "nix-shell --run 'cabal exec -- ghc-pkg list'"; -*-
+{ pkgs ? import (import ./nix/sources.nix {}).nixpkgs {}, sources ? import ./nix/sources.nix {} }:
+  # https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/haskell-modules/make-package-set.nix
+pkgs.haskellPackages.developPackage {
+    root = ./.;
+    withHoogle = false;
+    returnShellEnv = false;
+    modifier = with pkgs.haskell.lib; drv:
+      disableLibraryProfiling (dontHaddock (addBuildTools drv
+        (with pkgs.haskellPackages; [ cabal-install ghcid])));
+  }
