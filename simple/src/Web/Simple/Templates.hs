@@ -10,6 +10,7 @@ module Web.Simple.Templates
 
 import Control.Monad.IO.Class
 import Data.Aeson
+import qualified Data.Aeson.KeyMap as K
 import qualified Data.ByteString as S
 import qualified Data.ByteString.Lazy as L
 import qualified Data.HashMap.Strict as H
@@ -135,14 +136,14 @@ defaultFunctionMap = H.fromList
 
 valueLength :: Value -> Value
 valueLength (Array arr) = toJSON $ V.length arr
-valueLength (Object obj) = toJSON $ H.size obj
+valueLength (Object obj) = toJSON $ K.size obj
 valueLength (String str) = toJSON $ T.length str
 valueLength Null = toJSON (0 :: Int)
 valueLength _ = error "length only valid for arrays, objects and strings"
 
 valueNull :: Value -> Value
 valueNull (Array arr) = toJSON $ V.null arr
-valueNull (Object obj) = toJSON $ H.null obj
+valueNull (Object obj) = toJSON $ K.null obj
 valueNull (String str) = toJSON $ T.null str
 valueNull Null = toJSON True
 valueNull _ = error "null only valid for arrays, objects and strings"
