@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                simple-templates
-version:             1.0.0
+version:             2.0.0
 synopsis:            A basic template language for the Simple web framework
 description:
   A basic template language for the Simple web framework. The language supports
